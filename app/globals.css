@@ -1,0 +1,89 @@
+@import "tailwindcss";
+@import "highlight.js/styles/github.css";
+@plugin "@tailwindcss/typography";
+
+/* Dark mode: override highlight.js theme */
+@media (prefers-color-scheme: dark) {
+  .hljs {
+    background: #1e1e2e;
+    color: #cdd6f4;
+  }
+  .hljs-keyword,
+  .hljs-selector-tag,
+  .hljs-built_in,
+  .hljs-name,
+  .hljs-tag {
+    color: #cba6f7;
+  }
+  .hljs-string,
+  .hljs-title,
+  .hljs-section,
+  .hljs-attribute,
+  .hljs-literal,
+  .hljs-template-tag,
+  .hljs-template-variable,
+  .hljs-type,
+  .hljs-addition {
+    color: #a6e3a1;
+  }
+  .hljs-comment,
+  .hljs-quote,
+  .hljs-deletion,
+  .hljs-meta {
+    color: #6c7086;
+  }
+  .hljs-number,
+  .hljs-regexp,
+  .hljs-selector-id,
+  .hljs-selector-class {
+    color: #fab387;
+  }
+  .hljs-variable,
+  .hljs-params {
+    color: #f5c2e7;
+  }
+  .hljs-function {
+    color: #89b4fa;
+  }
+  .hljs-title.function_ {
+    color: #89b4fa;
+  }
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Code block styling overrides */
+.prose pre {
+  border: 1px solid;
+  border-color: rgba(0, 0, 0, 0.1);
+  padding-left: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose pre {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"],
+      "@/types": ["./src/types"],
+      "@/types/*": ["./src/types/*"],
+      "@/repository": ["./src/repository"],
+      "@/repository/*": ["./src/repository/*"],
+      "@/filesystem": ["./src/filesystem"],
+      "@/filesystem/*": ["./src/filesystem/*"],
+      "@/parser": ["./src/parser"],
+      "@/parser/*": ["./src/parser/*"],
+      "@/search": ["./src/search"],
+      "@/search/*": ["./src/search/*"],
+      "@/revision": ["./src/revision"],
+      "@/revision/*": ["./src/revision/*"],
+      "@/ai": ["./src/ai"],
+      "@/ai/*": ["./src/ai/*"],
+      "@/git": ["./src/git"],
+      "@/git/*": ["./src/git/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
