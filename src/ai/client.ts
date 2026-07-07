@@ -11,6 +11,7 @@
 
 import { logInput, logOutput, logError } from './logger';
 import { addLogEntry, emitStreamChunk } from './log-store';
+import { logger } from '../lib/logger';
 
 export interface AIClient {
   isAvailable(): Promise<boolean>;
