@@ -1,4 +1,4 @@
-import path from 'path';
+import path from "path";
 
 /**
  * Workspace directory structure configuration.
@@ -6,9 +6,9 @@ import path from 'path';
  * problems (by platform), and root-level directories.
  */
 export const WORKSPACE_STRUCTURE = {
-  notes: ['dsa', 'system-design', 'database', 'networking', 'os', 'oop'],
-  problems: ['leetcode', 'codeforces', 'gfg'],
-  root: ['templates', 'revision', 'flashcards', 'assets'],
+  notes: ["dsa", "system-design", "database", "networking", "os", "oop"],
+  problems: ["leetcode", "codeforces", "gfg"],
+  root: ["templates", "revision", "flashcards", "assets"],
 } as const;
 
 /**
@@ -17,7 +17,7 @@ export const WORKSPACE_STRUCTURE = {
  */
 const DEFAULT_WORKSPACE_PATH = path.resolve(
   process.cwd(),
-  'knowledge-workspace'
+  "knowledge-workspace",
 );
 
 /**

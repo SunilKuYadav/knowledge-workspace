@@ -8,11 +8,12 @@
  * Requirements: 6.1, 6.2, 6.4
  */
 
-import { createAIClient } from './client';
+import { createAIClient } from "./client";
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
-const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL || 'http://localhost:11434/v1';
-const API_KEY = process.env.OPENAI_API_KEY || '';
+const DEFAULT_BASE_URL =
+  process.env.OPENAI_BASE_URL || "http://localhost:11434/v1";
+const API_KEY = process.env.OPENAI_API_KEY || "";
 
 let available = false;
 let healthCheckTimer: ReturnType<typeof setInterval> | null = null;

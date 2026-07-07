@@ -4,8 +4,8 @@
  * Pure functions for updating revision data and extracting confidence trends.
  */
 
-import type { RevisionData, RevisionEntry } from '@/types';
-import { computeNextReview } from './scheduler';
+import type { RevisionData, RevisionEntry } from "@/types";
+import { computeNextReview } from "./scheduler";
 
 /**
  * Add a revision entry to an existing RevisionData, returning a new RevisionData
@@ -21,7 +21,7 @@ import { computeNextReview } from './scheduler';
  */
 export function addRevisionEntry(
   current: RevisionData,
-  entry: RevisionEntry
+  entry: RevisionEntry,
 ): RevisionData {
   // Determine previous interval
   let previousInterval = 1;
@@ -54,7 +54,7 @@ export function addRevisionEntry(
  * @returns Array of { date, confidence } pairs in the same order as the input
  */
 export function getConfidenceTrend(
-  history: RevisionEntry[]
+  history: RevisionEntry[],
 ): { date: string; confidence: number }[] {
   return history.map((entry) => ({
     date: entry.date,

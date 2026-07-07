@@ -1,11 +1,11 @@
-import MiniSearch from 'minisearch';
+import MiniSearch from "minisearch";
 
 /**
  * Represents a document that can be indexed and searched.
  */
 export interface SearchDocument {
   id: string;
-  type: 'topic' | 'problem' | 'note' | 'flashcard';
+  type: "topic" | "problem" | "note" | "flashcard";
   title: string;
   content: string;
   tags: string[];
@@ -64,11 +64,11 @@ export class SearchIndex {
 
   private createInstance(): MiniSearch<SearchDocument> {
     return new MiniSearch<SearchDocument>({
-      fields: ['title', 'content', 'tags'],
-      storeFields: ['title', 'type', 'path', 'content'],
+      fields: ["title", "content", "tags"],
+      storeFields: ["title", "type", "path", "content"],
       extractField: (doc, fieldName) => {
-        if (fieldName === 'tags') {
-          return (doc as SearchDocument).tags.join(' ');
+        if (fieldName === "tags") {
+          return (doc as SearchDocument).tags.join(" ");
         }
         return (doc as unknown as Record<string, string>)[fieldName];
       },

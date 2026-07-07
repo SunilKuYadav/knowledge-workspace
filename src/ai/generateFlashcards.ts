@@ -8,9 +8,9 @@
  * Requirements: 5.3
  */
 
-import type { Flashcard } from '@/types';
-import type { AIClient } from './client';
-import { buildFlashcardsPrompt } from './prompts';
+import type { Flashcard } from "@/types";
+import type { AIClient } from "./client";
+import { buildFlashcardsPrompt } from "./prompts";
 
 /**
  * Generates flashcards from the given content.
@@ -21,7 +21,7 @@ import { buildFlashcardsPrompt } from './prompts';
  */
 export async function generateFlashcards(
   content: string,
-  client: AIClient
+  client: AIClient,
 ): Promise<Flashcard[]> {
   try {
     const available = await client.isAvailable();
@@ -31,7 +31,7 @@ export async function generateFlashcards(
 
     const prompt = buildFlashcardsPrompt(content);
 
-    let fullResponse = '';
+    let fullResponse = "";
     for await (const chunk of client.generate(prompt)) {
       fullResponse += chunk;
     }
@@ -96,16 +96,13 @@ function validateFlashcards(items: unknown[]): Flashcard[] {
   const valid: Flashcard[] = [];
 
   for (const item of items) {
-    if (
-      item &&
-      typeof item === 'object' &&
-      'front' in item &&
-      'back' in item
-    ) {
+    if (item && typeof item === "object" && "front" in item && "back" in item) {
       const f = item as Record<string, unknown>;
-      if (typeof f.front === 'string' && typeof f.back === 'string') {
+      if (typeof f.front === "string" && typeof f.back === "string") {
         const tags = Array.isArray(f.tags)
-          ? (f.tags as unknown[]).filter((t): t is string => typeof t === 'string')
+          ? (f.tags as unknown[]).filter(
+              (t): t is string => typeof t === "string",
+            )
           : [];
 
         valid.push({
@@ -113,7 +110,7 @@ function validateFlashcards(items: unknown[]): Flashcard[] {
           front: f.front,
           back: f.back,
           tags,
-          topicId: '',
+          topicId: "",
           createdAt: new Date().toISOString(),
         });
       }

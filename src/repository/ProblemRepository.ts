@@ -1,5 +1,5 @@
-import type { Problem, RevisionData } from '@/types';
-import type { Repository } from './Repository';
+import type { Problem, RevisionData } from "@/types";
+import type { Repository } from "./Repository";
 
 /**
  * Repository interface for Problem entities.

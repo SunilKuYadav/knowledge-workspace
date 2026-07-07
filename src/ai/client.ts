@@ -9,9 +9,9 @@
  * Requirements: 6.1, 6.4
  */
 
-import { logInput, logOutput, logError } from './logger';
-import { addLogEntry, emitStreamChunk } from './log-store';
-import { logger } from '../lib/logger';
+import { logInput, logOutput, logError } from "./logger";
+import { addLogEntry, emitStreamChunk } from "./log-store";
+import { logger } from "../lib/logger";
 
 export interface AIClient {
   isAvailable(): Promise<boolean>;
@@ -33,7 +33,7 @@ export interface AIClientOptions {
  * @param options.defaultModel - Default model to use (defaults to "gpt-3.5-turbo")
  */
 export function createAIClient(options: AIClientOptions): AIClient {
-  const { baseUrl, apiKey, defaultModel = 'gpt-3.5-turbo' } = options;
+  const { baseUrl, apiKey, defaultModel = "gpt-3.5-turbo" } = options;
 
   return {
     async isAvailable(): Promise<boolean> {
@@ -53,24 +53,27 @@ export function createAIClient(options: AIClientOptions): AIClient {
       }
     },
 
-    async *generate(prompt: string, model: string = defaultModel): AsyncGenerator<string> {
+    async *generate(
+      prompt: string,
+      model: string = defaultModel,
+    ): AsyncGenerator<string> {
       logInput(prompt, model);
-      let fullResponse = '';
+      let fullResponse = "";
 
       try {
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         };
         if (apiKey) {
-          headers['Authorization'] = `Bearer ${apiKey}`;
+          headers["Authorization"] = `Bearer ${apiKey}`;
         }
 
         const response = await fetch(`${baseUrl}/chat/completions`, {
-          method: 'POST',
+          method: "POST",
           headers,
           body: JSON.stringify({
             model,
-            messages: [{ role: 'user', content: prompt }],
+            messages: [{ role: "user", content: prompt }],
             stream: true,
           }),
         });
@@ -82,23 +85,23 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
+        let buffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
+          const lines = buffer.split("\n");
           // Keep the last partial line in the buffer
-          buffer = lines.pop() ?? '';
+          buffer = lines.pop() ?? "";
 
           for (const line of lines) {
             const trimmed = line.trim();
-            if (!trimmed || !trimmed.startsWith('data: ')) continue;
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
 
             const data = trimmed.slice(6);
-            if (data === '[DONE]') {
+            if (data === "[DONE]") {
               logOutput(prompt, fullResponse);
               addLogEntry(prompt, fullResponse, model);
               return;
@@ -123,7 +126,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
         // Process any remaining buffer content
         if (buffer.trim()) {
           const trimmed = buffer.trim();
-          if (trimmed.startsWith('data: ') && trimmed.slice(6) !== '[DONE]') {
+          if (trimmed.startsWith("data: ") && trimmed.slice(6) !== "[DONE]") {
             try {
               const parsed = JSON.parse(trimmed.slice(6)) as {
                 choices?: Array<{ delta?: { content?: string } }>;
@@ -143,7 +146,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
         logOutput(prompt, fullResponse);
         addLogEntry(prompt, fullResponse, model);
       } catch {
-        logError(prompt, 'connection failed');
+        logError(prompt, "connection failed");
         return;
       }
     },
@@ -156,8 +159,8 @@ export function createAIClient(options: AIClientOptions): AIClient {
 export const createOllamaClient = (baseUrl: string): AIClient => {
   // Convert old Ollama base URL to OpenAI-compatible format
   // Ollama supports OpenAI-compatible API at /v1
-  const openaiBaseUrl = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
-  return createAIClient({ baseUrl: openaiBaseUrl, defaultModel: 'llama3' });
+  const openaiBaseUrl = baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
+  return createAIClient({ baseUrl: openaiBaseUrl, defaultModel: "llama3" });
 };
 
 /**

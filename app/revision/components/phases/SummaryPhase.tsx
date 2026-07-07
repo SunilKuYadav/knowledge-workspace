@@ -1,9 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { MarkdownRenderer } from '@/src/components/MarkdownRenderer';
-import type { CategorizedItem, AnswerRecord, SessionSummary, GeneratableContent } from '../../lib/types';
-import { generateContentFromSession } from '../../lib/api';
+import { useState, useCallback } from "react";
+import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
+import type {
+  CategorizedItem,
+  AnswerRecord,
+  SessionSummary,
+  GeneratableContent,
+} from "../../lib/types";
+import { generateContentFromSession } from "../../lib/api";
 
 interface SummaryPhaseProps {
   currentItem: CategorizedItem;
@@ -28,40 +33,58 @@ export function SummaryPhase({
   onFinish,
 }: SummaryPhaseProps) {
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
-  const [generatedContents, setGeneratedContents] = useState<Record<string, GeneratedContent>>({});
+  const [generatedContents, setGeneratedContents] = useState<
+    Record<string, GeneratedContent>
+  >({});
 
-  const handleGenerate = useCallback(async (contentType: GeneratableContent) => {
-    setGeneratedContents((prev) => ({
-      ...prev,
-      [contentType]: { type: contentType, content: '', loading: true },
-    }));
-
-    try {
-      await generateContentFromSession(
-        currentItem,
-        answers,
-        contentType,
-        (accumulated) => {
-          setGeneratedContents((prev) => ({
-            ...prev,
-            [contentType]: { type: contentType, content: accumulated, loading: false },
-          }));
-        }
-      );
-    } catch {
+  const handleGenerate = useCallback(
+    async (contentType: GeneratableContent) => {
       setGeneratedContents((prev) => ({
         ...prev,
-        [contentType]: { type: contentType, content: '', loading: false, error: 'Failed to generate content.' },
+        [contentType]: { type: contentType, content: "", loading: true },
       }));
-    }
-  }, [currentItem, answers]);
 
-  const contentButtons: { type: GeneratableContent; label: string; icon: string }[] = [
-    { type: 'notes', label: 'Update Notes', icon: '📝' },
-    { type: 'mistakes', label: 'Generate Mistakes', icon: '❌' },
-    { type: 'patterns', label: 'Generate Patterns', icon: '🔄' },
-    { type: 'solution', label: 'Generate Solution', icon: '✅' },
-    { type: 'flashcards', label: 'Generate Flashcards', icon: '🃏' },
+      try {
+        await generateContentFromSession(
+          currentItem,
+          answers,
+          contentType,
+          (accumulated) => {
+            setGeneratedContents((prev) => ({
+              ...prev,
+              [contentType]: {
+                type: contentType,
+                content: accumulated,
+                loading: false,
+              },
+            }));
+          },
+        );
+      } catch {
+        setGeneratedContents((prev) => ({
+          ...prev,
+          [contentType]: {
+            type: contentType,
+            content: "",
+            loading: false,
+            error: "Failed to generate content.",
+          },
+        }));
+      }
+    },
+    [currentItem, answers],
+  );
+
+  const contentButtons: {
+    type: GeneratableContent;
+    label: string;
+    icon: string;
+  }[] = [
+    { type: "notes", label: "Update Notes", icon: "📝" },
+    { type: "mistakes", label: "Generate Mistakes", icon: "❌" },
+    { type: "patterns", label: "Generate Patterns", icon: "🔄" },
+    { type: "solution", label: "Generate Solution", icon: "✅" },
+    { type: "flashcards", label: "Generate Flashcards", icon: "🃏" },
   ];
 
   return (
@@ -80,7 +103,9 @@ export function SummaryPhase({
             >
               {/* Question header - clickable */}
               <button
-                onClick={() => setExpandedQuestion(expandedQuestion === i ? null : i)}
+                onClick={() =>
+                  setExpandedQuestion(expandedQuestion === i ? null : i)
+                }
                 className="w-full flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -98,16 +123,16 @@ export function SummaryPhase({
                   <span
                     className={`text-sm font-bold ${
                       a.score >= 4
-                        ? 'text-green-600 dark:text-green-400'
+                        ? "text-green-600 dark:text-green-400"
                         : a.score === 3
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-red-600 dark:text-red-400'
+                          ? "text-yellow-600 dark:text-yellow-400"
+                          : "text-red-600 dark:text-red-400"
                     }`}
                   >
                     {a.score}/5
                   </span>
                   <span className="text-zinc-400 text-xs">
-                    {expandedQuestion === i ? '▲' : '▼'}
+                    {expandedQuestion === i ? "▲" : "▼"}
                   </span>
                 </div>
               </button>
@@ -152,7 +177,9 @@ export function SummaryPhase({
                     <p className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase mb-1">
                       Feedback
                     </p>
-                    <p className="text-sm text-zinc-700 dark:text-zinc-300">{a.feedback}</p>
+                    <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                      {a.feedback}
+                    </p>
                   </div>
 
                   {/* Mistakes */}
@@ -163,7 +190,10 @@ export function SummaryPhase({
                       </p>
                       <ul className="space-y-1 pl-4">
                         {a.mistakes.map((m, mi) => (
-                          <li key={mi} className="text-sm text-zinc-600 dark:text-zinc-400 list-disc">
+                          <li
+                            key={mi}
+                            className="text-sm text-zinc-600 dark:text-zinc-400 list-disc"
+                          >
                             {m}
                           </li>
                         ))}
@@ -179,7 +209,10 @@ export function SummaryPhase({
                       </p>
                       <ul className="space-y-1 pl-4">
                         {a.keyInsights.map((ins, ii) => (
-                          <li key={ii} className="text-sm text-zinc-600 dark:text-zinc-400 list-disc">
+                          <li
+                            key={ii}
+                            className="text-sm text-zinc-600 dark:text-zinc-400 list-disc"
+                          >
                             {ins}
                           </li>
                         ))}
@@ -210,7 +243,10 @@ export function SummaryPhase({
               </h4>
               <ul className="space-y-1 pl-4">
                 {sessionSummary.allMistakes.map((m, i) => (
-                  <li key={i} className="text-sm text-zinc-600 dark:text-zinc-400 list-disc">
+                  <li
+                    key={i}
+                    className="text-sm text-zinc-600 dark:text-zinc-400 list-disc"
+                  >
                     {m}
                   </li>
                 ))}
@@ -225,7 +261,10 @@ export function SummaryPhase({
               </h4>
               <ul className="space-y-1 pl-4">
                 {sessionSummary.focusAreas.map((f, i) => (
-                  <li key={i} className="text-sm text-zinc-600 dark:text-zinc-400 list-disc">
+                  <li
+                    key={i}
+                    className="text-sm text-zinc-600 dark:text-zinc-400 list-disc"
+                  >
                     {f}
                   </li>
                 ))}
@@ -241,7 +280,9 @@ export function SummaryPhase({
           Generate Study Material
         </h3>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
-          Generate content based on this session&apos;s Q&amp;A and your existing notes. Each button generates that specific content type incorporating existing material.
+          Generate content based on this session&apos;s Q&amp;A and your
+          existing notes. Each button generates that specific content type
+          incorporating existing material.
         </p>
 
         <div className="flex flex-wrap gap-2 mb-4">
@@ -255,13 +296,15 @@ export function SummaryPhase({
                 disabled={isLoading}
                 className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                   generated?.content
-                    ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30'
-                    : 'border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                    ? "border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30"
+                    : "border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
                 <span>{icon}</span>
-                {isLoading ? 'Generating...' : label}
-                {generated?.content && !isLoading && <span className="text-green-500">✓</span>}
+                {isLoading ? "Generating..." : label}
+                {generated?.content && !isLoading && (
+                  <span className="text-green-500">✓</span>
+                )}
               </button>
             );
           })}
@@ -274,7 +317,9 @@ export function SummaryPhase({
             <div key={gen.type} className="mt-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 capitalize">
-                  {gen.type === 'flashcards' ? '🃏 Flashcards' : `📄 ${gen.type}`}
+                  {gen.type === "flashcards"
+                    ? "🃏 Flashcards"
+                    : `📄 ${gen.type}`}
                 </h4>
                 {gen.content && (
                   <button
@@ -286,7 +331,9 @@ export function SummaryPhase({
                 )}
               </div>
               {gen.error ? (
-                <p className="text-sm text-red-600 dark:text-red-400">{gen.error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {gen.error}
+                </p>
               ) : (
                 <div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-4 max-h-80 overflow-y-auto">
                   <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
@@ -317,14 +364,14 @@ export function SummaryPhase({
               disabled={isPending}
               className={`flex-1 py-3 text-sm font-medium rounded-md transition-colors disabled:opacity-50 ${
                 level <= 2
-                  ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800'
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 border border-red-200 dark:border-red-800"
                   : level === 3
-                  ? 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800'
-                  : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800'
+                    ? "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800"
+                    : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800"
               } ${
                 sessionSummary && level === sessionSummary.recommendedConfidence
-                  ? 'ring-2 ring-blue-500'
-                  : ''
+                  ? "ring-2 ring-blue-500"
+                  : ""
               }`}
             >
               {level}

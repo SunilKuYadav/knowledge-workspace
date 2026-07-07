@@ -1,5 +1,5 @@
-import type { Problem, RevisionData } from '@/types';
-import type { ProblemRepository } from '@/repository';
+import type { Problem, RevisionData } from "@/types";
+import type { ProblemRepository } from "@/repository";
 
 /**
  * Application service for Problem operations.
@@ -17,7 +17,9 @@ export class ProblemService {
     return this.repository.getById(id);
   }
 
-  async createProblem(data: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'>): Promise<Problem> {
+  async createProblem(
+    data: Omit<Problem, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Problem> {
     return this.repository.create(data);
   }
 

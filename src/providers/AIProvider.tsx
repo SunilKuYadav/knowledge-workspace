@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * AI availability context provider.
@@ -9,14 +9,22 @@
  * Requirements: 6.1, 6.2, 6.4
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { installAIFetchLogger } from '@/src/ai/logger';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { installAIFetchLogger } from "@/src/ai/logger";
 
 interface AIStatusContextValue {
   available: boolean;
 }
 
-const AIStatusContext = createContext<AIStatusContextValue>({ available: false });
+const AIStatusContext = createContext<AIStatusContextValue>({
+  available: false,
+});
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
 
@@ -33,7 +41,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
 
     async function checkStatus() {
       try {
-        const res = await fetch('/api/ai/status');
+        const res = await fetch("/api/ai/status");
         if (res.ok) {
           const data = await res.json();
           if (mounted) {

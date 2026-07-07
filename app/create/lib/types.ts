@@ -14,4 +14,4 @@ export interface ProblemFormData {
   url?: string;
 }
 
-export type FormType = 'topic' | 'problem';
+export type FormType = "topic" | "problem";

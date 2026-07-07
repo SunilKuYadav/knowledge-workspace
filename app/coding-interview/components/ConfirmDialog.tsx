@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -12,7 +12,13 @@ interface ConfirmDialogProps {
  * Reusable confirmation modal with overlay.
  * Accessible: uses proper button labels and role="dialog".
  */
-export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+}: ConfirmDialogProps) {
   if (!isOpen) return null;
 
   return (
@@ -37,7 +43,9 @@ export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }: C
         >
           {title}
         </h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+          {message}
+        </p>
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <button

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { AI_TIMEOUT } from './constants';
+import { AI_TIMEOUT } from "./constants";
 import type {
   GeneratedProblem,
   InterviewSource,
@@ -10,15 +10,15 @@ import type {
   SessionSummary,
   ConversationMessage,
   ExecutionResult,
-} from './types';
+} from "./types";
 
 /* ─── Request/Response Types ─────────────────────────────── */
 
 export interface GenerateProblemParams {
   source: InterviewSource;
   context?: InterviewContext;
-  language: 'javascript' | 'typescript';
-  difficulty?: 'easy' | 'medium' | 'hard';
+  language: "javascript" | "typescript";
+  difficulty?: "easy" | "medium" | "hard";
   userPrompt?: string;
 }
 
@@ -32,7 +32,7 @@ export interface RequestHintParams {
 export interface EvaluateCodeParams {
   code: string;
   problem: GeneratedProblem;
-  language: 'javascript' | 'typescript';
+  language: "javascript" | "typescript";
   testResults?: ExecutionResult;
 }
 
@@ -60,39 +60,45 @@ export interface RequestScoreParams {
 async function fetchWithTimeout(
   url: string,
   body: unknown,
-  timeoutMs: number = AI_TIMEOUT
+  timeoutMs: number = AI_TIMEOUT,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
     return response;
   } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error(
-        `AI service request to ${url} timed out after ${timeoutMs / 1000} seconds. Please try again.`
+        `AI service request to ${url} timed out after ${timeoutMs / 1000} seconds. Please try again.`,
       );
     }
     throw new Error(
-      `Network error while calling ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Network error while calling ${url}: ${error instanceof Error ? error.message : "Unknown error"}`,
     );
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-async function handleResponse<T>(response: Response, endpoint: string): Promise<T> {
+async function handleResponse<T>(
+  response: Response,
+  endpoint: string,
+): Promise<T> {
   if (!response.ok) {
     let errorMessage: string;
     try {
       const errorBody = await response.json();
-      errorMessage = errorBody.error || errorBody.message || `Request failed with status ${response.status}`;
+      errorMessage =
+        errorBody.error ||
+        errorBody.message ||
+        `Request failed with status ${response.status}`;
     } catch {
       errorMessage = `Request to ${endpoint} failed with status ${response.status}`;
     }
@@ -107,8 +113,10 @@ async function handleResponse<T>(response: Response, endpoint: string): Promise<
  * Generate a coding interview problem based on configuration.
  * POST /api/ai/coding-interview/generate-problem
  */
-export async function generateProblem(params: GenerateProblemParams): Promise<GeneratedProblem> {
-  const endpoint = '/api/ai/coding-interview/generate-problem';
+export async function generateProblem(
+  params: GenerateProblemParams,
+): Promise<GeneratedProblem> {
+  const endpoint = "/api/ai/coding-interview/generate-problem";
   const response = await fetchWithTimeout(endpoint, params);
   return handleResponse<GeneratedProblem>(response, endpoint);
 }
@@ -118,9 +126,9 @@ export async function generateProblem(params: GenerateProblemParams): Promise<Ge
  * POST /api/ai/coding-interview/hint
  */
 export async function requestHint(
-  params: RequestHintParams
+  params: RequestHintParams,
 ): Promise<{ hint: string; level: number }> {
-  const endpoint = '/api/ai/coding-interview/hint';
+  const endpoint = "/api/ai/coding-interview/hint";
   const response = await fetchWithTimeout(endpoint, params);
   return handleResponse<{ hint: string; level: number }>(response, endpoint);
 }
@@ -130,9 +138,9 @@ export async function requestHint(
  * POST /api/ai/coding-interview/evaluate
  */
 export async function evaluateCode(
-  params: EvaluateCodeParams
+  params: EvaluateCodeParams,
 ): Promise<{ evaluation: EvaluationReport }> {
-  const endpoint = '/api/ai/coding-interview/evaluate';
+  const endpoint = "/api/ai/coding-interview/evaluate";
   const response = await fetchWithTimeout(endpoint, params);
   return handleResponse<{ evaluation: EvaluationReport }>(response, endpoint);
 }
@@ -142,11 +150,14 @@ export async function evaluateCode(
  * POST /api/ai/coding-interview/follow-up
  */
 export async function requestFollowUp(
-  params: RequestFollowUpParams
+  params: RequestFollowUpParams,
 ): Promise<{ question?: string; complete: boolean }> {
-  const endpoint = '/api/ai/coding-interview/follow-up';
+  const endpoint = "/api/ai/coding-interview/follow-up";
   const response = await fetchWithTimeout(endpoint, params);
-  return handleResponse<{ question?: string; complete: boolean }>(response, endpoint);
+  return handleResponse<{ question?: string; complete: boolean }>(
+    response,
+    endpoint,
+  );
 }
 
 /**
@@ -154,12 +165,12 @@ export async function requestFollowUp(
  * POST /api/ai/coding-interview/score
  */
 export async function requestScore(
-  params: RequestScoreParams
+  params: RequestScoreParams,
 ): Promise<{ scoringReport: ScoringReport; sessionSummary: SessionSummary }> {
-  const endpoint = '/api/ai/coding-interview/score';
+  const endpoint = "/api/ai/coding-interview/score";
   const response = await fetchWithTimeout(endpoint, params);
-  return handleResponse<{ scoringReport: ScoringReport; sessionSummary: SessionSummary }>(
-    response,
-    endpoint
-  );
+  return handleResponse<{
+    scoringReport: ScoringReport;
+    sessionSummary: SessionSummary;
+  }>(response, endpoint);
 }

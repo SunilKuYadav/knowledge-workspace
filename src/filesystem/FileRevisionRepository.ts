@@ -1,10 +1,10 @@
-import path from 'path';
-import type { RevisionData, RevisionEntry } from '@/types';
-import type { RevisionRepository } from '@/repository';
-import { WORKSPACE_STRUCTURE } from '../lib/constants';
-import { addRevisionEntry } from '../revision/history';
-import { getDueItems as getDueItemsFromList } from '../revision/spaced';
-import { readJsonFile, writeJsonFile, listDirectories } from './workspace';
+import path from "path";
+import type { RevisionData, RevisionEntry } from "@/types";
+import type { RevisionRepository } from "@/repository";
+import { WORKSPACE_STRUCTURE } from "../lib/constants";
+import { addRevisionEntry } from "../revision/history";
+import { getDueItems as getDueItemsFromList } from "../revision/spaced";
+import { readJsonFile, writeJsonFile, listDirectories } from "./workspace";
 
 /**
  * File-system-backed implementation of RevisionRepository.
@@ -16,8 +16,8 @@ export class FileRevisionRepository implements RevisionRepository {
   private problemsPath: string;
 
   constructor(workspacePath: string) {
-    this.notesPath = path.join(workspacePath, 'notes');
-    this.problemsPath = path.join(workspacePath, 'problems');
+    this.notesPath = path.join(workspacePath, "notes");
+    this.problemsPath = path.join(workspacePath, "problems");
   }
 
   /**
@@ -44,8 +44,8 @@ export class FileRevisionRepository implements RevisionRepository {
    */
   async updateRevision(
     itemId: string,
-    itemType: 'topic' | 'problem',
-    entry: RevisionEntry
+    itemType: "topic" | "problem",
+    entry: RevisionEntry,
   ): Promise<RevisionData> {
     const revisionPath = await this.findRevisionPath(itemId, itemType);
     if (!revisionPath) {
@@ -72,14 +72,14 @@ export class FileRevisionRepository implements RevisionRepository {
    */
   async getHistory(itemId: string): Promise<RevisionEntry[]> {
     // Search topics first
-    const topicPath = await this.findRevisionPath(itemId, 'topic');
+    const topicPath = await this.findRevisionPath(itemId, "topic");
     if (topicPath) {
       const data = await readJsonFile<RevisionData>(topicPath);
       return data?.history ?? [];
     }
 
     // Then search problems
-    const problemPath = await this.findRevisionPath(itemId, 'problem');
+    const problemPath = await this.findRevisionPath(itemId, "problem");
     if (problemPath) {
       const data = await readJsonFile<RevisionData>(problemPath);
       return data?.history ?? [];
@@ -100,7 +100,7 @@ export class FileRevisionRepository implements RevisionRepository {
       const slugDirs = await listDirectories(categoryPath);
 
       for (const slug of slugDirs) {
-        const revisionPath = path.join(categoryPath, slug, 'revision.json');
+        const revisionPath = path.join(categoryPath, slug, "revision.json");
         const data = await readJsonFile<RevisionData>(revisionPath);
         if (data) {
           items.push(data);
@@ -114,7 +114,7 @@ export class FileRevisionRepository implements RevisionRepository {
       const slugDirs = await listDirectories(platformPath);
 
       for (const slug of slugDirs) {
-        const revisionPath = path.join(platformPath, slug, 'revision.json');
+        const revisionPath = path.join(platformPath, slug, "revision.json");
         const data = await readJsonFile<RevisionData>(revisionPath);
         if (data) {
           items.push(data);
@@ -135,17 +135,15 @@ export class FileRevisionRepository implements RevisionRepository {
    */
   private async findRevisionPath(
     itemId: string,
-    itemType: 'topic' | 'problem'
+    itemType: "topic" | "problem",
   ): Promise<string | null> {
-    if (itemType === 'topic') {
+    if (itemType === "topic") {
       for (const category of WORKSPACE_STRUCTURE.notes) {
         const itemPath = path.join(this.notesPath, category, itemId);
         // Check if the topic folder exists by looking for topic.json
-        const topicJson = await readJsonFile(
-          path.join(itemPath, 'topic.json')
-        );
+        const topicJson = await readJsonFile(path.join(itemPath, "topic.json"));
         if (topicJson) {
-          return path.join(itemPath, 'revision.json');
+          return path.join(itemPath, "revision.json");
         }
       }
     } else {
@@ -153,10 +151,10 @@ export class FileRevisionRepository implements RevisionRepository {
         const itemPath = path.join(this.problemsPath, platform, itemId);
         // Check if the problem folder exists by looking for problem.json
         const problemJson = await readJsonFile(
-          path.join(itemPath, 'problem.json')
+          path.join(itemPath, "problem.json"),
         );
         if (problemJson) {
-          return path.join(itemPath, 'revision.json');
+          return path.join(itemPath, "revision.json");
         }
       }
     }
@@ -169,13 +167,13 @@ export class FileRevisionRepository implements RevisionRepository {
    */
   private defaultRevisionData(
     itemId: string,
-    itemType: 'topic' | 'problem'
+    itemType: "topic" | "problem",
   ): RevisionData {
     return {
       itemId,
       itemType,
       lastReviewed: null,
-      nextReview: new Date().toISOString().split('T')[0],
+      nextReview: new Date().toISOString().split("T")[0],
       confidence: 1,
       history: [],
     };

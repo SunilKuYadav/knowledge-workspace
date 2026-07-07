@@ -1,23 +1,27 @@
 /**
  * Review session prompt builders.
  */
-import { composePrompt } from '../utils/compose';
-import { IDENTITY_CONTEXT } from '../system/identity';
-import { INTERVIEW_CONTEXT } from '../system/interview';
-import { TEACHING_CONTEXT } from '../system/teaching';
-import { JSON_CONTEXT } from '../system/json';
-import { REVIEW_QUESTIONS_SCHEMA, EVALUATION_SCHEMA, SESSION_SUMMARY_SCHEMA } from '../schemas/review';
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+import { INTERVIEW_CONTEXT } from "../system/interview";
+import { TEACHING_CONTEXT } from "../system/teaching";
+import { JSON_CONTEXT } from "../system/json";
+import {
+  REVIEW_QUESTIONS_SCHEMA,
+  EVALUATION_SCHEMA,
+  SESSION_SUMMARY_SCHEMA,
+} from "../schemas/review";
 
 export function buildReviewPrompt(
   content: string,
-  itemType: 'topic' | 'problem',
-  confidence: number
+  itemType: "topic" | "problem",
+  confidence: number,
 ): string {
   const difficultyLevel =
-    confidence <= 2 ? 'basic' : confidence <= 3 ? 'intermediate' : 'advanced';
+    confidence <= 2 ? "basic" : confidence <= 3 ? "intermediate" : "advanced";
 
   const questionTypes =
-    itemType === 'problem'
+    itemType === "problem"
       ? `Mix of:
 - "code": Ask the user to write code or pseudocode solving a variation of the problem
 - "conceptual": Ask about the approach, time/space complexity, or trade-offs
@@ -57,7 +61,7 @@ export function buildEvaluationPrompt(
   userResponse: string,
   questionType: string,
   content: string,
-  itemType: string
+  itemType: string,
 ): string {
   return composePrompt({
     modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],
@@ -87,7 +91,7 @@ JSON:`,
 export function buildHintPrompt(
   question: string,
   questionType: string,
-  content: string
+  content: string,
 ): string {
   return composePrompt({
     modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT],
@@ -106,16 +110,21 @@ Hint:`,
 }
 
 export function buildSessionSummaryPrompt(
-  answers: Array<{ question: string; response: string; score: number; mistakes: string[] }>,
+  answers: Array<{
+    question: string;
+    response: string;
+    score: number;
+    mistakes: string[];
+  }>,
   content: string,
-  itemType: string
+  itemType: string,
 ): string {
   const answersText = answers
     .map(
       (a, i) =>
-        `Q${i + 1}: ${a.question}\nResponse: ${a.response}\nScore: ${a.score}/5\nMistakes: ${a.mistakes.join('; ') || 'None'}`
+        `Q${i + 1}: ${a.question}\nResponse: ${a.response}\nScore: ${a.score}/5\nMistakes: ${a.mistakes.join("; ") || "None"}`,
     )
-    .join('\n\n');
+    .join("\n\n");
 
   return composePrompt({
     modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],

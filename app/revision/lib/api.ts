@@ -1,16 +1,27 @@
-import type { CategorizedItem, ReviewQuestion, EvaluationResult, SessionSummary, AnswerRecord, GeneratableContent } from './types';
+import type {
+  CategorizedItem,
+  ReviewQuestion,
+  EvaluationResult,
+  SessionSummary,
+  AnswerRecord,
+  GeneratableContent,
+} from "./types";
 
 /**
  * Generates AI review questions for a given revision item.
  */
 export async function generateReviewQuestions(
-  item: CategorizedItem
-): Promise<{ questions?: ReviewQuestion[]; error?: string; rawResponse?: string }> {
-  const res = await fetch('/api/ai/review-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  item: CategorizedItem,
+): Promise<{
+  questions?: ReviewQuestion[];
+  error?: string;
+  rawResponse?: string;
+}> {
+  const res = await fetch("/api/ai/review-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: 'generate',
+      action: "generate",
       itemId: item.item.itemId,
       itemType: item.item.itemType,
       confidence: item.item.confidence,
@@ -18,14 +29,16 @@ export async function generateReviewQuestions(
   });
 
   if (!res.ok) {
-    return { error: 'Failed to generate review questions. Is the AI service running?' };
+    return {
+      error: "Failed to generate review questions. Is the AI service running?",
+    };
   }
 
   const data = await res.json();
   if (!data.questions || data.questions.length === 0) {
     const debugInfo = data.rawResponse
       ? `\n\nAI responded but parsing failed. Raw: "${data.rawResponse}"`
-      : '';
+      : "";
     return { error: `No questions generated. Try again.${debugInfo}` };
   }
 
@@ -39,13 +52,13 @@ export async function evaluateResponse(
   item: CategorizedItem,
   question: string,
   userResponse: string,
-  questionType: string
+  questionType: string,
 ): Promise<{ result?: EvaluationResult; error?: string }> {
-  const res = await fetch('/api/ai/review-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/ai/review-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: 'evaluate',
+      action: "evaluate",
       itemId: item.item.itemId,
       itemType: item.item.itemType,
       question,
@@ -55,7 +68,7 @@ export async function evaluateResponse(
   });
 
   if (!res.ok) {
-    return { error: 'Failed to evaluate response.' };
+    return { error: "Failed to evaluate response." };
   }
 
   const result: EvaluationResult = await res.json();
@@ -67,14 +80,14 @@ export async function evaluateResponse(
  */
 export async function getSessionSummary(
   item: CategorizedItem,
-  answers: AnswerRecord[]
+  answers: AnswerRecord[],
 ): Promise<SessionSummary | null> {
   try {
-    const res = await fetch('/api/ai/review-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/ai/review-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: 'session-summary',
+        action: "session-summary",
         itemId: item.item.itemId,
         itemType: item.item.itemType,
         answers,
@@ -98,13 +111,13 @@ export async function streamHint(
   item: CategorizedItem,
   question: string,
   questionType: string,
-  onChunk: (accumulated: string) => void
+  onChunk: (accumulated: string) => void,
 ): Promise<void> {
-  const res = await fetch('/api/ai/review-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/ai/review-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: 'hint',
+      action: "hint",
       itemId: item.item.itemId,
       itemType: item.item.itemType,
       question,
@@ -115,7 +128,7 @@ export async function streamHint(
   if (res.ok && res.body) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let accumulated = '';
+    let accumulated = "";
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -123,7 +136,7 @@ export async function streamHint(
       onChunk(accumulated);
     }
   } else {
-    onChunk('Unable to get hint right now.');
+    onChunk("Unable to get hint right now.");
   }
 }
 
@@ -136,13 +149,13 @@ export async function generateContentFromSession(
   item: CategorizedItem,
   answers: AnswerRecord[],
   contentType: GeneratableContent,
-  onChunk: (accumulated: string) => void
+  onChunk: (accumulated: string) => void,
 ): Promise<void> {
-  const res = await fetch('/api/ai/review-session', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/ai/review-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: 'generate-content',
+      action: "generate-content",
       itemId: item.item.itemId,
       itemType: item.item.itemType,
       answers,
@@ -153,7 +166,7 @@ export async function generateContentFromSession(
   if (res.ok && res.body) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
-    let accumulated = '';
+    let accumulated = "";
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -161,6 +174,6 @@ export async function generateContentFromSession(
       onChunk(accumulated);
     }
   } else {
-    onChunk('Unable to generate content right now.');
+    onChunk("Unable to generate content right now.");
   }
 }

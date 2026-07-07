@@ -7,8 +7,8 @@
  * Requirements: 5.1
  */
 
-import type { AIClient } from './client';
-import { buildSummaryPrompt } from './prompts';
+import type { AIClient } from "./client";
+import { buildSummaryPrompt } from "./prompts";
 
 /**
  * Generates a streaming summary of the given content.
@@ -19,11 +19,11 @@ import { buildSummaryPrompt } from './prompts';
  */
 export async function* generateSummary(
   content: string,
-  client: AIClient
+  client: AIClient,
 ): AsyncGenerator<string> {
   const available = await client.isAvailable();
   if (!available) {
-    yield 'AI is currently unavailable. Please check your AI service configuration.';
+    yield "AI is currently unavailable. Please check your AI service configuration.";
     return;
   }
 
@@ -34,6 +34,6 @@ export async function* generateSummary(
       yield chunk;
     }
   } catch {
-    yield '\n\n[Error: Summary generation failed. Please try again.]';
+    yield "\n\n[Error: Summary generation failed. Please try again.]";
   }
 }

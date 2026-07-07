@@ -1,21 +1,23 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import type { CategorizedItem } from '../lib/types';
-import { useInteractiveReviewSession } from '../hooks/useInteractiveReviewSession';
+import Link from "next/link";
+import type { CategorizedItem } from "../lib/types";
+import { useInteractiveReviewSession } from "../hooks/useInteractiveReviewSession";
 import {
   IdlePhase,
   LoadingPhase,
   AnsweringPhase,
   FeedbackPhase,
   SummaryPhase,
-} from './phases';
+} from "./phases";
 
 interface InteractiveReviewSessionProps {
   dueItems: CategorizedItem[];
 }
 
-export function InteractiveReviewSession({ dueItems }: InteractiveReviewSessionProps) {
+export function InteractiveReviewSession({
+  dueItems,
+}: InteractiveReviewSessionProps) {
   const {
     currentItemIndex,
     currentItem,
@@ -62,7 +64,8 @@ export function InteractiveReviewSession({ dueItems }: InteractiveReviewSessionP
           🎉 All Reviews Complete!
         </p>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-          You reviewed {itemsCompleted} item{itemsCompleted !== 1 ? 's' : ''} this session.
+          You reviewed {itemsCompleted} item{itemsCompleted !== 1 ? "s" : ""}{" "}
+          this session.
         </p>
       </div>
     );
@@ -105,7 +108,7 @@ export function InteractiveReviewSession({ dueItems }: InteractiveReviewSessionP
         </h2>
         <Link
           href={
-            currentItem.item.itemType === 'topic'
+            currentItem.item.itemType === "topic"
               ? `/topics/${currentItem.item.itemId}`
               : `/problems/${currentItem.item.itemId}`
           }
@@ -123,11 +126,13 @@ export function InteractiveReviewSession({ dueItems }: InteractiveReviewSessionP
       )}
 
       {/* Phase rendering */}
-      {phase === 'idle' && (
+      {phase === "idle" && (
         <IdlePhase currentItem={currentItem} onStart={startReview} />
       )}
-      {phase === 'generating' && <LoadingPhase message="Generating review questions..." />}
-      {phase === 'answering' && questions[currentQuestionIndex] && (
+      {phase === "generating" && (
+        <LoadingPhase message="Generating review questions..." />
+      )}
+      {phase === "answering" && questions[currentQuestionIndex] && (
         <AnsweringPhase
           question={questions[currentQuestionIndex]}
           userResponse={userResponse}
@@ -138,15 +143,17 @@ export function InteractiveReviewSession({ dueItems }: InteractiveReviewSessionP
           hint={hint}
         />
       )}
-      {phase === 'evaluating' && <LoadingPhase message="Evaluating your response..." />}
-      {phase === 'feedback' && evaluation && (
+      {phase === "evaluating" && (
+        <LoadingPhase message="Evaluating your response..." />
+      )}
+      {phase === "feedback" && evaluation && (
         <FeedbackPhase
           evaluation={evaluation}
           isLastQuestion={currentQuestionIndex >= questions.length - 1}
           onNext={nextQuestion}
         />
       )}
-      {phase === 'summary' && (
+      {phase === "summary" && (
         <SummaryPhase
           currentItem={currentItem}
           answers={answers}

@@ -1,15 +1,19 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { useInterviewStore } from '../store/interviewStore';
-import { validateInterviewProps } from '../lib/validation';
-import { generateProblem } from '../lib/api';
-import type { InterviewModuleProps, InterviewPhase } from '../lib/types';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { useInterviewStore } from "../store/interviewStore";
+import { validateInterviewProps } from "../lib/validation";
+import { generateProblem } from "../lib/api";
+import type { InterviewModuleProps, InterviewPhase } from "../lib/types";
 
 const MAX_RETRIES = 3;
 
 /** Sources that can generate without context (they don't require specific metadata). */
-const CONTEXT_OPTIONAL_SOURCES = new Set(['practice', 'interview', 'self-test']);
+const CONTEXT_OPTIONAL_SOURCES = new Set([
+  "practice",
+  "interview",
+  "self-test",
+]);
 
 interface UseInterviewSessionReturn {
   phase: InterviewPhase;
@@ -25,7 +29,9 @@ interface UseInterviewSessionReturn {
  * If no context is provided for practice/interview/self-test sources, waits for user prompt.
  * Retries up to 3 times on generation failure.
  */
-export function useInterviewSession(props: InterviewModuleProps): UseInterviewSessionReturn {
+export function useInterviewSession(
+  props: InterviewModuleProps,
+): UseInterviewSessionReturn {
   const phase = useInterviewStore((s) => s.phase);
   const error = useInterviewStore((s) => s.error);
   const setPhase = useInterviewStore((s) => s.setPhase);
@@ -40,13 +46,15 @@ export function useInterviewSession(props: InterviewModuleProps): UseInterviewSe
   const doGenerate = useCallback(async () => {
     // Prevent concurrent generation calls
     if (generatingRef.current) {
-      console.log('[useInterviewSession] doGenerate skipped — already generating');
+      console.log(
+        "[useInterviewSession] doGenerate skipped — already generating",
+      );
       return;
     }
     generatingRef.current = true;
 
     const currentProps = props;
-    console.log('[useInterviewSession] doGenerate called', {
+    console.log("[useInterviewSession] doGenerate called", {
       source: currentProps.source,
       context: currentProps.context,
       language: currentProps.language,
@@ -57,46 +65,51 @@ export function useInterviewSession(props: InterviewModuleProps): UseInterviewSe
     // Validate props
     const validation = validateInterviewProps(currentProps);
     if (!validation.valid) {
-      console.log('[useInterviewSession] validation failed:', validation.error);
-      setError(validation.error || 'Invalid interview configuration');
-      setPhase('error');
+      console.log("[useInterviewSession] validation failed:", validation.error);
+      setError(validation.error || "Invalid interview configuration");
+      setPhase("error");
       generatingRef.current = false;
       return;
     }
 
     // Begin generation
-    setPhase('generating');
+    setPhase("generating");
     setError(null);
 
     let attempts = 0;
     while (attempts < MAX_RETRIES) {
       attempts++;
-      console.log(`[useInterviewSession] generation attempt ${attempts}/${MAX_RETRIES}`);
+      console.log(
+        `[useInterviewSession] generation attempt ${attempts}/${MAX_RETRIES}`,
+      );
       try {
         const problem = await generateProblem({
           source: currentProps.source,
           context: currentProps.context,
-          language: currentProps.language || 'javascript',
+          language: currentProps.language || "javascript",
           difficulty: currentProps.difficulty,
           userPrompt: userPromptRef.current,
         });
 
-        console.log('[useInterviewSession] generation success:', problem.title);
+        console.log("[useInterviewSession] generation success:", problem.title);
         // Success — set problem, start coding phase
         setProblem(problem);
-        setPhase('coding');
+        setPhase("coding");
         resumeTimer();
         generatingRef.current = false;
         return;
       } catch (err: unknown) {
-        console.error(`[useInterviewSession] generation attempt ${attempts} failed:`, err);
+        console.error(
+          `[useInterviewSession] generation attempt ${attempts} failed:`,
+          err,
+        );
         if (attempts >= MAX_RETRIES) {
           const message =
             err instanceof Error
               ? err.message
-              : 'Problem generation failed after multiple attempts';
+              : "Problem generation failed after multiple attempts";
           setError(message);
-          setPhase('error');
+          setPhase("error");
           generatingRef.current = false;
           return;
         }
@@ -109,41 +122,55 @@ export function useInterviewSession(props: InterviewModuleProps): UseInterviewSe
 
   // Trigger on mount and whenever phase becomes 'initializing'
   useEffect(() => {
-    console.log('[useInterviewSession] effect fired — phase:', phase, 'context:', props.context, 'source:', props.source);
+    console.log(
+      "[useInterviewSession] effect fired — phase:",
+      phase,
+      "context:",
+      props.context,
+      "source:",
+      props.source,
+    );
 
     // Act on 'initializing' OR 'generating' (stale persisted state from interrupted session)
-    if (phase !== 'initializing' && phase !== 'generating') {
-      console.log('[useInterviewSession] phase is not initializing/generating, skipping');
+    if (phase !== "initializing" && phase !== "generating") {
+      console.log(
+        "[useInterviewSession] phase is not initializing/generating, skipping",
+      );
       return;
     }
 
     // If phase is 'generating' but we're not actually generating, restart
-    if (phase === 'generating' && generatingRef.current) {
-      console.log('[useInterviewSession] already generating, skipping');
+    if (phase === "generating" && generatingRef.current) {
+      console.log("[useInterviewSession] already generating, skipping");
       return;
     }
 
     // If no context provided and source allows freeform, ask user for prompt
     if (!props.context && CONTEXT_OPTIONAL_SOURCES.has(props.source)) {
-      console.log('[useInterviewSession] no context + optional source → showing prompt');
+      console.log(
+        "[useInterviewSession] no context + optional source → showing prompt",
+      );
       setNeedsPrompt(true);
       return;
     }
 
     // Has context — generate immediately
-    console.log('[useInterviewSession] has context → calling doGenerate');
+    console.log("[useInterviewSession] has context → calling doGenerate");
     doGenerate();
   }, [phase, props.context, props.source, doGenerate]);
 
   /**
    * Start generation with a user-provided prompt.
    */
-  const startWithPrompt = useCallback((userPrompt: string) => {
-    console.log('[useInterviewSession] startWithPrompt called:', userPrompt);
-    userPromptRef.current = userPrompt;
-    setNeedsPrompt(false);
-    doGenerate();
-  }, [doGenerate]);
+  const startWithPrompt = useCallback(
+    (userPrompt: string) => {
+      console.log("[useInterviewSession] startWithPrompt called:", userPrompt);
+      userPromptRef.current = userPrompt;
+      setNeedsPrompt(false);
+      doGenerate();
+    },
+    [doGenerate],
+  );
 
   /**
    * Retry after failure.

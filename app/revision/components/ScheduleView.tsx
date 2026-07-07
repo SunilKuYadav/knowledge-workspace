@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import type { CategorizedItem } from '../lib/types';
+import Link from "next/link";
+import type { CategorizedItem } from "../lib/types";
 
 interface ScheduleViewProps {
   categorizedItems: CategorizedItem[];
 }
 
 export function ScheduleView({ categorizedItems }: ScheduleViewProps) {
-  const overdue = categorizedItems.filter((c) => c.category === 'overdue');
-  const dueToday = categorizedItems.filter((c) => c.category === 'due-today');
-  const upcoming = categorizedItems.filter((c) => c.category === 'upcoming');
+  const overdue = categorizedItems.filter((c) => c.category === "overdue");
+  const dueToday = categorizedItems.filter((c) => c.category === "due-today");
+  const upcoming = categorizedItems.filter((c) => c.category === "upcoming");
 
   return (
     <div className="space-y-8">
@@ -53,17 +53,21 @@ function ScheduleGroup({
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           {title}
         </h2>
-        <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeColor}`}>
+        <span
+          className={`text-xs font-medium px-2 py-0.5 rounded ${badgeColor}`}
+        >
           {items.length}
         </span>
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">{emptyMessage}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          {emptyMessage}
+        </p>
       ) : (
         <ul className="space-y-2">
           {items.map((ci) => {
             const href =
-              ci.item.itemType === 'topic'
+              ci.item.itemType === "topic"
                 ? `/topics/${ci.item.itemId}`
                 : `/problems/${ci.item.itemId}`;
             return (
@@ -83,7 +87,7 @@ function ScheduleGroup({
                   </p>
                 </div>
                 <span className="text-xs text-zinc-400">
-                  {ci.item.nextReview.split('T')[0]}
+                  {ci.item.nextReview.split("T")[0]}
                 </span>
               </li>
             );

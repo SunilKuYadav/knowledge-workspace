@@ -6,11 +6,7 @@ export async function GET() {
   const stream = new ReadableStream({
     start(controller) {
       const unsubscribe = loggerBus.subscribe((log) => {
-        controller.enqueue(
-          encoder.encode(
-            `data:${JSON.stringify(log)}\n\n`
-          )
-        );
+        controller.enqueue(encoder.encode(`data:${JSON.stringify(log)}\n\n`));
       });
 
       return () => unsubscribe();

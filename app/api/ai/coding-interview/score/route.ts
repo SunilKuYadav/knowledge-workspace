@@ -10,26 +10,27 @@
  * Requirements: 10 (AC 1-8), 11 (AC 1-9)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createAIClient } from '@/ai';
-import { AI_TIMEOUT } from '@/app/coding-interview/lib/constants';
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient } from "@/ai";
+import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import {
   getReadiness,
   calculatePenalty,
   applyPenalties,
   clampScore,
-} from '@/app/coding-interview/lib/scoring';
+} from "@/app/coding-interview/lib/scoring";
 import type {
   EvaluationReport,
   ConversationMessage,
   ScoringReport,
   SessionSummary,
   DimensionScore,
-} from '@/app/coding-interview/lib/types';
+} from "@/app/coding-interview/lib/types";
 
-const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL || 'http://127.0.0.1:1234/v1';
-const API_KEY = process.env.OPENAI_API_KEY || '';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+const DEFAULT_BASE_URL =
+  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
+const API_KEY = process.env.OPENAI_API_KEY || "";
+const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 interface ScoreRequestBody {
   evaluation: EvaluationReport;
@@ -56,8 +57,8 @@ export async function POST(request: NextRequest) {
 
     if (!evaluation || !code) {
       return NextResponse.json(
-        { error: 'Missing required fields: evaluation, code' },
-        { status: 400 }
+        { error: "Missing required fields: evaluation, code" },
+        { status: 400 },
       );
     }
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       hintsUsed || 0,
       executionCount || 0,
       elapsedSeconds || 0,
-      duration || 45
+      duration || 45,
     );
 
     const prompt = buildScorePrompt(
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       hintsUsed || 0,
       executionCount || 0,
       elapsedSeconds || 0,
-      duration || 45
+      duration || 45,
     );
 
     // Use AbortController for 30s timeout
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
 
     try {
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const chunk of client.generate(prompt)) {
         if (controller.signal.aborted) break;
         fullResponse += chunk;
@@ -99,8 +100,8 @@ export async function POST(request: NextRequest) {
 
       if (controller.signal.aborted) {
         return NextResponse.json(
-          { error: 'Scoring timed out after 30 seconds' },
-          { status: 504 }
+          { error: "Scoring timed out after 30 seconds" },
+          { status: 504 },
         );
       }
 
@@ -126,20 +127,23 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       clearTimeout(timeoutId);
 
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof Error && err.name === "AbortError") {
         return NextResponse.json(
-          { error: 'Scoring timed out after 30 seconds' },
-          { status: 504 }
+          { error: "Scoring timed out after 30 seconds" },
+          { status: 504 },
         );
       }
 
       return NextResponse.json(
-        { error: 'Scoring failed. Please retry.' },
-        { status: 500 }
+        { error: "Scoring failed. Please retry." },
+        { status: 500 },
       );
     }
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -152,13 +156,12 @@ function buildScorePrompt(
   hintsUsed: number,
   executionCount: number,
   elapsedSeconds: number,
-  duration: number
+  duration: number,
 ): string {
-  const conversationSummary = conversationHistory.length > 0
-    ? conversationHistory
-        .map((m) => `${m.role}: ${m.content}`)
-        .join('\n')
-    : 'No follow-up discussion took place.';
+  const conversationSummary =
+    conversationHistory.length > 0
+      ? conversationHistory.map((m) => `${m.role}: ${m.content}`).join("\n")
+      : "No follow-up discussion took place.";
 
   return `You are a senior software engineer scoring a coding interview session.
 Based on the evaluation data and follow-up discussion below, provide dimension scores and a session summary.
@@ -170,10 +173,10 @@ Based on the evaluation data and follow-up discussion below, provide dimension s
 - Time Complexity: ${evaluation.complexityAnalysis.timeComplexity}
 - Space Complexity: ${evaluation.complexityAnalysis.spaceComplexity}
 - Code Quality Score: ${evaluation.codeQuality.score}/100
-- Positives: ${evaluation.codeQuality.positives.join('; ')}
-- Improvements: ${evaluation.codeQuality.improvements.join('; ')}
-- Edge Cases Handled: ${evaluation.edgeCaseHandling.handled.join('; ') || 'None identified'}
-- Edge Cases Missed: ${evaluation.edgeCaseHandling.missed.join('; ') || 'None identified'}
+- Positives: ${evaluation.codeQuality.positives.join("; ")}
+- Improvements: ${evaluation.codeQuality.improvements.join("; ")}
+- Edge Cases Handled: ${evaluation.edgeCaseHandling.handled.join("; ") || "None identified"}
+- Edge Cases Missed: ${evaluation.edgeCaseHandling.missed.join("; ") || "None identified"}
 - Error Handling: ${evaluation.errorHandling.assessment}
 
 ## Session Metrics
@@ -226,7 +229,7 @@ Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 
 interface ParsedScoreResponse {
   overallScore: number;
-  dimensions: ScoringReport['dimensions'];
+  dimensions: ScoringReport["dimensions"];
   confidence: number;
   sessionSummary: SessionSummary;
 }
@@ -246,11 +249,14 @@ function parseScoreResponse(response: string): ParsedScoreResponse {
 }
 
 function parseDimensions(
-  dims: Record<string, unknown> | undefined
-): ScoringReport['dimensions'] {
-  const defaultDimension: DimensionScore = { score: 50, justification: 'Insufficient data for assessment.' };
+  dims: Record<string, unknown> | undefined,
+): ScoringReport["dimensions"] {
+  const defaultDimension: DimensionScore = {
+    score: 50,
+    justification: "Insufficient data for assessment.",
+  };
 
-  if (!dims || typeof dims !== 'object') {
+  if (!dims || typeof dims !== "object") {
     return {
       communication: defaultDimension,
       codingAbility: defaultDimension,
@@ -274,48 +280,78 @@ function parseDimensions(
 }
 
 function parseDimension(dim: unknown): DimensionScore {
-  if (!dim || typeof dim !== 'object') {
-    return { score: 50, justification: 'Insufficient data for assessment.' };
+  if (!dim || typeof dim !== "object") {
+    return { score: 50, justification: "Insufficient data for assessment." };
   }
   const d = dim as Record<string, unknown>;
   return {
-    score: clampScore(typeof d.score === 'number' ? d.score : 50),
-    justification: typeof d.justification === 'string' && d.justification.length > 0
-      ? d.justification
-      : 'Insufficient data for assessment.',
+    score: clampScore(typeof d.score === "number" ? d.score : 50),
+    justification:
+      typeof d.justification === "string" && d.justification.length > 0
+        ? d.justification
+        : "Insufficient data for assessment.",
   };
 }
 
 function parseSessionSummary(summary: unknown): SessionSummary {
   const defaultSummary: SessionSummary = {
-    strengths: ['Completed the coding interview session.'],
-    weaknesses: ['Areas for improvement were identified.'],
+    strengths: ["Completed the coding interview session."],
+    weaknesses: ["Areas for improvement were identified."],
     missedEdgeCases: [],
-    alternativeSolutions: [{ approach: 'Brute force', timeComplexity: 'O(n²)', spaceComplexity: 'O(1)' }],
-    studyRecommendations: ['Review algorithm fundamentals.', 'Practice edge case identification.'],
-    similarProblems: [
-      { title: 'Two Sum', targetSkill: 'Hash map usage' },
-      { title: 'Valid Parentheses', targetSkill: 'Stack data structure' },
+    alternativeSolutions: [
+      {
+        approach: "Brute force",
+        timeComplexity: "O(n²)",
+        spaceComplexity: "O(1)",
+      },
     ],
-    nextTopics: ['Data structures fundamentals'],
+    studyRecommendations: [
+      "Review algorithm fundamentals.",
+      "Practice edge case identification.",
+    ],
+    similarProblems: [
+      { title: "Two Sum", targetSkill: "Hash map usage" },
+      { title: "Valid Parentheses", targetSkill: "Stack data structure" },
+    ],
+    nextTopics: ["Data structures fundamentals"],
     improvementPlan: [
-      { action: 'Practice timed coding sessions', priority: 'high' },
-      { action: 'Study common algorithm patterns', priority: 'medium' },
-      { action: 'Review edge case identification techniques', priority: 'low' },
+      { action: "Practice timed coding sessions", priority: "high" },
+      { action: "Study common algorithm patterns", priority: "medium" },
+      { action: "Review edge case identification techniques", priority: "low" },
     ],
   };
 
-  if (!summary || typeof summary !== 'object') return defaultSummary;
+  if (!summary || typeof summary !== "object") return defaultSummary;
   const s = summary as Record<string, unknown>;
 
   return {
-    strengths: clampArray(toStringArray(s.strengths), 1, 5, defaultSummary.strengths),
-    weaknesses: clampArray(toStringArray(s.weaknesses), 1, 5, defaultSummary.weaknesses),
+    strengths: clampArray(
+      toStringArray(s.strengths),
+      1,
+      5,
+      defaultSummary.strengths,
+    ),
+    weaknesses: clampArray(
+      toStringArray(s.weaknesses),
+      1,
+      5,
+      defaultSummary.weaknesses,
+    ),
     missedEdgeCases: parseMissedEdgeCases(s.missedEdgeCases),
     alternativeSolutions: parseAlternativeSolutions(s.alternativeSolutions),
-    studyRecommendations: clampArray(toStringArray(s.studyRecommendations), 2, 5, defaultSummary.studyRecommendations),
+    studyRecommendations: clampArray(
+      toStringArray(s.studyRecommendations),
+      2,
+      5,
+      defaultSummary.studyRecommendations,
+    ),
     similarProblems: parseSimilarProblems(s.similarProblems),
-    nextTopics: clampArray(toStringArray(s.nextTopics), 1, 3, defaultSummary.nextTopics),
+    nextTopics: clampArray(
+      toStringArray(s.nextTopics),
+      1,
+      3,
+      defaultSummary.nextTopics,
+    ),
     improvementPlan: parseImprovementPlan(s.improvementPlan),
   };
 }
@@ -328,27 +364,34 @@ function extractJsonObject(response: string): any | null {
   try {
     const trimmed = response.trim();
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
-  } catch { /* fall through */ }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+      return parsed;
+  } catch {
+    /* fall through */
+  }
 
   // Try code block extraction
   const codeBlockMatch = response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
-      if (parsed && typeof parsed === 'object') return parsed;
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* fall through */
+    }
   }
 
   // Try finding JSON object in response
-  const firstBrace = response.indexOf('{');
-  const lastBrace = response.lastIndexOf('}');
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
       const substr = response.slice(firstBrace, lastBrace + 1);
       const parsed = JSON.parse(substr);
-      if (parsed && typeof parsed === 'object') return parsed;
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* fall through */
+    }
   }
 
   return null;
@@ -356,37 +399,58 @@ function extractJsonObject(response: string): any | null {
 
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
-  return value.filter((v) => typeof v === 'string' && v.length > 0).map(String);
+  return value.filter((v) => typeof v === "string" && v.length > 0).map(String);
 }
 
-function clampArray(arr: string[], min: number, max: number, fallback: string[]): string[] {
+function clampArray(
+  arr: string[],
+  min: number,
+  max: number,
+  fallback: string[],
+): string[] {
   if (arr.length < min) return fallback.slice(0, max);
   return arr.slice(0, max);
 }
 
-function parseMissedEdgeCases(value: unknown): Array<{ case: string; explanation: string }> {
+function parseMissedEdgeCases(
+  value: unknown,
+): Array<{ case: string; explanation: string }> {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
     .map((v) => ({
-      case: String(v.case || v.description || ''),
-      explanation: String(v.explanation || ''),
+      case: String(v.case || v.description || ""),
+      explanation: String(v.explanation || ""),
     }))
     .filter((v) => v.case.length > 0);
 }
 
 function parseAlternativeSolutions(
-  value: unknown
-): Array<{ approach: string; timeComplexity: string; spaceComplexity: string }> {
-  const fallback = [{ approach: 'Brute force', timeComplexity: 'O(n²)', spaceComplexity: 'O(1)' }];
+  value: unknown,
+): Array<{
+  approach: string;
+  timeComplexity: string;
+  spaceComplexity: string;
+}> {
+  const fallback = [
+    {
+      approach: "Brute force",
+      timeComplexity: "O(n²)",
+      spaceComplexity: "O(1)",
+    },
+  ];
   if (!Array.isArray(value)) return fallback;
 
   const parsed = value
-    .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
     .map((v) => ({
-      approach: String(v.approach || ''),
-      timeComplexity: String(v.timeComplexity || v.time_complexity || 'Unknown'),
-      spaceComplexity: String(v.spaceComplexity || v.space_complexity || 'Unknown'),
+      approach: String(v.approach || ""),
+      timeComplexity: String(
+        v.timeComplexity || v.time_complexity || "Unknown",
+      ),
+      spaceComplexity: String(
+        v.spaceComplexity || v.space_complexity || "Unknown",
+      ),
     }))
     .filter((v) => v.approach.length > 0);
 
@@ -395,19 +459,19 @@ function parseAlternativeSolutions(
 }
 
 function parseSimilarProblems(
-  value: unknown
+  value: unknown,
 ): Array<{ title: string; targetSkill: string }> {
   const fallback = [
-    { title: 'Two Sum', targetSkill: 'Hash map usage' },
-    { title: 'Valid Parentheses', targetSkill: 'Stack data structure' },
+    { title: "Two Sum", targetSkill: "Hash map usage" },
+    { title: "Valid Parentheses", targetSkill: "Stack data structure" },
   ];
   if (!Array.isArray(value)) return fallback;
 
   const parsed = value
-    .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
     .map((v) => ({
-      title: String(v.title || ''),
-      targetSkill: String(v.targetSkill || v.target_skill || ''),
+      title: String(v.title || ""),
+      targetSkill: String(v.targetSkill || v.target_skill || ""),
     }))
     .filter((v) => v.title.length > 0 && v.targetSkill.length > 0);
 
@@ -416,21 +480,26 @@ function parseSimilarProblems(
 }
 
 function parseImprovementPlan(
-  value: unknown
-): Array<{ action: string; priority: 'high' | 'medium' | 'low' }> {
-  const fallback: Array<{ action: string; priority: 'high' | 'medium' | 'low' }> = [
-    { action: 'Practice timed coding sessions', priority: 'high' },
-    { action: 'Study common algorithm patterns', priority: 'medium' },
-    { action: 'Review edge case identification techniques', priority: 'low' },
+  value: unknown,
+): Array<{ action: string; priority: "high" | "medium" | "low" }> {
+  const fallback: Array<{
+    action: string;
+    priority: "high" | "medium" | "low";
+  }> = [
+    { action: "Practice timed coding sessions", priority: "high" },
+    { action: "Study common algorithm patterns", priority: "medium" },
+    { action: "Review edge case identification techniques", priority: "low" },
   ];
   if (!Array.isArray(value)) return fallback;
 
-  const validPriorities = new Set(['high', 'medium', 'low']);
+  const validPriorities = new Set(["high", "medium", "low"]);
   const parsed = value
-    .filter((v): v is Record<string, unknown> => !!v && typeof v === 'object')
+    .filter((v): v is Record<string, unknown> => !!v && typeof v === "object")
     .map((v) => ({
-      action: String(v.action || ''),
-      priority: (validPriorities.has(String(v.priority)) ? String(v.priority) : 'medium') as 'high' | 'medium' | 'low',
+      action: String(v.action || ""),
+      priority: (validPriorities.has(String(v.priority))
+        ? String(v.priority)
+        : "medium") as "high" | "medium" | "low",
     }))
     .filter((v) => v.action.length > 0);
 
@@ -438,6 +507,8 @@ function parseImprovementPlan(
 
   // Sort by priority: high → medium → low
   const priorityOrder = { high: 0, medium: 1, low: 2 };
-  const sorted = parsed.slice(0, 7).sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  const sorted = parsed
+    .slice(0, 7)
+    .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
   return sorted;
 }

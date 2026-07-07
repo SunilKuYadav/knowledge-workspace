@@ -1,4 +1,4 @@
-import type { RevisionData, RevisionEntry } from '@/types';
+import type { RevisionData, RevisionEntry } from "@/types";
 
 /**
  * Repository interface for revision scheduling operations.
@@ -7,6 +7,10 @@ import type { RevisionData, RevisionEntry } from '@/types';
  */
 export interface RevisionRepository {
   getDueItems(currentDate: string): Promise<RevisionData[]>;
-  updateRevision(itemId: string, itemType: 'topic' | 'problem', entry: RevisionEntry): Promise<RevisionData>;
+  updateRevision(
+    itemId: string,
+    itemType: "topic" | "problem",
+    entry: RevisionEntry,
+  ): Promise<RevisionData>;
   getHistory(itemId: string): Promise<RevisionEntry[]>;
 }

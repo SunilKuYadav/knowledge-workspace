@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { create } from "zustand";
+import { subscribeWithSelector } from "zustand/middleware";
 import type {
   InterviewState,
   InterviewPhase,
@@ -11,9 +11,13 @@ import type {
   ConversationMessage,
   ScoringReport,
   SessionSummary,
-} from '../lib/types';
-import { DEFAULT_DURATION } from '../lib/constants';
-import { loadPersistedState, persistState, clearPersistedState } from './persistence';
+} from "../lib/types";
+import { DEFAULT_DURATION } from "../lib/constants";
+import {
+  loadPersistedState,
+  persistState,
+  clearPersistedState,
+} from "./persistence";
 
 /* ─── Store Actions Interface ────────────────────────────── */
 
@@ -62,10 +66,10 @@ export type InterviewStore = InterviewState & InterviewActions;
 
 export const defaultInterviewState: InterviewState = {
   // Configuration
-  phase: 'initializing',
-  source: 'practice' as InterviewSource,
+  phase: "initializing",
+  source: "practice" as InterviewSource,
   context: null,
-  language: 'javascript',
+  language: "javascript",
   difficulty: null,
   duration: DEFAULT_DURATION,
 
@@ -73,8 +77,8 @@ export const defaultInterviewState: InterviewState = {
   problem: null,
 
   // Editor
-  code: '',
-  boilerplate: '',
+  code: "",
+  boilerplate: "",
 
   // Timer
   elapsedSeconds: 0,
@@ -114,11 +118,18 @@ export const defaultInterviewState: InterviewState = {
 function getInitialState(): InterviewState {
   const restored = loadPersistedState();
   if (restored) {
-    console.log('[interviewStore] restored persisted state, phase:', restored.phase);
+    console.log(
+      "[interviewStore] restored persisted state, phase:",
+      restored.phase,
+    );
     return { ...restored, lastPersistedAt: Date.now() };
   }
-  console.log('[interviewStore] no persisted state, using defaults');
-  return { ...defaultInterviewState, sessionStartTime: Date.now(), lastPersistedAt: Date.now() };
+  console.log("[interviewStore] no persisted state, using defaults");
+  return {
+    ...defaultInterviewState,
+    sessionStartTime: Date.now(),
+    lastPersistedAt: Date.now(),
+  };
 }
 
 /* ─── Store Creation ─────────────────────────────────────── */
@@ -127,8 +138,7 @@ export const useInterviewStore = create<InterviewStore>()(
   subscribeWithSelector((set) => ({
     ...getInitialState(),
 
-    setPhase: (phase: InterviewPhase) =>
-      set({ phase }),
+    setPhase: (phase: InterviewPhase) => set({ phase }),
 
     setCode: (code: string) => set({ code }),
 
@@ -154,14 +164,13 @@ export const useInterviewStore = create<InterviewStore>()(
         hintsUsed: state.hintsUsed + 1,
       })),
 
-    setEvaluation: (evaluation: EvaluationReport) =>
-      set({ evaluation }),
+    setEvaluation: (evaluation: EvaluationReport) => set({ evaluation }),
 
     addConversationMessage: (message: ConversationMessage) =>
       set((state) => ({
         conversationHistory: [...state.conversationHistory, message],
         followUpQuestionsAsked:
-          message.role === 'interviewer'
+          message.role === "interviewer"
             ? state.followUpQuestionsAsked + 1
             : state.followUpQuestionsAsked,
       })),
@@ -174,9 +183,13 @@ export const useInterviewStore = create<InterviewStore>()(
 
     clearSession: () => {
       clearPersistedState();
-      set({ ...defaultInterviewState, sessionStartTime: Date.now(), lastPersistedAt: Date.now() });
+      set({
+        ...defaultInterviewState,
+        sessionStartTime: Date.now(),
+        lastPersistedAt: Date.now(),
+      });
     },
-  }))
+  })),
 );
 
 /* ─── Auto-persist on every state change ─────────────────── */

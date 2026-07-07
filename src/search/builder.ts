@@ -1,7 +1,7 @@
-import { Topic } from '@/types/Topic';
-import { Problem } from '@/types/Problem';
-import { Flashcard } from '@/types/Flashcard';
-import { SearchDocument } from './search-index';
+import { Topic } from "@/types/Topic";
+import { Problem } from "@/types/Problem";
+import { Flashcard } from "@/types/Flashcard";
+import { SearchDocument } from "./search-index";
 
 /**
  * Content associated with a topic for indexing purposes.
@@ -27,16 +27,16 @@ export interface ProblemContent {
 export function buildSearchDocuments(
   topics: TopicContent[],
   problems: ProblemContent[],
-  flashcards: Flashcard[]
+  flashcards: Flashcard[],
 ): SearchDocument[] {
   const documents: SearchDocument[] = [];
 
   for (const { topic, overview, notes } of topics) {
     documents.push({
       id: topic.id,
-      type: 'topic',
+      type: "topic",
       title: topic.title,
-      content: [overview, notes].filter(Boolean).join(' '),
+      content: [overview, notes].filter(Boolean).join(" "),
       tags: topic.tags,
       path: `notes/${topic.category}/${topic.id}`,
     });
@@ -45,7 +45,7 @@ export function buildSearchDocuments(
   for (const { problem, notes } of problems) {
     documents.push({
       id: problem.id,
-      type: 'problem',
+      type: "problem",
       title: problem.title,
       content: notes,
       tags: [...problem.patterns, ...problem.companies],
@@ -56,7 +56,7 @@ export function buildSearchDocuments(
   for (const flashcard of flashcards) {
     documents.push({
       id: flashcard.id,
-      type: 'flashcard',
+      type: "flashcard",
       title: flashcard.front,
       content: flashcard.back,
       tags: flashcard.tags,

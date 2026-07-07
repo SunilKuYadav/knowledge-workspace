@@ -1,13 +1,15 @@
-import Link from 'next/link';
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileProblemRepository } from '@/src/filesystem/FileProblemRepository';
-import { ProblemService } from '@/src/services/ProblemService';
-import ProblemsListClient from './ProblemsListClient';
-import CodingInterviewButton from '@/src/components/CodingInterviewButton';
+import Link from "next/link";
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { ProblemService } from "@/src/services/ProblemService";
+import ProblemsListClient from "./ProblemsListClient";
+import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 
 export default async function ProblemsPage() {
   const workspacePath = getWorkspacePath();
-  const problemService = new ProblemService(new FileProblemRepository(workspacePath));
+  const problemService = new ProblemService(
+    new FileProblemRepository(workspacePath),
+  );
   const problems = await problemService.getAllProblems();
 
   return (
@@ -26,7 +28,8 @@ export default async function ProblemsPage() {
             All Problems
           </h1>
           <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-            {problems.length} problem{problems.length !== 1 ? 's' : ''} in your workspace
+            {problems.length} problem{problems.length !== 1 ? "s" : ""} in your
+            workspace
           </p>
         </div>
         <div className="flex items-center gap-3">

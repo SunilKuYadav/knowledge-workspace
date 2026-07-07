@@ -1,5 +1,5 @@
 export interface AISidebarProps {
-  context: 'topic' | 'problem';
+  context: "topic" | "problem";
   itemId: string;
   itemTitle?: string;
   available?: boolean;

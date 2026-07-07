@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import type { ExecutionResult } from '../lib/types';
+import type { ExecutionResult } from "../lib/types";
 
 interface ConsolePanelProps {
   result: ExecutionResult | null;
@@ -66,7 +66,7 @@ export function ConsolePanel({ result, isExecuting }: ConsolePanelProps) {
           <pre className="text-sm font-mono bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded p-3 overflow-x-auto whitespace-pre-wrap break-words text-zinc-800 dark:text-zinc-200">
             {result.consoleOutput}
           </pre>
-          {result.consoleOutput.includes('[output truncated') && (
+          {result.consoleOutput.includes("[output truncated") && (
             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
               ⚠ Output was truncated at 10,000 characters
             </p>
@@ -77,8 +77,9 @@ export function ConsolePanel({ result, isExecuting }: ConsolePanelProps) {
       {/* Execution metrics */}
       <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
         <span>
-          ⏱ {result.executionTimeMs < 1
-            ? '<1ms'
+          ⏱{" "}
+          {result.executionTimeMs < 1
+            ? "<1ms"
             : `${result.executionTimeMs.toFixed(1)}ms`}
         </span>
         <span>💾 {result.memoryUsageMb.toFixed(1)} MB</span>
@@ -87,8 +88,12 @@ export function ConsolePanel({ result, isExecuting }: ConsolePanelProps) {
   );
 }
 
-function ErrorDisplay({ error }: { error: NonNullable<ExecutionResult['error']> }) {
-  if (error.type === 'timeout') {
+function ErrorDisplay({
+  error,
+}: {
+  error: NonNullable<ExecutionResult["error"]>;
+}) {
+  if (error.type === "timeout") {
     return (
       <div className="rounded p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
         <p className="text-sm font-medium text-red-700 dark:text-red-400">
@@ -101,11 +106,11 @@ function ErrorDisplay({ error }: { error: NonNullable<ExecutionResult['error']> 
     );
   }
 
-  if (error.type === 'syntax') {
+  if (error.type === "syntax") {
     return (
       <div className="rounded p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
         <p className="text-sm font-medium text-red-700 dark:text-red-400">
-          Syntax Error{error.line != null ? ` at line ${error.line}` : ''}:{' '}
+          Syntax Error{error.line != null ? ` at line ${error.line}` : ""}:{" "}
           {error.message}
         </p>
       </div>

@@ -1,7 +1,7 @@
-import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
-import path from 'path';
-import { getWorkspacePath as getWorkspacePathFromConstants } from '../lib/constants';
-import type { FilesystemError } from '@/types/errors';
+import { mkdir, readdir, readFile, writeFile } from "fs/promises";
+import path from "path";
+import { getWorkspacePath as getWorkspacePathFromConstants } from "../lib/constants";
+import type { FilesystemError } from "@/types/errors";
 
 /**
  * Returns the resolved workspace path.
@@ -33,7 +33,7 @@ export async function listDirectories(basePath: string): Promise<string[]> {
       .filter((entry) => entry.isDirectory())
       .map((entry) => entry.name);
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isNodeError(error) && error.code === "ENOENT") {
       return [];
     }
     throw mapToFilesystemError(error, basePath);
@@ -46,10 +46,10 @@ export async function listDirectories(basePath: string): Promise<string[]> {
  */
 export async function readJsonFile<T>(filePath: string): Promise<T | null> {
   try {
-    const content = await readFile(filePath, 'utf-8');
+    const content = await readFile(filePath, "utf-8");
     return JSON.parse(content) as T;
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
+    if (isNodeError(error) && error.code === "ENOENT") {
       return null;
     }
     throw mapToFilesystemError(error, filePath);
@@ -60,11 +60,14 @@ export async function readJsonFile<T>(filePath: string): Promise<T | null> {
  * Writes data as formatted JSON to a file.
  * Ensures the parent directory exists before writing.
  */
-export async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
+export async function writeJsonFile<T>(
+  filePath: string,
+  data: T,
+): Promise<void> {
   try {
     await ensureDirectoryExists(path.dirname(filePath));
     const content = JSON.stringify(data, null, 2);
-    await writeFile(filePath, content, 'utf-8');
+    await writeFile(filePath, content, "utf-8");
   } catch (error: unknown) {
     if (isFilesystemError(error)) {
       throw error;
@@ -79,10 +82,10 @@ export async function writeJsonFile<T>(filePath: string, data: T): Promise<void>
  */
 export async function readMarkdownFile(filePath: string): Promise<string> {
   try {
-    return await readFile(filePath, 'utf-8');
+    return await readFile(filePath, "utf-8");
   } catch (error: unknown) {
-    if (isNodeError(error) && error.code === 'ENOENT') {
-      return '';
+    if (isNodeError(error) && error.code === "ENOENT") {
+      return "";
     }
     throw mapToFilesystemError(error, filePath);
   }
@@ -92,10 +95,13 @@ export async function readMarkdownFile(filePath: string): Promise<string> {
  * Writes content to a Markdown file.
  * Ensures the parent directory exists before writing.
  */
-export async function writeMarkdownFile(filePath: string, content: string): Promise<void> {
+export async function writeMarkdownFile(
+  filePath: string,
+  content: string,
+): Promise<void> {
   try {
     await ensureDirectoryExists(path.dirname(filePath));
-    await writeFile(filePath, content, 'utf-8');
+    await writeFile(filePath, content, "utf-8");
   } catch (error: unknown) {
     if (isFilesystemError(error)) {
       throw error;
@@ -108,7 +114,7 @@ export async function writeMarkdownFile(filePath: string, content: string): Prom
  * Type guard for Node.js system errors with a `code` property.
  */
 function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error;
+  return error instanceof Error && "code" in error;
 }
 
 /**
@@ -116,14 +122,14 @@ function isNodeError(error: unknown): error is NodeJS.ErrnoException {
  */
 function isFilesystemError(error: unknown): error is FilesystemError {
   return (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'code' in error &&
-    'message' in error &&
-    'path' in error &&
-    typeof (error as FilesystemError).code === 'string' &&
-    ['NOT_FOUND', 'PERMISSION_DENIED', 'DISK_FULL', 'UNKNOWN'].includes(
-      (error as FilesystemError).code
+    "code" in error &&
+    "message" in error &&
+    "path" in error &&
+    typeof (error as FilesystemError).code === "string" &&
+    ["NOT_FOUND", "PERMISSION_DENIED", "DISK_FULL", "UNKNOWN"].includes(
+      (error as FilesystemError).code,
     )
   );
 }
@@ -135,31 +141,34 @@ function isFilesystemError(error: unknown): error is FilesystemError {
  * - ENOSPC → DISK_FULL
  * - other → UNKNOWN
  */
-function mapToFilesystemError(error: unknown, filePath: string): FilesystemError {
+function mapToFilesystemError(
+  error: unknown,
+  filePath: string,
+): FilesystemError {
   if (isNodeError(error)) {
     switch (error.code) {
-      case 'ENOENT':
+      case "ENOENT":
         return {
-          code: 'NOT_FOUND',
+          code: "NOT_FOUND",
           message: `File or directory not found: ${filePath}`,
           path: filePath,
         };
-      case 'EACCES':
-      case 'EPERM':
+      case "EACCES":
+      case "EPERM":
         return {
-          code: 'PERMISSION_DENIED',
+          code: "PERMISSION_DENIED",
           message: `Permission denied: ${filePath}`,
           path: filePath,
         };
-      case 'ENOSPC':
+      case "ENOSPC":
         return {
-          code: 'DISK_FULL',
+          code: "DISK_FULL",
           message: `No space left on device: ${filePath}`,
           path: filePath,
         };
       default:
         return {
-          code: 'UNKNOWN',
+          code: "UNKNOWN",
           message: error.message || `Unknown filesystem error: ${filePath}`,
           path: filePath,
         };
@@ -167,8 +176,9 @@ function mapToFilesystemError(error: unknown, filePath: string): FilesystemError
   }
 
   return {
-    code: 'UNKNOWN',
-    message: error instanceof Error ? error.message : `Unknown error: ${filePath}`,
+    code: "UNKNOWN",
+    message:
+      error instanceof Error ? error.message : `Unknown error: ${filePath}`,
     path: filePath,
   };
 }

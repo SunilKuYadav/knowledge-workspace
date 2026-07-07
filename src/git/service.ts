@@ -1,8 +1,8 @@
-import { access } from 'fs/promises';
-import { join } from 'path';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { executeGitAdd, executeGitCommit } from './commit';
+import { access } from "fs/promises";
+import { join } from "path";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { executeGitAdd, executeGitCommit } from "./commit";
 
 const execAsync = promisify(exec);
 
@@ -23,7 +23,7 @@ export class GitService {
    */
   async isInitialized(): Promise<boolean> {
     try {
-      await access(join(this.workspacePath, '.git'));
+      await access(join(this.workspacePath, ".git"));
       return true;
     } catch {
       return false;
@@ -36,9 +36,9 @@ export class GitService {
    */
   async initialize(): Promise<void> {
     try {
-      await execAsync('git init', { cwd: this.workspacePath });
+      await execAsync("git init", { cwd: this.workspacePath });
     } catch (error) {
-      console.error('[GitService] Failed to initialize git repository:', error);
+      console.error("[GitService] Failed to initialize git repository:", error);
     }
   }
 
@@ -62,10 +62,7 @@ export class GitService {
       await executeGitAdd(filePath, this.workspacePath);
       await executeGitCommit(message, this.workspacePath);
     } catch (error) {
-      console.error(
-        `[GitService] Failed to commit file "${filePath}":`,
-        error
-      );
+      console.error(`[GitService] Failed to commit file "${filePath}":`, error);
     }
   }
 }

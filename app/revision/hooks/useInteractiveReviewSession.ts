@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useTransition, useCallback } from 'react';
+import { useState, useTransition, useCallback } from "react";
 import type {
   CategorizedItem,
   ReviewQuestion,
@@ -8,14 +8,14 @@ import type {
   AnswerRecord,
   SessionSummary,
   SessionPhase,
-} from '../lib/types';
+} from "../lib/types";
 import {
   generateReviewQuestions,
   evaluateResponse,
   getSessionSummary,
   streamHint,
-} from '../lib/api';
-import { rateRevision } from '../actions';
+} from "../lib/api";
+import { rateRevision } from "../actions";
 
 interface UseInteractiveReviewSessionReturn {
   // State
@@ -45,19 +45,21 @@ interface UseInteractiveReviewSessionReturn {
 }
 
 export function useInteractiveReviewSession(
-  dueItems: CategorizedItem[]
+  dueItems: CategorizedItem[],
 ): UseInteractiveReviewSessionReturn {
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
-  const [phase, setPhase] = useState<SessionPhase>('idle');
+  const [phase, setPhase] = useState<SessionPhase>("idle");
   const [questions, setQuestions] = useState<ReviewQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userResponse, setUserResponse] = useState('');
+  const [userResponse, setUserResponse] = useState("");
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
-  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
-  const [hint, setHint] = useState('');
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(
+    null,
+  );
+  const [hint, setHint] = useState("");
   const [hintLoading, setHintLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
   const [itemsCompleted, setItemsCompleted] = useState(0);
   const [allSessionComplete, setAllSessionComplete] = useState(false);
@@ -66,33 +68,33 @@ export function useInteractiveReviewSession(
 
   const startReview = useCallback(async () => {
     if (!currentItem) return;
-    setPhase('generating');
-    setError('');
+    setPhase("generating");
+    setError("");
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setAnswers([]);
     setSessionSummary(null);
-    setHint('');
+    setHint("");
 
     try {
       const data = await generateReviewQuestions(currentItem);
       if (data.error) {
         setError(data.error);
-        setPhase('idle');
+        setPhase("idle");
         return;
       }
       setQuestions(data.questions!);
-      setPhase('answering');
+      setPhase("answering");
     } catch {
-      setError('Connection failed. Please check your AI service.');
-      setPhase('idle');
+      setError("Connection failed. Please check your AI service.");
+      setPhase("idle");
     }
   }, [currentItem]);
 
   const submitAnswer = useCallback(async () => {
     if (!userResponse.trim() || !currentItem) return;
-    setPhase('evaluating');
-    setError('');
+    setPhase("evaluating");
+    setError("");
 
     const currentQuestion = questions[currentQuestionIndex];
 
@@ -101,12 +103,12 @@ export function useInteractiveReviewSession(
         currentItem,
         currentQuestion.question,
         userResponse.trim(),
-        currentQuestion.type
+        currentQuestion.type,
       );
 
       if (data.error) {
         setError(data.error);
-        setPhase('answering');
+        setPhase("answering");
         return;
       }
 
@@ -127,34 +129,34 @@ export function useInteractiveReviewSession(
         },
       ]);
 
-      setPhase('feedback');
+      setPhase("feedback");
     } catch {
-      setError('Connection failed during evaluation.');
-      setPhase('answering');
+      setError("Connection failed during evaluation.");
+      setPhase("answering");
     }
   }, [userResponse, currentItem, questions, currentQuestionIndex]);
 
   const nextQuestion = useCallback(async () => {
     const nextIdx = currentQuestionIndex + 1;
-    setHint('');
-    setUserResponse('');
+    setHint("");
+    setUserResponse("");
     setEvaluation(null);
 
     if (nextIdx >= questions.length) {
-      setPhase('evaluating');
+      setPhase("evaluating");
       const summary = await getSessionSummary(currentItem, answers);
       if (summary) setSessionSummary(summary);
-      setPhase('summary');
+      setPhase("summary");
     } else {
       setCurrentQuestionIndex(nextIdx);
-      setPhase('answering');
+      setPhase("answering");
     }
   }, [currentQuestionIndex, questions.length, currentItem, answers]);
 
   const requestHint = useCallback(async () => {
     if (!currentItem || hintLoading) return;
     setHintLoading(true);
-    setHint('');
+    setHint("");
 
     const currentQuestion = questions[currentQuestionIndex];
 
@@ -163,10 +165,10 @@ export function useInteractiveReviewSession(
         currentItem,
         currentQuestion.question,
         currentQuestion.type,
-        (accumulated) => setHint(accumulated)
+        (accumulated) => setHint(accumulated),
       );
     } catch {
-      setHint('Unable to get hint right now.');
+      setHint("Unable to get hint right now.");
     } finally {
       setHintLoading(false);
     }
@@ -179,7 +181,7 @@ export function useInteractiveReviewSession(
         await rateRevision(
           currentItem.item.itemId,
           currentItem.item.itemType,
-          confidence
+          confidence,
         );
 
         setItemsCompleted((c) => c + 1);
@@ -189,19 +191,19 @@ export function useInteractiveReviewSession(
           setAllSessionComplete(true);
         } else {
           setCurrentItemIndex(nextItemIdx);
-          setPhase('idle');
+          setPhase("idle");
           setQuestions([]);
           setCurrentQuestionIndex(0);
           setAnswers([]);
           setSessionSummary(null);
-          setUserResponse('');
+          setUserResponse("");
           setEvaluation(null);
-          setHint('');
-          setError('');
+          setHint("");
+          setError("");
         }
       });
     },
-    [currentItem, currentItemIndex, dueItems.length, startTransition]
+    [currentItem, currentItemIndex, dueItems.length, startTransition],
   );
 
   return {

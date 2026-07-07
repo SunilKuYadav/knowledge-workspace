@@ -1,10 +1,10 @@
 /**
  * Summary prompt builder.
  */
-import { composePrompt } from '../utils/compose';
-import { IDENTITY_CONTEXT } from '../system/identity';
-import { TEACHING_CONTEXT } from '../system/teaching';
-import { MARKDOWN_CONTEXT } from '../system/markdown';
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+import { TEACHING_CONTEXT } from "../system/teaching";
+import { MARKDOWN_CONTEXT } from "../system/markdown";
 
 export function buildSummaryPrompt(content: string): string {
   return composePrompt({

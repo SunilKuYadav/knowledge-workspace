@@ -13,13 +13,14 @@
  * Requirements: 8.2-8.5
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createAIClient } from '@/ai';
-import { AI_TIMEOUT } from '@/app/coding-interview/lib/constants';
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient } from "@/ai";
+import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 
-const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL || 'http://127.0.0.1:1234/v1';
-const API_KEY = process.env.OPENAI_API_KEY || '';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+const DEFAULT_BASE_URL =
+  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
+const API_KEY = process.env.OPENAI_API_KEY || "";
+const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 interface HintRequest {
   problemStatement: string;
@@ -31,9 +32,10 @@ interface HintRequest {
 function buildHintPrompt(body: HintRequest): string {
   const { problemStatement, code, level, previousHints = [] } = body;
 
-  const previousHintsSection = previousHints.length > 0
-    ? `\nPrevious hints given:\n${previousHints.map((h, i) => `Level ${i + 1}: ${h}`).join('\n')}\n`
-    : '';
+  const previousHintsSection =
+    previousHints.length > 0
+      ? `\nPrevious hints given:\n${previousHints.map((h, i) => `Level ${i + 1}: ${h}`).join("\n")}\n`
+      : "";
 
   const levelInstructions: Record<number, string> = {
     1: `Provide a CLARIFYING QUESTION or RESTATEMENT of the problem that helps the user better understand what they need to solve.
@@ -71,7 +73,7 @@ Problem:
 ${problemStatement}
 
 User's current code:
-${code || '(no code written yet)'}
+${code || "(no code written yet)"}
 ${previousHintsSection}
 You are providing a Level ${level} hint (out of 4 levels, where each level gives more detail).
 
@@ -87,33 +89,37 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.problemStatement) {
       return NextResponse.json(
-        { error: 'Missing required field: problemStatement' },
-        { status: 400 }
+        { error: "Missing required field: problemStatement" },
+        { status: 400 },
       );
     }
 
-    if (typeof body.level !== 'number' || body.level < 1 || body.level > 4) {
+    if (typeof body.level !== "number" || body.level < 1 || body.level > 4) {
       return NextResponse.json(
-        { error: 'level must be an integer between 1 and 4' },
-        { status: 400 }
+        { error: "level must be an integer between 1 and 4" },
+        { status: 400 },
       );
     }
 
     if (body.previousHints && !Array.isArray(body.previousHints)) {
       return NextResponse.json(
-        { error: 'previousHints must be an array of strings' },
-        { status: 400 }
+        { error: "previousHints must be an array of strings" },
+        { status: 400 },
       );
     }
 
-    const client = createAIClient({ baseUrl: DEFAULT_BASE_URL, apiKey: API_KEY, defaultModel: MODEL });
+    const client = createAIClient({
+      baseUrl: DEFAULT_BASE_URL,
+      apiKey: API_KEY,
+      defaultModel: MODEL,
+    });
     const prompt = buildHintPrompt(body);
 
     // Use AbortController for 30s timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
 
-    let fullResponse = '';
+    let fullResponse = "";
 
     try {
       const generator = client.generate(prompt);
@@ -128,10 +134,13 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId);
     } catch (err) {
       clearTimeout(timeoutId);
-      if (controller.signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
+      if (
+        controller.signal.aborted ||
+        (err instanceof Error && err.name === "AbortError")
+      ) {
         return NextResponse.json(
-          { error: 'Hint generation timed out after 30 seconds' },
-          { status: 504 }
+          { error: "Hint generation timed out after 30 seconds" },
+          { status: 504 },
         );
       }
       throw err;
@@ -139,8 +148,8 @@ export async function POST(request: NextRequest) {
 
     if (controller.signal.aborted) {
       return NextResponse.json(
-        { error: 'Hint generation timed out after 30 seconds' },
-        { status: 504 }
+        { error: "Hint generation timed out after 30 seconds" },
+        { status: 504 },
       );
     }
 
@@ -148,16 +157,16 @@ export async function POST(request: NextRequest) {
 
     if (!hint) {
       return NextResponse.json(
-        { error: 'AI returned an empty hint response' },
-        { status: 502 }
+        { error: "AI returned an empty hint response" },
+        { status: 502 },
       );
     }
 
     return NextResponse.json({ hint, level: body.level });
   } catch {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

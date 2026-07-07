@@ -32,7 +32,7 @@ export {
   DSA_CONTEXT,
   SYSTEM_DESIGN_CONTEXT,
   REVISION_CONTEXT,
-} from './system';
+} from "./system";
 
 // ─── Builders ───
 export {
@@ -52,7 +52,7 @@ export {
   buildEvaluationPrompt,
   buildHintPrompt,
   buildSessionSummaryPrompt,
-} from './builders';
+} from "./builders";
 
 // ─── Schemas ───
 export {
@@ -64,16 +64,16 @@ export {
   TOPIC_PARSE_SCHEMA,
   PROBLEM_PARSE_SCHEMA,
   SIMILAR_PROBLEMS_SCHEMA,
-} from './schemas';
+} from "./schemas";
 
 // ─── Utils ───
-export { composePrompt } from './utils/compose';
-export type { ComposeOptions } from './utils/compose';
-export { section, field, metadata, joinBlocks } from './utils/format';
+export { composePrompt } from "./utils/compose";
+export type { ComposeOptions } from "./utils/compose";
+export { section, field, metadata, joinBlocks } from "./utils/format";
 
 // ─── Backward Compatibility ───
 // The old SYSTEM_CONTEXT and withContext are kept for gradual migration.
-import { IDENTITY_CONTEXT } from './system/identity';
+import { IDENTITY_CONTEXT } from "./system/identity";
 
 /**
  * @deprecated Use IDENTITY_CONTEXT or compose specific modules instead.

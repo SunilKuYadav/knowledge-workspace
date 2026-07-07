@@ -9,22 +9,23 @@
  * Requirements: 6 (AC 1-9)
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createAIClient } from '@/ai';
-import { AI_TIMEOUT } from '@/app/coding-interview/lib/constants';
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient } from "@/ai";
+import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import type {
   GeneratedProblem,
   TestCaseResult,
   EvaluationReport,
-} from '@/app/coding-interview/lib/types';
+} from "@/app/coding-interview/lib/types";
 
-const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL || 'http://127.0.0.1:1234/v1';
-const API_KEY = process.env.OPENAI_API_KEY || '';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+const DEFAULT_BASE_URL =
+  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
+const API_KEY = process.env.OPENAI_API_KEY || "";
+const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 interface EvaluateRequestBody {
   code: string;
-  language: 'javascript' | 'typescript';
+  language: "javascript" | "typescript";
   problem: GeneratedProblem;
   testResults: TestCaseResult[];
 }
@@ -36,8 +37,11 @@ export async function POST(request: NextRequest) {
 
     if (!code || !language || !problem || !testResults) {
       return NextResponse.json(
-        { error: 'Missing required fields: code, language, problem, testResults' },
-        { status: 400 }
+        {
+          error:
+            "Missing required fields: code, language, problem, testResults",
+        },
+        { status: 400 },
       );
     }
 
@@ -54,7 +58,7 @@ export async function POST(request: NextRequest) {
     const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
 
     try {
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const chunk of client.generate(prompt)) {
         if (controller.signal.aborted) break;
         fullResponse += chunk;
@@ -63,8 +67,8 @@ export async function POST(request: NextRequest) {
 
       if (controller.signal.aborted) {
         return NextResponse.json(
-          { error: 'Evaluation timed out after 30 seconds' },
-          { status: 504 }
+          { error: "Evaluation timed out after 30 seconds" },
+          { status: 504 },
         );
       }
 
@@ -73,20 +77,23 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       clearTimeout(timeoutId);
 
-      if (err instanceof Error && err.name === 'AbortError') {
+      if (err instanceof Error && err.name === "AbortError") {
         return NextResponse.json(
-          { error: 'Evaluation timed out after 30 seconds' },
-          { status: 504 }
+          { error: "Evaluation timed out after 30 seconds" },
+          { status: 504 },
         );
       }
 
       return NextResponse.json(
-        { error: 'Evaluation failed. Please retry or proceed to follow-up.' },
-        { status: 500 }
+        { error: "Evaluation failed. Please retry or proceed to follow-up." },
+        { status: 500 },
       );
     }
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -96,7 +103,7 @@ function buildEvaluatePrompt(
   code: string,
   language: string,
   problem: GeneratedProblem,
-  testResults: TestCaseResult[]
+  testResults: TestCaseResult[],
 ): string {
   const passedCount = testResults.filter((r) => r.passed).length;
   const totalCount = testResults.length;
@@ -113,7 +120,7 @@ Statement:
 ${problem.statement}
 
 Constraints:
-${problem.constraints.join('\n')}
+${problem.constraints.join("\n")}
 
 Expected Time Complexity: ${problem.expectedTimeComplexity}
 Expected Space Complexity: ${problem.expectedSpaceComplexity}
@@ -128,9 +135,9 @@ Passed: ${passedCount}/${totalCount}
 ${testResults
   .map(
     (r, i) =>
-      `Test ${i + 1}: ${r.passed ? 'PASS' : 'FAIL'} | Input: ${JSON.stringify(r.input)} | Expected: ${JSON.stringify(r.expectedOutput)} | Got: ${JSON.stringify(r.actualOutput)} | Time: ${r.executionTimeMs}ms`
+      `Test ${i + 1}: ${r.passed ? "PASS" : "FAIL"} | Input: ${JSON.stringify(r.input)} | Expected: ${JSON.stringify(r.expectedOutput)} | Got: ${JSON.stringify(r.actualOutput)} | Time: ${r.executionTimeMs}ms`,
   )
-  .join('\n')}
+  .join("\n")}
 
 ## Instructions
 Provide a detailed evaluation as a JSON object with the following structure:
@@ -173,7 +180,7 @@ Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 
 function parseEvaluationResponse(
   response: string,
-  testResults: TestCaseResult[]
+  testResults: TestCaseResult[],
 ): EvaluationReport {
   const defaultReport: EvaluationReport = {
     correctness: {
@@ -182,19 +189,19 @@ function parseEvaluationResponse(
       results: testResults,
     },
     algorithmChoice: {
-      submittedComplexity: 'Unknown',
-      optimalComplexity: 'Unknown',
+      submittedComplexity: "Unknown",
+      optimalComplexity: "Unknown",
       isOptimal: false,
-      feedback: 'Unable to analyze algorithm choice.',
+      feedback: "Unable to analyze algorithm choice.",
     },
     complexityAnalysis: {
-      timeComplexity: 'Unknown',
-      spaceComplexity: 'Unknown',
-      explanation: 'Unable to analyze complexity.',
+      timeComplexity: "Unknown",
+      spaceComplexity: "Unknown",
+      explanation: "Unable to analyze complexity.",
     },
     codeQuality: {
-      positives: ['Code was submitted for evaluation.'],
-      improvements: ['Consider reviewing the solution structure.'],
+      positives: ["Code was submitted for evaluation."],
+      improvements: ["Consider reviewing the solution structure."],
       score: 50,
     },
     edgeCaseHandling: {
@@ -202,7 +209,7 @@ function parseEvaluationResponse(
       missed: [],
     },
     errorHandling: {
-      assessment: 'Unable to assess error handling.',
+      assessment: "Unable to assess error handling.",
       suggestions: [],
     },
   };
@@ -217,24 +224,35 @@ function parseEvaluationResponse(
       results: testResults,
     },
     algorithmChoice: {
-      submittedComplexity: String(parsed.algorithmChoice?.submittedComplexity || 'Unknown'),
-      optimalComplexity: String(parsed.algorithmChoice?.optimalComplexity || 'Unknown'),
+      submittedComplexity: String(
+        parsed.algorithmChoice?.submittedComplexity || "Unknown",
+      ),
+      optimalComplexity: String(
+        parsed.algorithmChoice?.optimalComplexity || "Unknown",
+      ),
       isOptimal: Boolean(parsed.algorithmChoice?.isOptimal),
-      feedback: String(parsed.algorithmChoice?.feedback || 'No feedback available.'),
+      feedback: String(
+        parsed.algorithmChoice?.feedback || "No feedback available.",
+      ),
     },
     complexityAnalysis: {
-      timeComplexity: String(parsed.complexityAnalysis?.timeComplexity || 'Unknown'),
-      spaceComplexity: String(parsed.complexityAnalysis?.spaceComplexity || 'Unknown'),
-      explanation: String(parsed.complexityAnalysis?.explanation || 'No analysis available.'),
+      timeComplexity: String(
+        parsed.complexityAnalysis?.timeComplexity || "Unknown",
+      ),
+      spaceComplexity: String(
+        parsed.complexityAnalysis?.spaceComplexity || "Unknown",
+      ),
+      explanation: String(
+        parsed.complexityAnalysis?.explanation || "No analysis available.",
+      ),
     },
     codeQuality: {
-      positives: ensureNonEmptyStringArray(
-        parsed.codeQuality?.positives,
-        ['Code was submitted for evaluation.']
-      ),
+      positives: ensureNonEmptyStringArray(parsed.codeQuality?.positives, [
+        "Code was submitted for evaluation.",
+      ]),
       improvements: ensureNonEmptyStringArray(
         parsed.codeQuality?.improvements,
-        ['Consider reviewing the solution structure.']
+        ["Consider reviewing the solution structure."],
       ),
       score: clampNumber(parsed.codeQuality?.score, 0, 100, 50),
     },
@@ -243,7 +261,9 @@ function parseEvaluationResponse(
       missed: toStringArray(parsed.edgeCaseHandling?.missed),
     },
     errorHandling: {
-      assessment: String(parsed.errorHandling?.assessment || 'No assessment available.'),
+      assessment: String(
+        parsed.errorHandling?.assessment || "No assessment available.",
+      ),
       suggestions: toStringArray(parsed.errorHandling?.suggestions),
     },
   };
@@ -257,33 +277,43 @@ function extractJsonObject(response: string): any | null {
   try {
     const trimmed = response.trim();
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
-  } catch { /* fall through */ }
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+      return parsed;
+  } catch {
+    /* fall through */
+  }
 
   // Try code block extraction
   const codeBlockMatch = response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
-      if (parsed && typeof parsed === 'object') return parsed;
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* fall through */
+    }
   }
 
   // Try finding JSON object in response
-  const firstBrace = response.indexOf('{');
-  const lastBrace = response.lastIndexOf('}');
+  const firstBrace = response.indexOf("{");
+  const lastBrace = response.lastIndexOf("}");
   if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
       const substr = response.slice(firstBrace, lastBrace + 1);
       const parsed = JSON.parse(substr);
-      if (parsed && typeof parsed === 'object') return parsed;
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      /* fall through */
+    }
   }
 
   return null;
 }
 
-function ensureNonEmptyStringArray(value: unknown, fallback: string[]): string[] {
+function ensureNonEmptyStringArray(
+  value: unknown,
+  fallback: string[],
+): string[] {
   if (!Array.isArray(value) || value.length === 0) return fallback;
   return value.map(String);
 }
@@ -293,7 +323,12 @@ function toStringArray(value: unknown): string[] {
   return value.map(String);
 }
 
-function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
-  if (typeof value !== 'number' || isNaN(value)) return fallback;
+function clampNumber(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
+  if (typeof value !== "number" || isNaN(value)) return fallback;
   return Math.max(min, Math.min(max, Math.round(value)));
 }

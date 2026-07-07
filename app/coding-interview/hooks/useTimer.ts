@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useCallback, useMemo } from 'react';
-import { useInterviewStore } from '../store/interviewStore';
-import { formatTime, WARNING_THRESHOLD_SECONDS } from '../lib/constants';
-import type { UseTimerReturn } from '../lib/types';
+import { useEffect, useRef, useCallback, useMemo } from "react";
+import { useInterviewStore } from "../store/interviewStore";
+import { formatTime, WARNING_THRESHOLD_SECONDS } from "../lib/constants";
+import type { UseTimerReturn } from "../lib/types";
 
 interface UseTimerOptions {
   durationMinutes: number;
@@ -14,7 +14,10 @@ interface UseTimerOptions {
  * Timer hook that integrates with the Zustand interview store.
  * Counts elapsed seconds, computes remaining time, and auto-expires.
  */
-export function useTimer({ durationMinutes, onExpire }: UseTimerOptions): UseTimerReturn {
+export function useTimer({
+  durationMinutes,
+  onExpire,
+}: UseTimerOptions): UseTimerReturn {
   const elapsedSeconds = useInterviewStore((s) => s.elapsedSeconds);
   const timerRunning = useInterviewStore((s) => s.timerRunning);
   const tickTimer = useInterviewStore((s) => s.tickTimer);
@@ -78,6 +81,15 @@ export function useTimer({ durationMinutes, onExpire }: UseTimerOptions): UseTim
       resume,
       formatTime,
     }),
-    [elapsedSeconds, remainingSeconds, isRunning, isPaused, isWarning, isExpired, pause, resume]
+    [
+      elapsedSeconds,
+      remainingSeconds,
+      isRunning,
+      isPaused,
+      isWarning,
+      isExpired,
+      pause,
+      resume,
+    ],
   );
 }

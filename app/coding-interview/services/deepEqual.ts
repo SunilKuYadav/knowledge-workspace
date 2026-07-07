@@ -11,7 +11,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === undefined || b === undefined) return false;
 
   // Handle NaN (NaN !== NaN in JS, but we consider them equal)
-  if (typeof a === 'number' && typeof b === 'number') {
+  if (typeof a === "number" && typeof b === "number") {
     if (Number.isNaN(a) && Number.isNaN(b)) return true;
     return false;
   }
@@ -20,7 +20,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
   if (typeof a !== typeof b) return false;
 
   // Primitives that aren't equal by === already failed above
-  if (typeof a !== 'object') return false;
+  if (typeof a !== "object") return false;
 
   // At this point both are non-null objects
   const objA = a as Record<string, unknown>;

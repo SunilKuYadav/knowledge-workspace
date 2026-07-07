@@ -1,5 +1,5 @@
-import type { Topic, FlashcardDeck, RevisionData } from '@/types';
-import type { TopicRepository } from '@/repository';
+import type { Topic, FlashcardDeck, RevisionData } from "@/types";
+import type { TopicRepository } from "@/repository";
 
 /**
  * Application service for Topic operations.
@@ -17,7 +17,9 @@ export class TopicService {
     return this.repository.getById(id);
   }
 
-  async createTopic(data: Omit<Topic, 'id' | 'createdAt' | 'updatedAt'>): Promise<Topic> {
+  async createTopic(
+    data: Omit<Topic, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Topic> {
     return this.repository.create(data);
   }
 
@@ -31,15 +33,15 @@ export class TopicService {
 
   async getTopicContent(
     id: string,
-    file: 'overview' | 'notes' | 'patterns' | 'mistakes'
+    file: "overview" | "notes" | "patterns" | "mistakes",
   ): Promise<string> {
     return this.repository.getContent(id, file);
   }
 
   async saveTopicContent(
     id: string,
-    file: 'overview' | 'notes' | 'patterns' | 'mistakes',
-    content: string
+    file: "overview" | "notes" | "patterns" | "mistakes",
+    content: string,
   ): Promise<void> {
     return this.repository.saveContent(id, file, content);
   }

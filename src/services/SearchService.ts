@@ -1,8 +1,8 @@
-import type { SearchIndex, SearchDocument } from '@/search';
-import type { SearchOptions, SearchResult } from '@/search';
-import { search } from '@/search';
-import { buildSearchDocuments, TopicContent, ProblemContent } from '@/search';
-import type { Flashcard } from '@/types';
+import type { SearchIndex, SearchDocument } from "@/search";
+import type { SearchOptions, SearchResult } from "@/search";
+import { search } from "@/search";
+import { buildSearchDocuments, TopicContent, ProblemContent } from "@/search";
+import type { Flashcard } from "@/types";
 
 /**
  * Application service for search operations.
@@ -17,7 +17,7 @@ export class SearchService {
   buildIndex(
     topics: TopicContent[],
     problems: ProblemContent[],
-    flashcards: Flashcard[]
+    flashcards: Flashcard[],
   ): void {
     const documents = buildSearchDocuments(topics, problems, flashcards);
     this.index.buildIndex(documents);

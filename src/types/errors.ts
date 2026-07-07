@@ -3,7 +3,7 @@
  * Covers common failure modes when reading/writing workspace files.
  */
 export type FilesystemError = {
-  code: 'NOT_FOUND' | 'PERMISSION_DENIED' | 'DISK_FULL' | 'UNKNOWN';
+  code: "NOT_FOUND" | "PERMISSION_DENIED" | "DISK_FULL" | "UNKNOWN";
   message: string;
   path: string;
 };
@@ -13,7 +13,7 @@ export type FilesystemError = {
  * Covers connectivity and generation failures.
  */
 export type AIError = {
-  code: 'AI_UNREACHABLE' | 'GENERATION_FAILED' | 'TIMEOUT';
+  code: "AI_UNREACHABLE" | "GENERATION_FAILED" | "TIMEOUT";
   message: string;
 };
 
@@ -22,7 +22,7 @@ export type AIError = {
  * Covers initialization and commit/add failures.
  */
 export type GitError = {
-  code: 'NOT_INITIALIZED' | 'COMMIT_FAILED' | 'ADD_FAILED';
+  code: "NOT_INITIALIZED" | "COMMIT_FAILED" | "ADD_FAILED";
   message: string;
   filePath: string;
 };

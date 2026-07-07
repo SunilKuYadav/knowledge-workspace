@@ -1,8 +1,8 @@
-import path from 'path';
-import { rm } from 'fs/promises';
-import type { Topic, FlashcardDeck, RevisionData } from '@/types';
-import type { TopicRepository } from '@/repository';
-import { WORKSPACE_STRUCTURE } from '../lib/constants';
+import path from "path";
+import { rm } from "fs/promises";
+import type { Topic, FlashcardDeck, RevisionData } from "@/types";
+import type { TopicRepository } from "@/repository";
+import { WORKSPACE_STRUCTURE } from "../lib/constants";
 import {
   readJsonFile,
   writeJsonFile,
@@ -10,7 +10,7 @@ import {
   writeMarkdownFile,
   listDirectories,
   ensureDirectoryExists,
-} from './workspace';
+} from "./workspace";
 
 /**
  * Generates a URL-safe slug from a title string.
@@ -19,8 +19,8 @@ import {
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**
@@ -32,7 +32,7 @@ export class FileTopicRepository implements TopicRepository {
   private basePath: string;
 
   constructor(workspacePath: string) {
-    this.basePath = path.join(workspacePath, 'notes');
+    this.basePath = path.join(workspacePath, "notes");
   }
 
   /**
@@ -46,7 +46,7 @@ export class FileTopicRepository implements TopicRepository {
       const slugDirs = await listDirectories(categoryPath);
 
       for (const slug of slugDirs) {
-        const topicJsonPath = path.join(categoryPath, slug, 'topic.json');
+        const topicJsonPath = path.join(categoryPath, slug, "topic.json");
         const topic = await readJsonFile<Topic>(topicJsonPath);
         if (topic) {
           topics.push(topic);
@@ -66,14 +66,16 @@ export class FileTopicRepository implements TopicRepository {
       return null;
     }
 
-    return readJsonFile<Topic>(path.join(topicPath, 'topic.json'));
+    return readJsonFile<Topic>(path.join(topicPath, "topic.json"));
   }
 
   /**
    * Creates a new topic folder with topic.json and all template Markdown files.
    * Generates a slug ID from the title and places it in the correct category subdirectory.
    */
-  async create(data: Omit<Topic, 'id' | 'createdAt' | 'updatedAt'>): Promise<Topic> {
+  async create(
+    data: Omit<Topic, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Topic> {
     const slug = generateSlug(data.title);
     const now = new Date().toISOString();
 
@@ -88,24 +90,24 @@ export class FileTopicRepository implements TopicRepository {
     await ensureDirectoryExists(topicDir);
 
     // Write topic.json metadata
-    await writeJsonFile(path.join(topicDir, 'topic.json'), topic);
+    await writeJsonFile(path.join(topicDir, "topic.json"), topic);
 
     // Write template Markdown files
     await writeMarkdownFile(
-      path.join(topicDir, 'overview.md'),
-      `# ${data.title}\n\n## Overview\n\n`
+      path.join(topicDir, "overview.md"),
+      `# ${data.title}\n\n## Overview\n\n`,
     );
     await writeMarkdownFile(
-      path.join(topicDir, 'notes.md'),
-      `# ${data.title} - Notes\n\n`
+      path.join(topicDir, "notes.md"),
+      `# ${data.title} - Notes\n\n`,
     );
     await writeMarkdownFile(
-      path.join(topicDir, 'patterns.md'),
-      `# ${data.title} - Patterns\n\n`
+      path.join(topicDir, "patterns.md"),
+      `# ${data.title} - Patterns\n\n`,
     );
     await writeMarkdownFile(
-      path.join(topicDir, 'mistakes.md'),
-      `# ${data.title} - Common Mistakes\n\n`
+      path.join(topicDir, "mistakes.md"),
+      `# ${data.title} - Common Mistakes\n\n`,
     );
 
     return topic;
@@ -120,7 +122,9 @@ export class FileTopicRepository implements TopicRepository {
       throw new Error(`Topic not found: ${id}`);
     }
 
-    const existing = await readJsonFile<Topic>(path.join(topicPath, 'topic.json'));
+    const existing = await readJsonFile<Topic>(
+      path.join(topicPath, "topic.json"),
+    );
     if (!existing) {
       throw new Error(`Topic metadata not found: ${id}`);
     }
@@ -133,7 +137,7 @@ export class FileTopicRepository implements TopicRepository {
       updatedAt: new Date().toISOString(),
     };
 
-    await writeJsonFile(path.join(topicPath, 'topic.json'), updated);
+    await writeJsonFile(path.join(topicPath, "topic.json"), updated);
     return updated;
   }
 
@@ -155,11 +159,11 @@ export class FileTopicRepository implements TopicRepository {
    */
   async getContent(
     id: string,
-    file: 'overview' | 'notes' | 'patterns' | 'mistakes'
+    file: "overview" | "notes" | "patterns" | "mistakes",
   ): Promise<string> {
     const topicPath = await this.findTopicPath(id);
     if (!topicPath) {
-      return '';
+      return "";
     }
 
     return readMarkdownFile(path.join(topicPath, `${file}.md`));
@@ -170,8 +174,8 @@ export class FileTopicRepository implements TopicRepository {
    */
   async saveContent(
     id: string,
-    file: 'overview' | 'notes' | 'patterns' | 'mistakes',
-    content: string
+    file: "overview" | "notes" | "patterns" | "mistakes",
+    content: string,
   ): Promise<void> {
     const topicPath = await this.findTopicPath(id);
     if (!topicPath) {
@@ -192,7 +196,7 @@ export class FileTopicRepository implements TopicRepository {
     }
 
     const deck = await readJsonFile<FlashcardDeck>(
-      path.join(topicPath, 'flashcards.json')
+      path.join(topicPath, "flashcards.json"),
     );
 
     return deck ?? { topicId: id, cards: [] };
@@ -209,7 +213,7 @@ export class FileTopicRepository implements TopicRepository {
     }
 
     const revision = await readJsonFile<RevisionData>(
-      path.join(topicPath, 'revision.json')
+      path.join(topicPath, "revision.json"),
     );
 
     return revision ?? this.defaultRevisionData(id);
@@ -223,7 +227,7 @@ export class FileTopicRepository implements TopicRepository {
     for (const category of WORKSPACE_STRUCTURE.notes) {
       const candidatePath = path.join(this.basePath, category, id);
       const topicJson = await readJsonFile<Topic>(
-        path.join(candidatePath, 'topic.json')
+        path.join(candidatePath, "topic.json"),
       );
       if (topicJson) {
         return candidatePath;
@@ -238,7 +242,7 @@ export class FileTopicRepository implements TopicRepository {
   private defaultRevisionData(id: string): RevisionData {
     return {
       itemId: id,
-      itemType: 'topic',
+      itemType: "topic",
       lastReviewed: null,
       nextReview: new Date().toISOString(),
       confidence: 1,

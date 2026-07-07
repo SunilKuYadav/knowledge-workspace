@@ -1,6 +1,10 @@
-import { searchIndex, topicRepository, problemRepository } from '@/src/services/container';
-import { buildSearchDocuments } from './builder';
-import type { SearchDocument } from './search-index';
+import {
+  searchIndex,
+  topicRepository,
+  problemRepository,
+} from "@/src/services/container";
+import { buildSearchDocuments } from "./builder";
+import type { SearchDocument } from "./search-index";
 
 /**
  * Lazy initialization state for the search index.
@@ -34,9 +38,9 @@ async function buildFullIndex(): Promise<void> {
     const topicContents = await Promise.all(
       topics.map(async (topic) => ({
         topic,
-        overview: await topicRepository.getContent(topic.id, 'overview'),
-        notes: await topicRepository.getContent(topic.id, 'notes'),
-      }))
+        overview: await topicRepository.getContent(topic.id, "overview"),
+        notes: await topicRepository.getContent(topic.id, "notes"),
+      })),
     );
 
     // Load all problems with their notes
@@ -45,7 +49,7 @@ async function buildFullIndex(): Promise<void> {
       problems.map(async (problem) => ({
         problem,
         notes: await problemRepository.getNotes(problem.id),
-      }))
+      })),
     );
 
     // Load all flashcards from all topics
@@ -54,12 +58,16 @@ async function buildFullIndex(): Promise<void> {
         topics.map(async (topic) => {
           const deck = await topicRepository.getFlashcards(topic.id);
           return deck.cards;
-        })
+        }),
       )
     ).flat();
 
     // Build documents and index them
-    const documents = buildSearchDocuments(topicContents, problemContents, allFlashcards);
+    const documents = buildSearchDocuments(
+      topicContents,
+      problemContents,
+      allFlashcards,
+    );
     searchIndex.buildIndex(documents);
     initialized = true;
   } catch (error) {
@@ -75,11 +83,11 @@ async function buildFullIndex(): Promise<void> {
  */
 export function updateSearchForFile(
   id: string,
-  type: 'topic' | 'problem' | 'note' | 'flashcard',
+  type: "topic" | "problem" | "note" | "flashcard",
   title: string,
   content: string,
   tags: string[],
-  path: string
+  path: string,
 ): void {
   const doc: SearchDocument = { id, type, title, content, tags, path };
   searchIndex.updateDocument(doc);

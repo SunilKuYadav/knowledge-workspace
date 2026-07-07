@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const matter = require('gray-matter') as typeof import('gray-matter');
+const matter = require("gray-matter") as typeof import("gray-matter");
 
 /**
  * Parsed Markdown document with separated frontmatter and content.

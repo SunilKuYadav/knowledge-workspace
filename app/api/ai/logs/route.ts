@@ -7,24 +7,32 @@
  * Only active when AI_LOG_ENABLED is not "false".
  */
 
-import { NextRequest } from 'next/server';
-import { getLogEntries, addListener, removeListener, type AILogEntry } from '@/src/ai/log-store';
+import { NextRequest } from "next/server";
+import {
+  getLogEntries,
+  addListener,
+  removeListener,
+  type AILogEntry,
+} from "@/src/ai/log-store";
 
 export async function GET(request: NextRequest) {
-  if (process.env.AI_LOG_ENABLED === 'false') {
+  if (process.env.AI_LOG_ENABLED === "false") {
     return new Response(JSON.stringify({ entries: [] }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
-  const isPoll = request.nextUrl.searchParams.get('poll');
+  const isPoll = request.nextUrl.searchParams.get("poll");
 
   // Simple poll mode
   if (isPoll) {
-    const afterId = parseInt(request.nextUrl.searchParams.get('afterId') || '0', 10);
+    const afterId = parseInt(
+      request.nextUrl.searchParams.get("afterId") || "0",
+      10,
+    );
     const entries = getLogEntries(afterId);
     return new Response(JSON.stringify({ entries }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -34,14 +42,30 @@ export async function GET(request: NextRequest) {
   const stream = new ReadableStream({
     start(controller) {
       // Send initial connection message
-      controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'connected' })}\n\n`));
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\n\n`),
+      );
 
       const listener = (entry: AILogEntry) => {
         try {
           const event = entry.streaming
-            ? { type: 'chunk', model: entry.model, prompt: entry.prompt, chunk: entry.response }
-            : { type: 'complete', id: entry.id, model: entry.model, prompt: entry.prompt, response: entry.response, timestamp: entry.timestamp };
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+            ? {
+                type: "chunk",
+                model: entry.model,
+                prompt: entry.prompt,
+                chunk: entry.response,
+              }
+            : {
+                type: "complete",
+                id: entry.id,
+                model: entry.model,
+                prompt: entry.prompt,
+                response: entry.response,
+                timestamp: entry.timestamp,
+              };
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
+          );
         } catch {
           // Client disconnected
         }
@@ -50,7 +74,7 @@ export async function GET(request: NextRequest) {
       addListener(listener);
 
       // Cleanup when client disconnects
-      request.signal.addEventListener('abort', () => {
+      request.signal.addEventListener("abort", () => {
         removeListener(listener);
         controller.close();
       });
@@ -59,9 +83,9 @@ export async function GET(request: NextRequest) {
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
     },
   });
 }

@@ -1,49 +1,64 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
-import type { Problem } from '@/src/types';
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import type { Problem } from "@/src/types";
 
-type DifficultyFilter = '' | 'easy' | 'medium' | 'hard';
-type StatusFilter = '' | 'not-started' | 'attempted' | 'solved';
-type PlatformFilter = '' | 'leetcode' | 'codeforces' | 'gfg';
+type DifficultyFilter = "" | "easy" | "medium" | "hard";
+type StatusFilter = "" | "not-started" | "attempted" | "solved";
+type PlatformFilter = "" | "leetcode" | "codeforces" | "gfg";
 
-export default function ProblemsListClient({ problems }: { problems: Problem[] }) {
-  const [search, setSearch] = useState('');
-  const [difficulty, setDifficulty] = useState<DifficultyFilter>('');
-  const [status, setStatus] = useState<StatusFilter>('');
-  const [platform, setPlatform] = useState<PlatformFilter>('');
+export default function ProblemsListClient({
+  problems,
+}: {
+  problems: Problem[];
+}) {
+  const [search, setSearch] = useState("");
+  const [difficulty, setDifficulty] = useState<DifficultyFilter>("");
+  const [status, setStatus] = useState<StatusFilter>("");
+  const [platform, setPlatform] = useState<PlatformFilter>("");
 
   const filtered = useMemo(() => {
     return problems.filter((problem) => {
       const matchesSearch =
-        search === '' ||
+        search === "" ||
         problem.title.toLowerCase().includes(search.toLowerCase()) ||
-        problem.patterns.some((p) => p.toLowerCase().includes(search.toLowerCase())) ||
-        problem.companies.some((c) => c.toLowerCase().includes(search.toLowerCase()));
-      const matchesDifficulty = difficulty === '' || problem.difficulty === difficulty;
-      const matchesStatus = status === '' || problem.status === status;
-      const matchesPlatform = platform === '' || problem.platform === platform;
-      return matchesSearch && matchesDifficulty && matchesStatus && matchesPlatform;
+        problem.patterns.some((p) =>
+          p.toLowerCase().includes(search.toLowerCase()),
+        ) ||
+        problem.companies.some((c) =>
+          c.toLowerCase().includes(search.toLowerCase()),
+        );
+      const matchesDifficulty =
+        difficulty === "" || problem.difficulty === difficulty;
+      const matchesStatus = status === "" || problem.status === status;
+      const matchesPlatform = platform === "" || problem.platform === platform;
+      return (
+        matchesSearch && matchesDifficulty && matchesStatus && matchesPlatform
+      );
     });
   }, [problems, search, difficulty, status, platform]);
 
   const difficultyColor: Record<string, string> = {
-    easy: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    medium: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    hard: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+    medium:
+      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+    hard: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   };
 
   const statusColor: Record<string, string> = {
-    'not-started': 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
-    attempted: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    solved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    "not-started":
+      "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
+    attempted:
+      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+    solved:
+      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   };
 
   const platformLabel: Record<string, string> = {
-    leetcode: 'LeetCode',
-    codeforces: 'Codeforces',
-    gfg: 'GFG',
+    leetcode: "LeetCode",
+    codeforces: "Codeforces",
+    gfg: "GFG",
   };
 
   return (
@@ -117,7 +132,9 @@ export default function ProblemsListClient({ problems }: { problems: Problem[] }
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {problem.favorite && (
-                        <span className="text-yellow-500" aria-label="Favorite">★</span>
+                        <span className="text-yellow-500" aria-label="Favorite">
+                          ★
+                        </span>
                       )}
                       <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                         {problem.title}
@@ -127,11 +144,17 @@ export default function ProblemsListClient({ problems }: { problems: Problem[] }
                       <span className="text-xs font-medium px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
                         {platformLabel[problem.platform]}
                       </span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColor[problem.difficulty]}`}>
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColor[problem.difficulty]}`}
+                      >
                         {problem.difficulty}
                       </span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${statusColor[problem.status]}`}>
-                        {problem.status === 'not-started' ? 'Not Started' : problem.status}
+                      <span
+                        className={`text-xs font-medium px-2 py-0.5 rounded ${statusColor[problem.status]}`}
+                      >
+                        {problem.status === "not-started"
+                          ? "Not Started"
+                          : problem.status}
                       </span>
                     </div>
                     {problem.patterns.length > 0 && (

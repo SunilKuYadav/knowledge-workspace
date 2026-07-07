@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import type { RevisionClientProps, ViewTab } from './lib/types';
+import { useState } from "react";
+import Link from "next/link";
+import type { RevisionClientProps, ViewTab } from "./lib/types";
 import {
   TabButton,
   InteractiveReviewSession,
   ScheduleView,
   HistoryView,
-} from './components';
+} from "./components";
 
 export default function RevisionClient({
   categorizedItems,
   dueItems,
 }: RevisionClientProps) {
-  const [activeTab, setActiveTab] = useState<ViewTab>('session');
+  const [activeTab, setActiveTab] = useState<ViewTab>("session");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 md:p-10">
@@ -36,20 +36,35 @@ export default function RevisionClient({
       </header>
 
       <nav className="flex gap-1 mb-8 border-b border-zinc-200 dark:border-zinc-800">
-        <TabButton active={activeTab === 'session'} onClick={() => setActiveTab('session')}>
+        <TabButton
+          active={activeTab === "session"}
+          onClick={() => setActiveTab("session")}
+        >
           Review Session
         </TabButton>
-        <TabButton active={activeTab === 'schedule'} onClick={() => setActiveTab('schedule')}>
+        <TabButton
+          active={activeTab === "schedule"}
+          onClick={() => setActiveTab("schedule")}
+        >
           Schedule
         </TabButton>
-        <TabButton active={activeTab === 'history'} onClick={() => setActiveTab('history')}>
+        <TabButton
+          active={activeTab === "history"}
+          onClick={() => setActiveTab("history")}
+        >
           History
         </TabButton>
       </nav>
 
-      {activeTab === 'session' && <InteractiveReviewSession dueItems={dueItems} />}
-      {activeTab === 'schedule' && <ScheduleView categorizedItems={categorizedItems} />}
-      {activeTab === 'history' && <HistoryView categorizedItems={categorizedItems} />}
+      {activeTab === "session" && (
+        <InteractiveReviewSession dueItems={dueItems} />
+      )}
+      {activeTab === "schedule" && (
+        <ScheduleView categorizedItems={categorizedItems} />
+      )}
+      {activeTab === "history" && (
+        <HistoryView categorizedItems={categorizedItems} />
+      )}
     </div>
   );
 }

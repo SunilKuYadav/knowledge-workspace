@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useInterviewStore } from '../store/interviewStore';
-import { requestFollowUp, requestScore } from '../lib/api';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useInterviewStore } from "../store/interviewStore";
+import { requestFollowUp, requestScore } from "../lib/api";
 
 interface UseFollowUpReturn {
   isLoading: boolean;
@@ -25,7 +25,9 @@ export function useFollowUp(): UseFollowUpReturn {
   const evaluation = useInterviewStore((s) => s.evaluation);
   const setPhase = useInterviewStore((s) => s.setPhase);
   const setError = useInterviewStore((s) => s.setError);
-  const addConversationMessage = useInterviewStore((s) => s.addConversationMessage);
+  const addConversationMessage = useInterviewStore(
+    (s) => s.addConversationMessage,
+  );
   const setScore = useInterviewStore((s) => s.setScore);
   const setSummary = useInterviewStore((s) => s.setSummary);
 
@@ -35,7 +37,7 @@ export function useFollowUp(): UseFollowUpReturn {
   const performScoring = useCallback(async () => {
     if (!problem || !evaluation) return;
 
-    setPhase('scoring');
+    setPhase("scoring");
     setIsLoading(true);
 
     try {
@@ -53,11 +55,11 @@ export function useFollowUp(): UseFollowUpReturn {
 
       setScore(scoringReport);
       setSummary(sessionSummary);
-      setPhase('summary');
+      setPhase("summary");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Scoring failed';
+      const message = err instanceof Error ? err.message : "Scoring failed";
       setError(message);
-      setPhase('error');
+      setPhase("error");
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +69,7 @@ export function useFollowUp(): UseFollowUpReturn {
    * Request the opening follow-up question when entering the follow-up phase.
    */
   useEffect(() => {
-    if (phase !== 'follow-up' || initRef.current) return;
+    if (phase !== "follow-up" || initRef.current) return;
     if (!problem || !evaluation) return;
 
     initRef.current = true;
@@ -87,13 +89,16 @@ export function useFollowUp(): UseFollowUpReturn {
           await performScoring();
         } else if (result.question) {
           addConversationMessage({
-            role: 'interviewer',
+            role: "interviewer",
             content: result.question,
             timestamp: Date.now(),
           });
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to start follow-up discussion';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to start follow-up discussion";
         setError(message);
       } finally {
         setIsLoading(false);
@@ -101,7 +106,15 @@ export function useFollowUp(): UseFollowUpReturn {
     };
 
     fetchOpening();
-  }, [phase, problem, evaluation, code, addConversationMessage, setError, performScoring]);
+  }, [
+    phase,
+    problem,
+    evaluation,
+    code,
+    addConversationMessage,
+    setError,
+    performScoring,
+  ]);
 
   /**
    * Send user's response in the follow-up conversation.
@@ -113,7 +126,7 @@ export function useFollowUp(): UseFollowUpReturn {
 
       // Add candidate message to store
       addConversationMessage({
-        role: 'candidate',
+        role: "candidate",
         content: text,
         timestamp: Date.now(),
       });
@@ -136,19 +149,30 @@ export function useFollowUp(): UseFollowUpReturn {
           await performScoring();
         } else if (result.question) {
           addConversationMessage({
-            role: 'interviewer',
+            role: "interviewer",
             content: result.question,
             timestamp: Date.now(),
           });
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to get follow-up response';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Failed to get follow-up response";
         setError(message);
       } finally {
         setIsLoading(false);
       }
     },
-    [problem, evaluation, code, isLoading, addConversationMessage, setError, performScoring]
+    [
+      problem,
+      evaluation,
+      code,
+      isLoading,
+      addConversationMessage,
+      setError,
+      performScoring,
+    ],
   );
 
   /**

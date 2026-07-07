@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import type { TestCaseResult } from '../lib/types';
-import { EXECUTION_TIMEOUT } from '../lib/constants';
+import type { TestCaseResult } from "../lib/types";
+import { EXECUTION_TIMEOUT } from "../lib/constants";
 
 interface TestCasePanelProps {
   results: TestCaseResult[];
@@ -65,8 +65,8 @@ export function TestCasePanel({ results, isExecuting }: TestCasePanelProps) {
         <span
           className={`text-sm font-medium ${
             passedCount === results.length
-              ? 'text-green-600 dark:text-green-400'
-              : 'text-red-600 dark:text-red-400'
+              ? "text-green-600 dark:text-green-400"
+              : "text-red-600 dark:text-red-400"
           }`}
         >
           {passedCount}/{results.length} passed
@@ -96,8 +96,8 @@ function TestCaseItem({
     <div
       className={`rounded border p-3 ${
         testCase.passed
-          ? 'border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10'
-          : 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10'
+          ? "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/10"
+          : "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
       }`}
     >
       <div className="flex items-center justify-between mb-2">
@@ -111,11 +111,17 @@ function TestCaseItem({
             </span>
           )}
           {testCase.passed ? (
-            <span className="text-green-600 dark:text-green-400" aria-label="Passed">
+            <span
+              className="text-green-600 dark:text-green-400"
+              aria-label="Passed"
+            >
               ✓
             </span>
           ) : (
-            <span className="text-red-600 dark:text-red-400" aria-label="Failed">
+            <span
+              className="text-red-600 dark:text-red-400"
+              aria-label="Failed"
+            >
               ✗
             </span>
           )}
@@ -140,11 +146,11 @@ function TestCaseItem({
           <span
             className={
               testCase.passed
-                ? 'text-green-700 dark:text-green-400'
-                : 'text-red-700 dark:text-red-400'
+                ? "text-green-700 dark:text-green-400"
+                : "text-red-700 dark:text-red-400"
             }
           >
-            {isTimedOut ? '—' : formatValue(testCase.actualOutput)}
+            {isTimedOut ? "—" : formatValue(testCase.actualOutput)}
           </span>
         </div>
       </div>

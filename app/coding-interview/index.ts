@@ -1,2 +1,2 @@
-export { InterviewModule } from './InterviewModule';
-export type { InterviewModuleProps } from './lib/types';
+export { InterviewModule } from "./InterviewModule";
+export type { InterviewModuleProps } from "./lib/types";

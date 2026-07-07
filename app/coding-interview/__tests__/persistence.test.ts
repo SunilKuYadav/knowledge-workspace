@@ -1,43 +1,52 @@
-import { describe, it, expect } from 'vitest';
-import * as fc from 'fast-check';
-import { shouldRestore, MAX_AGE_MS } from '../store/persistence';
-import type { InterviewState, InterviewPhase, InterviewSource } from '../lib/types';
+import { describe, it, expect } from "vitest";
+import * as fc from "fast-check";
+import { shouldRestore, MAX_AGE_MS } from "../store/persistence";
+import type {
+  InterviewState,
+  InterviewPhase,
+  InterviewSource,
+} from "../lib/types";
 
 /**
  * Property-based tests for persistence logic.
  *
  * **Validates: Requirements 12.7, 12.9**
  */
-describe('persistence — property-based tests', () => {
+describe("persistence — property-based tests", () => {
   /* ─── Generators ───────────────────────────────────────── */
   const arbPhase: fc.Arbitrary<InterviewPhase> = fc.constantFrom(
-    'initializing',
-    'generating',
-    'coding',
-    'executing',
-    'confirming',
-    'evaluating',
-    'follow-up',
-    'scoring',
-    'summary',
-    'error'
+    "initializing",
+    "generating",
+    "coding",
+    "executing",
+    "confirming",
+    "evaluating",
+    "follow-up",
+    "scoring",
+    "summary",
+    "error",
   );
 
   const arbSource: fc.Arbitrary<InterviewSource> = fc.constantFrom(
-    'problem',
-    'topic',
-    'self-test',
-    'revision',
-    'practice',
-    'interview'
+    "problem",
+    "topic",
+    "self-test",
+    "revision",
+    "practice",
+    "interview",
   );
 
   const arbInterviewState: fc.Arbitrary<InterviewState> = fc.record({
     phase: arbPhase,
     source: arbSource,
     context: fc.constant(null),
-    language: fc.constantFrom('javascript' as const, 'typescript' as const),
-    difficulty: fc.constantFrom('easy' as const, 'medium' as const, 'hard' as const, null),
+    language: fc.constantFrom("javascript" as const, "typescript" as const),
+    difficulty: fc.constantFrom(
+      "easy" as const,
+      "medium" as const,
+      "hard" as const,
+      null,
+    ),
     duration: fc.integer({ min: 1, max: 180 }),
     problem: fc.constant(null),
     code: fc.string({ maxLength: 200 }),
@@ -53,11 +62,11 @@ describe('persistence — property-based tests', () => {
     evaluation: fc.constant(null),
     conversationHistory: fc.array(
       fc.record({
-        role: fc.constantFrom('interviewer' as const, 'candidate' as const),
+        role: fc.constantFrom("interviewer" as const, "candidate" as const),
         content: fc.string({ maxLength: 50 }),
         timestamp: fc.integer({ min: 0, max: Date.now() }),
       }),
-      { maxLength: 3 }
+      { maxLength: 3 },
     ),
     followUpQuestionsAsked: fc.integer({ min: 0, max: 8 }),
     scoringReport: fc.constant(null),
@@ -68,8 +77,8 @@ describe('persistence — property-based tests', () => {
   });
 
   /* ─── Property 19: Persistence Round-Trip ──────────────── */
-  describe('Property 19: Serialize/deserialize round-trip', () => {
-    it('JSON stringify + parse produces equivalent state', () => {
+  describe("Property 19: Serialize/deserialize round-trip", () => {
+    it("JSON stringify + parse produces equivalent state", () => {
       fc.assert(
         fc.property(arbInterviewState, (state) => {
           const serialized = JSON.stringify(state);
@@ -90,20 +99,24 @@ describe('persistence — property-based tests', () => {
           expect(deserialized.hints).toEqual(state.hints);
           expect(deserialized.solutionRevealed).toBe(state.solutionRevealed);
           expect(deserialized.submittedCode).toBe(state.submittedCode);
-          expect(deserialized.conversationHistory).toEqual(state.conversationHistory);
-          expect(deserialized.followUpQuestionsAsked).toBe(state.followUpQuestionsAsked);
+          expect(deserialized.conversationHistory).toEqual(
+            state.conversationHistory,
+          );
+          expect(deserialized.followUpQuestionsAsked).toBe(
+            state.followUpQuestionsAsked,
+          );
           expect(deserialized.sessionStartTime).toBe(state.sessionStartTime);
           expect(deserialized.lastPersistedAt).toBe(state.lastPersistedAt);
           expect(deserialized.error).toBe(state.error);
         }),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
   });
 
   /* ─── Property 20: Session Staleness Check ─────────────── */
-  describe('Property 20: Staleness detection', () => {
-    it('timestamps older than 24h → shouldRestore returns false', () => {
+  describe("Property 20: Staleness detection", () => {
+    it("timestamps older than 24h → shouldRestore returns false", () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 1, max: 365 * 24 * 60 * 60 * 1000 }), // offset beyond 24h
@@ -114,13 +127,13 @@ describe('persistence — property-based tests', () => {
               lastPersistedAt: staleTimestamp,
             };
             expect(shouldRestore(persisted)).toBe(false);
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
 
-    it('timestamps within 24h → shouldRestore returns true', () => {
+    it("timestamps within 24h → shouldRestore returns true", () => {
       fc.assert(
         fc.property(
           fc.integer({ min: 0, max: MAX_AGE_MS - 1 }), // within 24h
@@ -131,9 +144,9 @@ describe('persistence — property-based tests', () => {
               lastPersistedAt: freshTimestamp,
             };
             expect(shouldRestore(persisted)).toBe(true);
-          }
+          },
         ),
-        { numRuns: 100 }
+        { numRuns: 100 },
       );
     });
   });

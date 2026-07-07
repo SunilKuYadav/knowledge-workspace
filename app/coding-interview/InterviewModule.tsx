@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import type { InterviewModuleProps } from './lib/types';
-import { useInterviewSession } from './hooks/useInterviewSession';
-import { useCodeExecution } from './hooks/useCodeExecution';
-import { useFollowUp } from './hooks/useFollowUp';
-import { useInterviewStore } from './store/interviewStore';
-import { requestHint } from './lib/api';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import type { InterviewModuleProps } from "./lib/types";
+import { useInterviewSession } from "./hooks/useInterviewSession";
+import { useCodeExecution } from "./hooks/useCodeExecution";
+import { useFollowUp } from "./hooks/useFollowUp";
+import { useInterviewStore } from "./store/interviewStore";
+import { requestHint } from "./lib/api";
 import {
   CodeEditor,
   ProblemPanel,
@@ -19,7 +19,7 @@ import {
   ScorePanel,
   SummaryPanel,
   ConfirmDialog,
-} from './components';
+} from "./components";
 
 /**
  * Top-level InterviewModule component.
@@ -28,9 +28,14 @@ import {
  */
 export function InterviewModule(props: InterviewModuleProps) {
   const router = useRouter();
-  const { phase, error, needsPrompt, retry, startWithPrompt } = useInterviewSession(props);
+  const { phase, error, needsPrompt, retry, startWithPrompt } =
+    useInterviewSession(props);
   const { isExecuting, runCode, submitCode } = useCodeExecution();
-  const { isLoading: isFollowUpLoading, sendResponse, endDiscussion } = useFollowUp();
+  const {
+    isLoading: isFollowUpLoading,
+    sendResponse,
+    endDiscussion,
+  } = useFollowUp();
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
@@ -71,7 +76,7 @@ export function InterviewModule(props: InterviewModuleProps) {
         setIsHintLoading(false);
       }
     },
-    [problem, code, addHint]
+    [problem, code, addHint],
   );
 
   /**
@@ -129,7 +134,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   // ─── Phase-based rendering ────────────────────────────────
 
   // Error state
-  if (phase === 'error') {
+  if (phase === "error") {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 flex items-center justify-center">
         <div className="max-w-md w-full rounded-xl border border-red-200 dark:border-red-800 bg-white dark:bg-zinc-900 p-6 text-center">
@@ -149,9 +154,11 @@ export function InterviewModule(props: InterviewModuleProps) {
               />
             </svg>
           </div>
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Error</h2>
+          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            Error
+          </h2>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {error || 'An unexpected error occurred.'}
+            {error || "An unexpected error occurred."}
           </p>
           <button
             type="button"
@@ -171,12 +178,12 @@ export function InterviewModule(props: InterviewModuleProps) {
   }
 
   // Initializing / Generating
-  if (phase === 'initializing' || phase === 'generating') {
+  if (phase === "initializing" || phase === "generating") {
     return <GeneratingScreen />;
   }
 
   // Evaluating
-  if (phase === 'evaluating') {
+  if (phase === "evaluating") {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 flex items-center justify-center">
         <div className="text-center">
@@ -210,7 +217,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   }
 
   // Scoring
-  if (phase === 'scoring') {
+  if (phase === "scoring") {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 flex items-center justify-center">
         <div className="text-center">
@@ -244,7 +251,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   }
 
   // Follow-up phase
-  if (phase === 'follow-up') {
+  if (phase === "follow-up") {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6">
         <div className="mx-auto max-w-3xl">
@@ -260,7 +267,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   }
 
   // Summary phase
-  if (phase === 'summary') {
+  if (phase === "summary") {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6">
         <div className="mx-auto max-w-4xl space-y-6">
@@ -269,7 +276,10 @@ export function InterviewModule(props: InterviewModuleProps) {
           <div className="text-center pt-4">
             <button
               type="button"
-              onClick={() => { clearSession(); router.back(); }}
+              onClick={() => {
+                clearSession();
+                router.back();
+              }}
               className="rounded-lg px-6 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
             >
               End Interview
@@ -281,7 +291,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   }
 
   // Coding / Executing / Confirming phase
-  if (phase === 'coding' || phase === 'executing' || phase === 'confirming') {
+  if (phase === "coding" || phase === "executing" || phase === "confirming") {
     return (
       <div className="h-screen bg-zinc-50 dark:bg-zinc-950 p-4 flex flex-col overflow-hidden">
         {/* Timer at top */}
@@ -301,7 +311,10 @@ export function InterviewModule(props: InterviewModuleProps) {
           {/* Left: Problem + Hints (resizable) */}
           <LeftPanel>
             {problem && <ProblemPanel problem={problem} />}
-            <HintPanel onRequestHint={handleRequestHint} isLoading={isHintLoading} />
+            <HintPanel
+              onRequestHint={handleRequestHint}
+              isLoading={isHintLoading}
+            />
           </LeftPanel>
 
           {/* Right: Editor + Controls + Results */}
@@ -312,7 +325,7 @@ export function InterviewModule(props: InterviewModuleProps) {
                 value={code}
                 onChange={setCode}
                 language={language}
-                boilerplate={problem?.boilerplate ?? ''}
+                boilerplate={problem?.boilerplate ?? ""}
               />
             </div>
 
@@ -324,7 +337,7 @@ export function InterviewModule(props: InterviewModuleProps) {
                 disabled={isExecuting}
                 className="rounded-lg px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isExecuting ? 'Running...' : 'Run'}
+                {isExecuting ? "Running..." : "Run"}
               </button>
               <button
                 type="button"
@@ -338,7 +351,10 @@ export function InterviewModule(props: InterviewModuleProps) {
 
             {/* Console + Test Cases */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 shrink-0 max-h-[30%] overflow-y-auto">
-              <ConsolePanel result={lastExecutionResult} isExecuting={isExecuting} />
+              <ConsolePanel
+                result={lastExecutionResult}
+                isExecuting={isExecuting}
+              />
               <TestCasePanel
                 results={lastExecutionResult?.testResults ?? []}
                 isExecuting={isExecuting}
@@ -391,7 +407,7 @@ function GeneratingScreen() {
 
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
-  const timeDisplay = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  const timeDisplay = `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 flex items-center justify-center">
@@ -445,24 +461,27 @@ function LeftPanel({ children }: { children: React.ReactNode }) {
     function onMouseMove(moveEvent: MouseEvent) {
       if (!isDragging.current) return;
       const maxWidth = window.innerWidth * 0.6;
-      const newWidth = Math.min(maxWidth, Math.max(250, startWidth + (moveEvent.clientX - startX)));
+      const newWidth = Math.min(
+        maxWidth,
+        Math.max(250, startWidth + (moveEvent.clientX - startX)),
+      );
       setWidth(newWidth);
     }
 
     function onMouseUp() {
       isDragging.current = false;
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
     }
 
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
   }
 
   return (
     <div
       className="relative flex-shrink-0 flex flex-col gap-4 overflow-y-auto"
-      style={{ width: `${width}px`, minWidth: '250px', maxWidth: '60vw' }}
+      style={{ width: `${width}px`, minWidth: "250px", maxWidth: "60vw" }}
     >
       {children}
       {/* Resize handle */}
@@ -482,15 +501,15 @@ function LeftPanel({ children }: { children: React.ReactNode }) {
  * Lets the user describe what kind of problem they want.
  */
 function PromptScreen({ onSubmit }: { onSubmit: (prompt: string) => void }) {
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState("");
 
   const suggestions = [
-    'Two pointer / sliding window problem (medium difficulty)',
-    'Binary tree traversal problem (easy)',
-    'Dynamic programming problem (hard)',
-    'Graph traversal with BFS/DFS (medium)',
-    'Hash map / frequency counting problem (easy)',
-    'String manipulation problem (medium)',
+    "Two pointer / sliding window problem (medium difficulty)",
+    "Binary tree traversal problem (easy)",
+    "Dynamic programming problem (hard)",
+    "Graph traversal with BFS/DFS (medium)",
+    "Hash map / frequency counting problem (easy)",
+    "String manipulation problem (medium)",
   ];
 
   function handleSubmit(e: React.FormEvent) {
@@ -513,7 +532,8 @@ function PromptScreen({ onSubmit }: { onSubmit: (prompt: string) => void }) {
               What would you like to practice?
             </h2>
             <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Describe the type of coding problem you want, or pick a suggestion below.
+              Describe the type of coding problem you want, or pick a suggestion
+              below.
             </p>
           </div>
 

@@ -20,7 +20,11 @@ let entries: AILogEntry[] = [];
 let nextId = 1;
 const listeners: Set<LogListener> = new Set();
 
-export function addLogEntry(prompt: string, response: string, model: string): void {
+export function addLogEntry(
+  prompt: string,
+  response: string,
+  model: string,
+): void {
   const entry: AILogEntry = {
     id: nextId++,
     timestamp: new Date().toISOString(),
@@ -41,7 +45,11 @@ export function addLogEntry(prompt: string, response: string, model: string): vo
 /**
  * Emit a streaming chunk event to connected browser clients.
  */
-export function emitStreamChunk(prompt: string, chunk: string, model: string): void {
+export function emitStreamChunk(
+  prompt: string,
+  chunk: string,
+  model: string,
+): void {
   const entry: AILogEntry = {
     id: 0, // Chunks don't get stored
     timestamp: new Date().toISOString(),

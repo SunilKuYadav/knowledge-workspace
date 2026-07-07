@@ -20,12 +20,12 @@ export function field(key: string, value: string): string {
  * Formats an array of key-value metadata fields.
  */
 export function metadata(fields: Array<[string, string]>): string {
-  return fields.map(([k, v]) => field(k, v)).join('\n');
+  return fields.map(([k, v]) => field(k, v)).join("\n");
 }
 
 /**
  * Joins multiple content blocks with double newlines.
  */
 export function joinBlocks(...blocks: (string | undefined | null)[]): string {
-  return blocks.filter(Boolean).join('\n\n');
+  return blocks.filter(Boolean).join("\n\n");
 }

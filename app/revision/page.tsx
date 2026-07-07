@@ -1,11 +1,11 @@
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileRevisionRepository } from '@/src/filesystem/FileRevisionRepository';
-import { FileTopicRepository } from '@/src/filesystem/FileTopicRepository';
-import { FileProblemRepository } from '@/src/filesystem/FileProblemRepository';
-import { categorizeRevisionItem, sortByPriority } from '@/src/revision/spaced';
-import type { RevisionCategory } from '@/src/revision/spaced';
-import type { RevisionData } from '@/src/types/Revision';
-import RevisionClient from './RevisionClient';
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileRevisionRepository } from "@/src/filesystem/FileRevisionRepository";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { categorizeRevisionItem, sortByPriority } from "@/src/revision/spaced";
+import type { RevisionCategory } from "@/src/revision/spaced";
+import type { RevisionData } from "@/src/types/Revision";
+import RevisionClient from "./RevisionClient";
 
 /**
  * Server component that fetches all revision data and passes it
@@ -18,7 +18,7 @@ export default async function RevisionPage() {
   const problemRepo = new FileProblemRepository(workspacePath);
 
   // Get current date for categorization
-  const currentDate = new Date().toISOString().split('T')[0];
+  const currentDate = new Date().toISOString().split("T")[0];
 
   // Fetch all revision data (due items gives us overdue + due-today)
   // We need all items for schedule and history views, so collect them all
@@ -55,7 +55,11 @@ export default async function RevisionPage() {
   // Also get due items from the revision repository (catches items not in topic/problem lists)
   const dueFromRepo = await revisionRepo.getDueItems(currentDate);
   for (const item of dueFromRepo) {
-    if (!allRevisionData.find((r) => r.itemId === item.itemId && r.itemType === item.itemType)) {
+    if (
+      !allRevisionData.find(
+        (r) => r.itemId === item.itemId && r.itemType === item.itemType,
+      )
+    ) {
       allRevisionData.push(item);
     }
   }
@@ -66,12 +70,15 @@ export default async function RevisionPage() {
   // Categorize each item
   const categorizedItems = sortedItems.map((item) => ({
     item,
-    category: categorizeRevisionItem(item.nextReview, currentDate) as RevisionCategory,
+    category: categorizeRevisionItem(
+      item.nextReview,
+      currentDate,
+    ) as RevisionCategory,
   }));
 
   // Due items for the review session (overdue + due-today)
   const dueItems = categorizedItems.filter(
-    (ci) => ci.category === 'overdue' || ci.category === 'due-today'
+    (ci) => ci.category === "overdue" || ci.category === "due-today",
   );
 
   return (

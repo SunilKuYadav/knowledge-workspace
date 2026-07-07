@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import type { GeneratedProblem } from '../lib/types';
+import type { GeneratedProblem } from "../lib/types";
 
 interface ProblemPanelProps {
   problem: GeneratedProblem;
 }
 
 const difficultyColors: Record<string, string> = {
-  easy: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400',
-  medium: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400',
-  hard: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400',
+  easy: "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400",
+  medium: "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400",
+  hard: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400",
 };
 
 export function ProblemPanel({ problem }: ProblemPanelProps) {
@@ -23,7 +23,7 @@ export function ProblemPanel({ problem }: ProblemPanelProps) {
               {problem.title}
             </h2>
             <span
-              className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColors[problem.difficulty] || ''}`}
+              className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColors[problem.difficulty] || ""}`}
             >
               {problem.difficulty}
             </span>
@@ -104,20 +104,26 @@ export function ProblemPanel({ problem }: ProblemPanelProps) {
                   Example {i + 1}
                 </p>
                 <div>
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Input:</span>
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Input:
+                  </span>
                   <pre className="mt-1 text-sm bg-zinc-50 dark:bg-zinc-800 rounded p-2 overflow-x-auto text-zinc-800 dark:text-zinc-200">
                     {sample.input}
                   </pre>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Output:</span>
+                  <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                    Output:
+                  </span>
                   <pre className="mt-1 text-sm bg-zinc-50 dark:bg-zinc-800 rounded p-2 overflow-x-auto text-zinc-800 dark:text-zinc-200">
                     {sample.output}
                   </pre>
                 </div>
                 {sample.explanation && (
                   <div>
-                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Explanation:</span>
+                    <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                      Explanation:
+                    </span>
                     <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
                       {sample.explanation}
                     </p>

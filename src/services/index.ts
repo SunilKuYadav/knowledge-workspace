@@ -1,7 +1,7 @@
-export { TopicService } from './TopicService';
-export { ProblemService } from './ProblemService';
-export { RevisionService } from './RevisionService';
-export { SearchService } from './SearchService';
+export { TopicService } from "./TopicService";
+export { ProblemService } from "./ProblemService";
+export { RevisionService } from "./RevisionService";
+export { SearchService } from "./SearchService";
 
 export {
   topicService,
@@ -12,4 +12,4 @@ export {
   problemRepository,
   revisionRepository,
   searchIndex,
-} from './container';
+} from "./container";

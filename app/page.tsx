@@ -1,20 +1,24 @@
-import Link from 'next/link';
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileTopicRepository } from '@/src/filesystem/FileTopicRepository';
-import { FileProblemRepository } from '@/src/filesystem/FileProblemRepository';
-import { FileRevisionRepository } from '@/src/filesystem/FileRevisionRepository';
-import { TopicService } from '@/src/services/TopicService';
-import { ProblemService } from '@/src/services/ProblemService';
-import { RevisionService } from '@/src/services/RevisionService';
-import { sortByPriority } from '@/src/revision/spaced';
-import type { RevisionData } from '@/src/types/Revision';
-import CodingInterviewButton from '@/src/components/CodingInterviewButton';
+import Link from "next/link";
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { FileRevisionRepository } from "@/src/filesystem/FileRevisionRepository";
+import { TopicService } from "@/src/services/TopicService";
+import { ProblemService } from "@/src/services/ProblemService";
+import { RevisionService } from "@/src/services/RevisionService";
+import { sortByPriority } from "@/src/revision/spaced";
+import type { RevisionData } from "@/src/types/Revision";
+import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 
 export default async function Dashboard() {
   const workspacePath = getWorkspacePath();
   const topicService = new TopicService(new FileTopicRepository(workspacePath));
-  const problemService = new ProblemService(new FileProblemRepository(workspacePath));
-  const revisionService = new RevisionService(new FileRevisionRepository(workspacePath));
+  const problemService = new ProblemService(
+    new FileProblemRepository(workspacePath),
+  );
+  const revisionService = new RevisionService(
+    new FileRevisionRepository(workspacePath),
+  );
 
   const [topics, problems, dueItems] = await Promise.all([
     topicService.getAllTopics(),
@@ -22,26 +26,33 @@ export default async function Dashboard() {
     revisionService.getDueItems(),
   ]);
 
-  const currentDate = new Date().toISOString().split('T')[0];
+  const currentDate = new Date().toISOString().split("T")[0];
   const sortedDueItems = sortByPriority(dueItems, currentDate);
 
   // Statistics: problems by difficulty
   const problemsByDifficulty = {
-    easy: problems.filter((p) => p.difficulty === 'easy').length,
-    medium: problems.filter((p) => p.difficulty === 'medium').length,
-    hard: problems.filter((p) => p.difficulty === 'hard').length,
+    easy: problems.filter((p) => p.difficulty === "easy").length,
+    medium: problems.filter((p) => p.difficulty === "medium").length,
+    hard: problems.filter((p) => p.difficulty === "hard").length,
   };
 
   // Statistics: topics by confidence
-  const topicsByConfidence: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const topicsByConfidence: Record<number, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+  };
   for (const topic of topics) {
-    topicsByConfidence[topic.confidence] = (topicsByConfidence[topic.confidence] || 0) + 1;
+    topicsByConfidence[topic.confidence] =
+      (topicsByConfidence[topic.confidence] || 0) + 1;
   }
 
   // Study streak: count of items reviewed today (simplified)
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const reviewedToday = dueItems.filter(
-    (item) => item.lastReviewed && item.lastReviewed.split('T')[0] === today
+    (item) => item.lastReviewed && item.lastReviewed.split("T")[0] === today,
   ).length;
 
   return (
@@ -67,8 +78,16 @@ export default async function Dashboard() {
       <section aria-label="Summary statistics" className="mb-10">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Total Topics" value={topics.length} href="/topics" />
-          <StatCard label="Total Problems" value={problems.length} href="/problems" />
-          <StatCard label="Due for Review" value={dueItems.length} href="/revision" />
+          <StatCard
+            label="Total Problems"
+            value={problems.length}
+            href="/problems"
+          />
+          <StatCard
+            label="Due for Review"
+            value={dueItems.length}
+            href="/revision"
+          />
           <StatCard label="Reviewed Today" value={reviewedToday} />
         </div>
       </section>
@@ -85,7 +104,10 @@ export default async function Dashboard() {
         ) : (
           <ul className="space-y-3">
             {sortedDueItems.map((item) => (
-              <RevisionItem key={`${item.itemType}-${item.itemId}`} item={item} />
+              <RevisionItem
+                key={`${item.itemType}-${item.itemId}`}
+                item={item}
+              />
             ))}
           </ul>
         )}
@@ -103,9 +125,21 @@ export default async function Dashboard() {
               Problems by Difficulty
             </h3>
             <div className="space-y-2">
-              <DifficultyRow label="Easy" count={problemsByDifficulty.easy} color="text-green-600" />
-              <DifficultyRow label="Medium" count={problemsByDifficulty.medium} color="text-yellow-600" />
-              <DifficultyRow label="Hard" count={problemsByDifficulty.hard} color="text-red-600" />
+              <DifficultyRow
+                label="Easy"
+                count={problemsByDifficulty.easy}
+                color="text-green-600"
+              />
+              <DifficultyRow
+                label="Medium"
+                count={problemsByDifficulty.medium}
+                color="text-yellow-600"
+              />
+              <DifficultyRow
+                label="Hard"
+                count={problemsByDifficulty.hard}
+                color="text-red-600"
+              />
             </div>
           </div>
 
@@ -155,7 +189,8 @@ export default async function Dashboard() {
               Coding Interview
             </h3>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-              Practice with AI-generated coding problems in a realistic interview setting.
+              Practice with AI-generated coding problems in a realistic
+              interview setting.
             </p>
             <div className="space-y-2">
               <CodingInterviewButton source="practice" variant="button" />
@@ -213,7 +248,15 @@ export default async function Dashboard() {
   );
 }
 
-function StatCard({ label, value, href }: { label: string; value: number; href?: string }) {
+function StatCard({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: number;
+  href?: string;
+}) {
   const content = (
     <>
       <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
@@ -264,12 +307,12 @@ function DifficultyRow({
 
 function RevisionItem({ item }: { item: RevisionData }) {
   const href =
-    item.itemType === 'topic'
+    item.itemType === "topic"
       ? `/topics/${item.itemId}`
       : `/problems/${item.itemId}`;
 
   const isOverdue =
-    item.nextReview.split('T')[0] < new Date().toISOString().split('T')[0];
+    item.nextReview.split("T")[0] < new Date().toISOString().split("T")[0];
 
   return (
     <li className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center justify-between">
@@ -291,7 +334,7 @@ function RevisionItem({ item }: { item: RevisionData }) {
           </span>
         )}
         <span className="text-xs text-zinc-400">
-          Due: {item.nextReview.split('T')[0]}
+          Due: {item.nextReview.split("T")[0]}
         </span>
       </div>
     </li>

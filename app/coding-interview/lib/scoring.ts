@@ -9,7 +9,8 @@
 
 /* ─── Readiness Mapping ──────────────────────────────────── */
 
-export type Readiness = 'not ready' | 'needs practice' | 'almost ready' | 'ready';
+export type Readiness =
+  "not ready" | "needs practice" | "almost ready" | "ready";
 
 /**
  * Maps an overall score (0-100) to an interview readiness rating.
@@ -22,10 +23,10 @@ export type Readiness = 'not ready' | 'needs practice' | 'almost ready' | 'ready
  */
 export function getReadiness(score: number): Readiness {
   const clamped = clampScore(score);
-  if (clamped <= 39) return 'not ready';
-  if (clamped <= 59) return 'needs practice';
-  if (clamped <= 79) return 'almost ready';
-  return 'ready';
+  if (clamped <= 39) return "not ready";
+  if (clamped <= 59) return "needs practice";
+  if (clamped <= 79) return "almost ready";
+  return "ready";
 }
 
 /* ─── Penalty Calculation ────────────────────────────────── */
@@ -59,15 +60,18 @@ export function calculatePenalty(
   hintsUsed: number,
   executionAttempts: number,
   elapsedSeconds: number,
-  durationMinutes: number
+  durationMinutes: number,
 ): Penalties {
   const hintPenalty = hintsUsed * HINT_PENALTY_PER_HINT;
 
   const timeLimitSeconds = durationMinutes * 60;
-  const timePenalty = elapsedSeconds > timeLimitSeconds ? TIME_EXCEEDED_PENALTY : 0;
+  const timePenalty =
+    elapsedSeconds > timeLimitSeconds ? TIME_EXCEEDED_PENALTY : 0;
 
   const executionPenalty =
-    executionAttempts > EXCESSIVE_EXECUTION_THRESHOLD ? EXCESSIVE_EXECUTION_PENALTY : 0;
+    executionAttempts > EXCESSIVE_EXECUTION_THRESHOLD
+      ? EXCESSIVE_EXECUTION_PENALTY
+      : 0;
 
   return {
     hintsUsed: hintPenalty,
@@ -81,8 +85,12 @@ export function calculatePenalty(
 /**
  * Applies penalties to a base score and clamps the result to [0, 100].
  */
-export function applyPenalties(baseScore: number, penalties: Penalties): number {
-  const total = penalties.hintsUsed + penalties.timePenalty + penalties.executionAttempts;
+export function applyPenalties(
+  baseScore: number,
+  penalties: Penalties,
+): number {
+  const total =
+    penalties.hintsUsed + penalties.timePenalty + penalties.executionAttempts;
   return clampScore(baseScore - total);
 }
 

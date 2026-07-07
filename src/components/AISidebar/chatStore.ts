@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
 }
@@ -13,7 +13,7 @@ export interface ChatMessage {
 export interface ChatSession {
   id: string;
   /** Context type: topic or problem */
-  context: 'topic' | 'problem';
+  context: "topic" | "problem";
   /** The item (topic/problem) this session is about */
   itemId: string;
   itemTitle: string;
@@ -29,8 +29,16 @@ interface AIChatState {
   activeSessionIds: Record<string, string>;
 
   // Actions
-  getOrCreateSession: (context: 'topic' | 'problem', itemId: string, itemTitle: string) => ChatSession;
-  addMessage: (sessionId: string, role: 'user' | 'assistant', content: string) => void;
+  getOrCreateSession: (
+    context: "topic" | "problem",
+    itemId: string,
+    itemTitle: string,
+  ) => ChatSession;
+  addMessage: (
+    sessionId: string,
+    role: "user" | "assistant",
+    content: string,
+  ) => void;
   updateLastAssistantMessage: (sessionId: string, content: string) => void;
   clearSession: (sessionId: string) => void;
   getSessionSummary: (sessionId: string) => string;
@@ -104,7 +112,7 @@ export const useAIChatStore = create<AIChatState>()(
           if (!session) return s;
           const messages = [...session.messages];
           const lastIdx = messages.length - 1;
-          if (lastIdx >= 0 && messages[lastIdx].role === 'assistant') {
+          if (lastIdx >= 0 && messages[lastIdx].role === "assistant") {
             messages[lastIdx] = { ...messages[lastIdx], content };
           }
           return {
@@ -133,27 +141,30 @@ export const useAIChatStore = create<AIChatState>()(
 
       getSessionSummary(sessionId) {
         const session = get().sessions[sessionId];
-        if (!session || session.messages.length === 0) return '';
+        if (!session || session.messages.length === 0) return "";
 
         // Build a concise summary of up to the last 6 Q&A pairs
         const messages = session.messages.slice(-12);
         const lines: string[] = [];
         for (const msg of messages) {
-          const prefix = msg.role === 'user' ? 'Q' : 'A';
+          const prefix = msg.role === "user" ? "Q" : "A";
           // Truncate long messages to keep the summary concise
-          const text = msg.content.length > 200 ? msg.content.slice(0, 200) + '...' : msg.content;
+          const text =
+            msg.content.length > 200
+              ? msg.content.slice(0, 200) + "..."
+              : msg.content;
           lines.push(`${prefix}: ${text}`);
         }
-        return lines.join('\n');
+        return lines.join("\n");
       },
     }),
     {
-      name: 'ai-chat-sessions',
+      name: "ai-chat-sessions",
       // Only persist sessions and activeSessionIds
       partialize: (state) => ({
         sessions: state.sessions,
         activeSessionIds: state.activeSessionIds,
       }),
-    }
-  )
+    },
+  ),
 );

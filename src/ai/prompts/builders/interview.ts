@@ -1,23 +1,29 @@
 /**
  * Interview prep and similar problems prompt builders.
  */
-import { composePrompt } from '../utils/compose';
-import { IDENTITY_CONTEXT } from '../system/identity';
-import { INTERVIEW_CONTEXT } from '../system/interview';
-import { CODING_CONTEXT } from '../system/coding';
-import { DSA_CONTEXT } from '../system/dsa';
-import { MARKDOWN_CONTEXT } from '../system/markdown';
-import { JSON_CONTEXT } from '../system/json';
-import { SIMILAR_PROBLEMS_SCHEMA } from '../schemas/similar';
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+import { INTERVIEW_CONTEXT } from "../system/interview";
+import { CODING_CONTEXT } from "../system/coding";
+import { DSA_CONTEXT } from "../system/dsa";
+import { MARKDOWN_CONTEXT } from "../system/markdown";
+import { JSON_CONTEXT } from "../system/json";
+import { SIMILAR_PROBLEMS_SCHEMA } from "../schemas/similar";
 
 export function buildInterviewPrepPrompt(
   title: string,
   platform: string,
   difficulty: string,
-  patterns: string
+  patterns: string,
 ): string {
   return composePrompt({
-    modules: [IDENTITY_CONTEXT, INTERVIEW_CONTEXT, CODING_CONTEXT, DSA_CONTEXT, MARKDOWN_CONTEXT],
+    modules: [
+      IDENTITY_CONTEXT,
+      INTERVIEW_CONTEXT,
+      CODING_CONTEXT,
+      DSA_CONTEXT,
+      MARKDOWN_CONTEXT,
+    ],
     task: `Generate interview preparation material for the following coding problem. Include:
 1. Key questions an interviewer might ask
 2. Hints for approaching the problem
@@ -39,7 +45,7 @@ export function buildSimilarProblemsPrompt(
   platform: string,
   difficulty: string,
   patterns: string,
-  companies: string
+  companies: string,
 ): string {
   return composePrompt({
     modules: [IDENTITY_CONTEXT, JSON_CONTEXT],

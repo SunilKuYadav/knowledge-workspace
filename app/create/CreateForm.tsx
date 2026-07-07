@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useActionState, useState } from 'react';
-import Link from 'next/link';
-import { createTopic, createProblem } from './actions';
-import type { CreateTopicState, CreateProblemState } from './actions';
-import { parseFormWithAI } from './lib';
-import type { TopicFormData, ProblemFormData, FormType } from './lib';
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import { createTopic, createProblem } from "./actions";
+import type { CreateTopicState, CreateProblemState } from "./actions";
+import { parseFormWithAI } from "./lib";
+import type { TopicFormData, ProblemFormData, FormType } from "./lib";
 
-type Tab = 'topic' | 'problem';
+type Tab = "topic" | "problem";
 
 export default function CreateForm() {
-  const [activeTab, setActiveTab] = useState<Tab>('topic');
+  const [activeTab, setActiveTab] = useState<Tab>("topic");
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 md:p-10">
@@ -36,24 +36,24 @@ export default function CreateForm() {
         <div className="flex gap-1 rounded-lg bg-zinc-200 dark:bg-zinc-800 p-1 w-fit">
           <button
             role="tab"
-            aria-selected={activeTab === 'topic'}
-            onClick={() => setActiveTab('topic')}
+            aria-selected={activeTab === "topic"}
+            onClick={() => setActiveTab("topic")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'topic'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              activeTab === "topic"
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
             }`}
           >
             Topic
           </button>
           <button
             role="tab"
-            aria-selected={activeTab === 'problem'}
-            onClick={() => setActiveTab('problem')}
+            aria-selected={activeTab === "problem"}
+            onClick={() => setActiveTab("problem")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeTab === 'problem'
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm'
-                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
+              activeTab === "problem"
+                ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-sm"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
             }`}
           >
             Problem
@@ -62,15 +62,21 @@ export default function CreateForm() {
       </div>
 
       {/* Form */}
-      {activeTab === 'topic' ? <TopicForm /> : <ProblemForm />}
+      {activeTab === "topic" ? <TopicForm /> : <ProblemForm />}
     </div>
   );
 }
 
 /* ─── AI Assist Component ─── */
 
-function AIAssist({ formType, onResult }: { formType: FormType; onResult: (data: TopicFormData | ProblemFormData) => void }) {
-  const [text, setText] = useState('');
+function AIAssist({
+  formType,
+  onResult,
+}: {
+  formType: FormType;
+  onResult: (data: TopicFormData | ProblemFormData) => void;
+}) {
+  const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,9 +88,11 @@ function AIAssist({ formType, onResult }: { formType: FormType; onResult: (data:
     try {
       const data = await parseFormWithAI(text, formType);
       onResult(data);
-      setText('');
+      setText("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect to AI service');
+      setError(
+        err instanceof Error ? err.message : "Failed to connect to AI service",
+      );
     } finally {
       setLoading(false);
     }
@@ -93,24 +101,40 @@ function AIAssist({ formType, onResult }: { formType: FormType; onResult: (data:
   return (
     <div className="mb-6 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/30 p-4">
       <div className="flex items-center gap-2 mb-2">
-        <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z" />
+        <svg
+          className="w-4 h-4 text-indigo-600 dark:text-indigo-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456Z"
+          />
         </svg>
         <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
           Ask AI to fill the form
         </span>
       </div>
       <p className="text-xs text-indigo-600 dark:text-indigo-400 mb-3">
-        Describe what you want to create and AI will populate the fields for you.
+        Describe what you want to create and AI will populate the fields for
+        you.
       </p>
       <div className="flex gap-2">
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAskAI(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAskAI();
+            }
+          }}
           placeholder={
-            formType === 'topic'
+            formType === "topic"
               ? 'e.g., "A hard DSA topic about graph traversal with tags bfs and dfs"'
               : 'e.g., "Two Sum from LeetCode, easy, asked at Google and Amazon, uses hash map pattern"'
           }
@@ -123,7 +147,7 @@ function AIAssist({ formType, onResult }: { formType: FormType; onResult: (data:
           disabled={loading || !text.trim()}
           className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
-          {loading ? 'Parsing...' : 'Fill with AI'}
+          {loading ? "Parsing..." : "Fill with AI"}
         </button>
       </div>
       {error && (
@@ -134,21 +158,21 @@ function AIAssist({ formType, onResult }: { formType: FormType; onResult: (data:
 }
 
 function TopicForm() {
-  const [state, formAction, isPending] = useActionState<CreateTopicState, FormData>(
-    createTopic,
-    {}
-  );
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [difficulty, setDifficulty] = useState('');
-  const [tags, setTags] = useState('');
+  const [state, formAction, isPending] = useActionState<
+    CreateTopicState,
+    FormData
+  >(createTopic, {});
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [tags, setTags] = useState("");
 
   function handleAIResult(data: TopicFormData | ProblemFormData) {
     const d = data as TopicFormData;
     if (d.title) setTitle(d.title);
     if (d.category) setCategory(d.category);
     if (d.difficulty) setDifficulty(d.difficulty);
-    if (d.tags) setTags(d.tags.join(', '));
+    if (d.tags) setTags(d.tags.join(", "));
   }
 
   return (
@@ -157,13 +181,19 @@ function TopicForm() {
 
       <form action={formAction} className="space-y-5">
         {state.error && (
-          <div role="alert" className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300">
+          <div
+            role="alert"
+            className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300"
+          >
             {state.error}
           </div>
         )}
 
         <div>
-          <label htmlFor="topic-title" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="topic-title"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Title <span className="text-red-500">*</span>
           </label>
           <input
@@ -179,7 +209,10 @@ function TopicForm() {
         </div>
 
         <div>
-          <label htmlFor="topic-category" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="topic-category"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Category <span className="text-red-500">*</span>
           </label>
           <select
@@ -201,7 +234,10 @@ function TopicForm() {
         </div>
 
         <div>
-          <label htmlFor="topic-difficulty" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="topic-difficulty"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Difficulty <span className="text-red-500">*</span>
           </label>
           <select
@@ -220,7 +256,10 @@ function TopicForm() {
         </div>
 
         <div>
-          <label htmlFor="topic-tags" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="topic-tags"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Tags
           </label>
           <input
@@ -242,7 +281,7 @@ function TopicForm() {
           disabled={isPending}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? 'Creating...' : 'Create Topic'}
+          {isPending ? "Creating..." : "Create Topic"}
         </button>
       </form>
     </div>
@@ -250,24 +289,24 @@ function TopicForm() {
 }
 
 function ProblemForm() {
-  const [state, formAction, isPending] = useActionState<CreateProblemState, FormData>(
-    createProblem,
-    {}
-  );
-  const [title, setTitle] = useState('');
-  const [platform, setPlatform] = useState('');
-  const [difficulty, setDifficulty] = useState('');
-  const [companies, setCompanies] = useState('');
-  const [patterns, setPatterns] = useState('');
-  const [url, setUrl] = useState('');
+  const [state, formAction, isPending] = useActionState<
+    CreateProblemState,
+    FormData
+  >(createProblem, {});
+  const [title, setTitle] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [difficulty, setDifficulty] = useState("");
+  const [companies, setCompanies] = useState("");
+  const [patterns, setPatterns] = useState("");
+  const [url, setUrl] = useState("");
 
   function handleAIResult(data: TopicFormData | ProblemFormData) {
     const d = data as ProblemFormData;
     if (d.title) setTitle(d.title);
     if (d.platform) setPlatform(d.platform);
     if (d.difficulty) setDifficulty(d.difficulty);
-    if (d.companies) setCompanies(d.companies.join(', '));
-    if (d.patterns) setPatterns(d.patterns.join(', '));
+    if (d.companies) setCompanies(d.companies.join(", "));
+    if (d.patterns) setPatterns(d.patterns.join(", "));
     if (d.url) setUrl(d.url);
   }
 
@@ -277,13 +316,19 @@ function ProblemForm() {
 
       <form action={formAction} className="space-y-5">
         {state.error && (
-          <div role="alert" className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300">
+          <div
+            role="alert"
+            className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 text-sm text-red-700 dark:text-red-300"
+          >
             {state.error}
           </div>
         )}
 
         <div>
-          <label htmlFor="problem-title" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-title"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Title <span className="text-red-500">*</span>
           </label>
           <input
@@ -299,7 +344,10 @@ function ProblemForm() {
         </div>
 
         <div>
-          <label htmlFor="problem-platform" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-platform"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Platform <span className="text-red-500">*</span>
           </label>
           <select
@@ -318,7 +366,10 @@ function ProblemForm() {
         </div>
 
         <div>
-          <label htmlFor="problem-difficulty" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-difficulty"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Difficulty <span className="text-red-500">*</span>
           </label>
           <select
@@ -337,7 +388,10 @@ function ProblemForm() {
         </div>
 
         <div>
-          <label htmlFor="problem-companies" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-companies"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Companies
           </label>
           <input
@@ -355,7 +409,10 @@ function ProblemForm() {
         </div>
 
         <div>
-          <label htmlFor="problem-patterns" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-patterns"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Patterns
           </label>
           <input
@@ -373,7 +430,10 @@ function ProblemForm() {
         </div>
 
         <div>
-          <label htmlFor="problem-url" className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
+          <label
+            htmlFor="problem-url"
+            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+          >
             Problem URL
           </label>
           <input
@@ -392,7 +452,7 @@ function ProblemForm() {
           disabled={isPending}
           className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isPending ? 'Creating...' : 'Create Problem'}
+          {isPending ? "Creating..." : "Create Problem"}
         </button>
       </form>
     </div>

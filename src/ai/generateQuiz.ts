@@ -8,8 +8,8 @@
  * Requirements: 5.2
  */
 
-import type { AIClient } from './client';
-import { buildQuizPrompt } from './prompts';
+import type { AIClient } from "./client";
+import { buildQuizPrompt } from "./prompts";
 
 export interface QuizQuestion {
   question: string;
@@ -27,7 +27,7 @@ export interface QuizQuestion {
  */
 export async function generateQuiz(
   content: string,
-  client: AIClient
+  client: AIClient,
 ): Promise<QuizQuestion[]> {
   try {
     const available = await client.isAvailable();
@@ -37,7 +37,7 @@ export async function generateQuiz(
 
     const prompt = buildQuizPrompt(content);
 
-    let fullResponse = '';
+    let fullResponse = "";
     for await (const chunk of client.generate(prompt)) {
       fullResponse += chunk;
     }
@@ -107,21 +107,21 @@ function validateQuizQuestions(items: unknown[]): QuizQuestion[] {
   for (const item of items) {
     if (
       item &&
-      typeof item === 'object' &&
-      'question' in item &&
-      'options' in item &&
-      'correctIndex' in item &&
-      'explanation' in item
+      typeof item === "object" &&
+      "question" in item &&
+      "options" in item &&
+      "correctIndex" in item &&
+      "explanation" in item
     ) {
       const q = item as Record<string, unknown>;
       if (
-        typeof q.question === 'string' &&
+        typeof q.question === "string" &&
         Array.isArray(q.options) &&
-        q.options.every((o: unknown) => typeof o === 'string') &&
-        typeof q.correctIndex === 'number' &&
+        q.options.every((o: unknown) => typeof o === "string") &&
+        typeof q.correctIndex === "number" &&
         q.correctIndex >= 0 &&
         q.correctIndex < (q.options as string[]).length &&
-        typeof q.explanation === 'string'
+        typeof q.explanation === "string"
       ) {
         valid.push({
           question: q.question,

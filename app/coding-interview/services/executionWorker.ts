@@ -8,7 +8,7 @@
 
 /// <reference lib="webworker" />
 
-import { deepEqual } from './deepEqual';
+import { deepEqual } from "./deepEqual";
 
 interface WorkerTestCase {
   input: unknown;
@@ -30,7 +30,7 @@ interface WorkerTestCaseResult {
 }
 
 interface WorkerExecutionError {
-  type: 'syntax' | 'runtime' | 'timeout';
+  type: "syntax" | "runtime" | "timeout";
   message: string;
   line?: number;
   stack?: string;
@@ -46,13 +46,16 @@ interface WorkerResponse {
 
 function truncateOutput(output: string, maxLength: number): string {
   if (output.length <= maxLength) return output;
-  return output.slice(0, maxLength) + '\n... [output truncated at 10,000 characters]';
+  return (
+    output.slice(0, maxLength) + "\n... [output truncated at 10,000 characters]"
+  );
 }
 
 function extractLineNumber(error: Error): number | undefined {
-  const stack = error.stack || '';
+  const stack = error.stack || "";
   // Look for line numbers in anonymous function or eval contexts
-  const match = stack.match(/<anonymous>:(\d+)/) ||
+  const match =
+    stack.match(/<anonymous>:(\d+)/) ||
     stack.match(/Function:(\d+)/) ||
     stack.match(/eval.*:(\d+)/);
   if (match) {
@@ -81,21 +84,23 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
   // Override console.log to capture output
   const originalLog = console.log;
   console.log = (...args: unknown[]) => {
-    const line = args.map(arg => {
-      if (typeof arg === 'object') {
-        try {
-          return JSON.stringify(arg);
-        } catch {
-          return String(arg);
+    const line = args
+      .map((arg) => {
+        if (typeof arg === "object") {
+          try {
+            return JSON.stringify(arg);
+          } catch {
+            return String(arg);
+          }
         }
-      }
-      return String(arg);
-    }).join(' ');
+        return String(arg);
+      })
+      .join(" ");
     consoleOutput.push(line);
   };
 
   const response: WorkerResponse = {
-    consoleOutput: '',
+    consoleOutput: "",
     testResults: [],
     executionTimeMs: 0,
     memoryUsageMb: 0,
@@ -106,19 +111,25 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     let userFunction: Function;
     try {
-      userFunction = new Function(code + '\nreturn typeof solution === "function" ? solution : null;')();
+      userFunction = new Function(
+        code + '\nreturn typeof solution === "function" ? solution : null;',
+      )();
     } catch (syntaxError) {
       const err = syntaxError as Error;
       const line = extractLineNumber(err);
       response.error = {
-        type: 'syntax',
+        type: "syntax",
         message: err.message,
         line,
         stack: err.stack,
       };
-      response.executionTimeMs = Math.round((performance.now() - startTime) * 100) / 100;
+      response.executionTimeMs =
+        Math.round((performance.now() - startTime) * 100) / 100;
       response.memoryUsageMb = getMemoryUsageMb();
-      response.consoleOutput = truncateOutput(consoleOutput.join('\n'), maxOutputLength);
+      response.consoleOutput = truncateOutput(
+        consoleOutput.join("\n"),
+        maxOutputLength,
+      );
       console.log = originalLog;
       self.postMessage(response);
       return;
@@ -128,19 +139,24 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     if (!userFunction) {
       try {
         // Try wrapping the code and looking for the exported function
-        userFunction = new Function(code + '\nreturn solution;')();
+        userFunction = new Function(code + "\nreturn solution;")();
       } catch {
         // If still no function, run the code and try to get the last expression
         try {
-          userFunction = new Function('return ' + code)();
+          userFunction = new Function("return " + code)();
         } catch {
           response.error = {
-            type: 'runtime',
-            message: 'No "solution" function found in submitted code. Define a function named "solution".',
+            type: "runtime",
+            message:
+              'No "solution" function found in submitted code. Define a function named "solution".',
           };
-          response.executionTimeMs = Math.round((performance.now() - startTime) * 100) / 100;
+          response.executionTimeMs =
+            Math.round((performance.now() - startTime) * 100) / 100;
           response.memoryUsageMb = getMemoryUsageMb();
-          response.consoleOutput = truncateOutput(consoleOutput.join('\n'), maxOutputLength);
+          response.consoleOutput = truncateOutput(
+            consoleOutput.join("\n"),
+            maxOutputLength,
+          );
           console.log = originalLog;
           self.postMessage(response);
           return;
@@ -156,7 +172,8 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
           ? testCase.input
           : [testCase.input];
         const actualOutput = userFunction(...input);
-        const testTimeMs = Math.round((performance.now() - testStart) * 100) / 100;
+        const testTimeMs =
+          Math.round((performance.now() - testStart) * 100) / 100;
         const passed = deepEqual(actualOutput, testCase.expectedOutput);
 
         response.testResults.push({
@@ -168,7 +185,8 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
         });
       } catch (runtimeError) {
         const err = runtimeError as Error;
-        const testTimeMs = Math.round((performance.now() - testStart) * 100) / 100;
+        const testTimeMs =
+          Math.round((performance.now() - testStart) * 100) / 100;
 
         response.testResults.push({
           input: testCase.input,
@@ -181,7 +199,7 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
         // Record the runtime error but continue with other test cases
         if (!response.error) {
           response.error = {
-            type: 'runtime',
+            type: "runtime",
             message: err.message,
             line: extractLineNumber(err),
             stack: err.stack,
@@ -192,16 +210,20 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
   } catch (unexpectedError) {
     const err = unexpectedError as Error;
     response.error = {
-      type: 'runtime',
+      type: "runtime",
       message: err.message,
       line: extractLineNumber(err),
       stack: err.stack,
     };
   }
 
-  response.executionTimeMs = Math.round((performance.now() - startTime) * 100) / 100;
+  response.executionTimeMs =
+    Math.round((performance.now() - startTime) * 100) / 100;
   response.memoryUsageMb = getMemoryUsageMb();
-  response.consoleOutput = truncateOutput(consoleOutput.join('\n'), maxOutputLength);
+  response.consoleOutput = truncateOutput(
+    consoleOutput.join("\n"),
+    maxOutputLength,
+  );
 
   // Restore console.log
   console.log = originalLog;

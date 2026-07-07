@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /** Confidence level on a 1-5 scale used across revision tracking. */
 export const ConfidenceSchema = z.union([
@@ -27,7 +27,7 @@ export type RevisionEntry = z.infer<typeof RevisionEntrySchema>;
  */
 export const RevisionDataSchema = z.object({
   itemId: z.string(),
-  itemType: z.enum(['topic', 'problem']),
+  itemType: z.enum(["topic", "problem"]),
   lastReviewed: z.string().nullable(),
   nextReview: z.string(),
   confidence: ConfidenceSchema,

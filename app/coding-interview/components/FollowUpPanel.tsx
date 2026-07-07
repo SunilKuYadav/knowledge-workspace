@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import type { ConversationMessage } from '../lib/types';
+import { useState, useRef, useEffect } from "react";
+import type { ConversationMessage } from "../lib/types";
 
 interface FollowUpPanelProps {
   messages: ConversationMessage[];
@@ -16,7 +16,7 @@ export function FollowUpPanel({
   onEndDiscussion,
   isLoading,
 }: FollowUpPanelProps) {
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const MAX_CHARS = 2000;
 
@@ -25,17 +25,17 @@ export function FollowUpPanel({
   const isSendDisabled = input.trim().length === 0 || isOverLimit || isLoading;
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   function handleSend() {
     if (isSendDisabled) return;
     onSendResponse(input.trim());
-    setInput('');
+    setInput("");
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -60,26 +60,26 @@ export function FollowUpPanel({
         {messages.map((msg, idx) => (
           <div
             key={idx}
-            className={`flex ${msg.role === 'candidate' ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${msg.role === "candidate" ? "justify-end" : "justify-start"}`}
           >
             <div
               className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm ${
-                msg.role === 'candidate'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700'
+                msg.role === "candidate"
+                  ? "bg-blue-600 text-white"
+                  : "bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700"
               }`}
             >
               <p className="whitespace-pre-wrap">{msg.content}</p>
               <p
                 className={`text-xs mt-1 ${
-                  msg.role === 'candidate'
-                    ? 'text-blue-200'
-                    : 'text-zinc-400 dark:text-zinc-500'
+                  msg.role === "candidate"
+                    ? "text-blue-200"
+                    : "text-zinc-400 dark:text-zinc-500"
                 }`}
               >
                 {new Date(msg.timestamp).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </p>
             </div>
@@ -90,9 +90,18 @@ export function FollowUpPanel({
           <div className="flex justify-start">
             <div className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-4 py-2.5">
               <div className="flex gap-1">
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span
+                  className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <span
+                  className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <span
+                  className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
               </div>
             </div>
           </div>
@@ -116,8 +125,8 @@ export function FollowUpPanel({
           <span
             className={`text-xs ${
               isOverLimit
-                ? 'text-red-600 dark:text-red-400'
-                : 'text-zinc-400 dark:text-zinc-500'
+                ? "text-red-600 dark:text-red-400"
+                : "text-zinc-400 dark:text-zinc-500"
             }`}
           >
             {charCount}/{MAX_CHARS}

@@ -1,11 +1,11 @@
-import { SearchIndex, SearchDocument } from './search-index';
+import { SearchIndex, SearchDocument } from "./search-index";
 
 /**
  * A single search result with relevance score and snippet.
  */
 export interface SearchResult {
   id: string;
-  type: 'topic' | 'problem' | 'note' | 'flashcard';
+  type: "topic" | "problem" | "note" | "flashcard";
   title: string;
   snippet: string;
   score: number;
@@ -17,7 +17,7 @@ export interface SearchResult {
  */
 export interface SearchOptions {
   query: string;
-  filter?: 'topic' | 'problem' | 'note' | 'flashcard';
+  filter?: "topic" | "problem" | "note" | "flashcard";
   limit?: number;
 }
 
@@ -29,7 +29,10 @@ const SNIPPET_LENGTH = 150;
  * Results are sorted by relevance score (MiniSearch default).
  * Supports optional type filtering and result limit.
  */
-export function search(index: SearchIndex, options: SearchOptions): SearchResult[] {
+export function search(
+  index: SearchIndex,
+  options: SearchOptions,
+): SearchResult[] {
   const { query, filter, limit = DEFAULT_LIMIT } = options;
 
   if (!query.trim()) {
@@ -61,8 +64,8 @@ export function search(index: SearchIndex, options: SearchOptions): SearchResult
  * Create a text snippet from content, taking the first N characters.
  */
 function createSnippet(content: string | undefined): string {
-  if (!content) return '';
-  const trimmed = content.replace(/\s+/g, ' ').trim();
+  if (!content) return "";
+  const trimmed = content.replace(/\s+/g, " ").trim();
   if (trimmed.length <= SNIPPET_LENGTH) return trimmed;
-  return trimmed.slice(0, SNIPPET_LENGTH) + '...';
+  return trimmed.slice(0, SNIPPET_LENGTH) + "...";
 }

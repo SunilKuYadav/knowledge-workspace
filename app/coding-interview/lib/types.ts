@@ -1,18 +1,25 @@
 /* ─── Interview Module Configuration ─────────────────────── */
 
-export type InterviewSource = 'problem' | 'topic' | 'self-test' | 'revision' | 'practice' | 'interview';
+export type InterviewSource =
+  "problem" | "topic" | "self-test" | "revision" | "practice" | "interview";
 
 export type InterviewContext =
-  | { source: 'problem'; id: string; title: string; category: string; tags: string[] }
-  | { source: 'topic'; id: string; title: string; concepts: string[] }
-  | { source: 'revision'; sessionId: string; topicIds: string[] }
-  | { source: 'self-test' | 'practice' | 'interview' };
+  | {
+      source: "problem";
+      id: string;
+      title: string;
+      category: string;
+      tags: string[];
+    }
+  | { source: "topic"; id: string; title: string; concepts: string[] }
+  | { source: "revision"; sessionId: string; topicIds: string[] }
+  | { source: "self-test" | "practice" | "interview" };
 
 export interface InterviewModuleProps {
   source: InterviewSource;
   context?: InterviewContext;
-  language?: 'javascript' | 'typescript';
-  difficulty?: 'easy' | 'medium' | 'hard';
+  language?: "javascript" | "typescript";
+  difficulty?: "easy" | "medium" | "hard";
   duration?: number; // 1-180 minutes
 }
 
@@ -25,7 +32,7 @@ export interface TestCase {
 
 export interface ExecutionRequest {
   code: string;
-  language: 'javascript' | 'typescript';
+  language: "javascript" | "typescript";
   testCases: TestCase[];
   timeout: number; // ms, default 5000
 }
@@ -39,7 +46,7 @@ export interface TestCaseResult {
 }
 
 export interface ExecutionError {
-  type: 'syntax' | 'runtime' | 'timeout';
+  type: "syntax" | "runtime" | "timeout";
   message: string;
   line?: number;
   stack?: string;
@@ -69,7 +76,7 @@ export interface EdgeCase {
 
 export interface GeneratedProblem {
   title: string;
-  difficulty: 'easy' | 'medium' | 'hard';
+  difficulty: "easy" | "medium" | "hard";
   category: string;
   tags: string[]; // >= 2
   statement: string;
@@ -138,7 +145,7 @@ export interface ScoringReport {
     codeQuality: DimensionScore;
   };
   confidence: number; // 0-100%
-  readiness: 'not ready' | 'needs practice' | 'almost ready' | 'ready';
+  readiness: "not ready" | "needs practice" | "almost ready" | "ready";
   penalties: {
     hintsUsed: number;
     timePenalty: number;
@@ -162,26 +169,26 @@ export interface SessionSummary {
   nextTopics: string[]; // 1-3
   improvementPlan: Array<{
     action: string;
-    priority: 'high' | 'medium' | 'low';
+    priority: "high" | "medium" | "low";
   }>; // 3-7, ordered high→low
 }
 
 /* ─── Interview State (Zustand Store) ────────────────────── */
 
 export type InterviewPhase =
-  | 'initializing'
-  | 'generating'
-  | 'coding'
-  | 'executing'
-  | 'confirming'
-  | 'evaluating'
-  | 'follow-up'
-  | 'scoring'
-  | 'summary'
-  | 'error';
+  | "initializing"
+  | "generating"
+  | "coding"
+  | "executing"
+  | "confirming"
+  | "evaluating"
+  | "follow-up"
+  | "scoring"
+  | "summary"
+  | "error";
 
 export interface ConversationMessage {
-  role: 'interviewer' | 'candidate';
+  role: "interviewer" | "candidate";
   content: string;
   timestamp: number;
 }
@@ -191,8 +198,8 @@ export interface InterviewState {
   phase: InterviewPhase;
   source: InterviewSource;
   context: InterviewContext | null;
-  language: 'javascript' | 'typescript';
-  difficulty: 'easy' | 'medium' | 'hard' | null;
+  language: "javascript" | "typescript";
+  difficulty: "easy" | "medium" | "hard" | null;
   duration: number; // minutes
 
   // Problem
@@ -238,7 +245,14 @@ export interface InterviewState {
 /* ─── Error Types ────────────────────────────────────────── */
 
 export interface InterviewError {
-  type: 'config' | 'generation' | 'execution' | 'evaluation' | 'followup' | 'scoring' | 'persistence';
+  type:
+    | "config"
+    | "generation"
+    | "execution"
+    | "evaluation"
+    | "followup"
+    | "scoring"
+    | "persistence";
   message: string;
   retryable: boolean;
   timestamp: number;
@@ -249,7 +263,7 @@ export interface InterviewError {
 export interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;
-  language: 'javascript' | 'typescript';
+  language: "javascript" | "typescript";
   boilerplate: string;
   readOnly?: boolean;
 }

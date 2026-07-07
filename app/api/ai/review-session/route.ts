@@ -10,30 +10,39 @@
  * - hint: Provide a hint for the current question
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { createAIClient } from '@/ai';
+import { NextRequest, NextResponse } from "next/server";
+import { createAIClient } from "@/ai";
 import {
   buildReviewPrompt,
   buildEvaluationPrompt,
   buildHintPrompt,
   buildSessionSummaryPrompt,
   buildGenerateContentPrompt,
-} from '@/ai';
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileTopicRepository } from '@/src/filesystem/FileTopicRepository';
-import { FileProblemRepository } from '@/src/filesystem/FileProblemRepository';
+} from "@/ai";
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 
-const DEFAULT_BASE_URL = process.env.OPENAI_BASE_URL || 'http://127.0.0.1:1234/v1';
-const API_KEY = process.env.OPENAI_API_KEY || '';
-const MODEL = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+const DEFAULT_BASE_URL =
+  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
+const API_KEY = process.env.OPENAI_API_KEY || "";
+const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, itemId, itemType, confidence, question, userResponse, questionType } = body as {
+    const {
+      action,
+      itemId,
+      itemType,
+      confidence,
+      question,
+      userResponse,
+      questionType,
+    } = body as {
       action: string;
       itemId: string;
-      itemType: 'topic' | 'problem';
+      itemType: "topic" | "problem";
       confidence?: number;
       question?: string;
       userResponse?: string;
@@ -42,24 +51,31 @@ export async function POST(request: NextRequest) {
 
     if (!action || !itemId || !itemType) {
       return NextResponse.json(
-        { error: 'Missing required fields: action, itemId, itemType' },
-        { status: 400 }
+        { error: "Missing required fields: action, itemId, itemType" },
+        { status: 400 },
       );
     }
 
-    const client = createAIClient({ baseUrl: DEFAULT_BASE_URL, apiKey: API_KEY, defaultModel: MODEL });
+    const client = createAIClient({
+      baseUrl: DEFAULT_BASE_URL,
+      apiKey: API_KEY,
+      defaultModel: MODEL,
+    });
     const workspacePath = getWorkspacePath();
 
-    if (action === 'generate') {
+    if (action === "generate") {
       const content = await getItemContent(itemId, itemType, workspacePath);
       if (!content) {
-        return NextResponse.json({ error: 'Item content not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: "Item content not found" },
+          { status: 404 },
+        );
       }
 
       const prompt = buildReviewPrompt(content, itemType, confidence || 3);
 
       // Try streaming generation first
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const chunk of client.generate(prompt)) {
         fullResponse += chunk;
       }
@@ -67,24 +83,29 @@ export async function POST(request: NextRequest) {
       // If streaming returned nothing, try a non-streaming request as fallback
       if (!fullResponse.trim()) {
         try {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          if (API_KEY) headers['Authorization'] = `Bearer ${API_KEY}`;
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (API_KEY) headers["Authorization"] = `Bearer ${API_KEY}`;
 
-          const fallbackRes = await fetch(`${DEFAULT_BASE_URL}/chat/completions`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              model: MODEL,
-              messages: [{ role: 'user', content: prompt }],
-              stream: false,
-            }),
-          });
+          const fallbackRes = await fetch(
+            `${DEFAULT_BASE_URL}/chat/completions`,
+            {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                model: MODEL,
+                messages: [{ role: "user", content: prompt }],
+                stream: false,
+              }),
+            },
+          );
 
           if (fallbackRes.ok) {
-            const json = await fallbackRes.json() as {
+            const json = (await fallbackRes.json()) as {
               choices?: Array<{ message?: { content?: string } }>;
             };
-            fullResponse = json.choices?.[0]?.message?.content || '';
+            fullResponse = json.choices?.[0]?.message?.content || "";
           }
         } catch {
           // Fallback also failed
@@ -92,21 +113,27 @@ export async function POST(request: NextRequest) {
       }
 
       if (!fullResponse.trim()) {
-        return NextResponse.json({ questions: [], rawResponse: '(empty response from AI)' });
+        return NextResponse.json({
+          questions: [],
+          rawResponse: "(empty response from AI)",
+        });
       }
 
       const questions = parseReviewQuestions(fullResponse);
       if (questions.length === 0 && fullResponse.trim().length > 0) {
-        return NextResponse.json({ questions: [], rawResponse: fullResponse.slice(0, 500) });
+        return NextResponse.json({
+          questions: [],
+          rawResponse: fullResponse.slice(0, 500),
+        });
       }
       return NextResponse.json({ questions });
     }
 
-    if (action === 'evaluate') {
+    if (action === "evaluate") {
       if (!question || !userResponse) {
         return NextResponse.json(
-          { error: 'Missing required fields: question, userResponse' },
-          { status: 400 }
+          { error: "Missing required fields: question, userResponse" },
+          { status: 400 },
         );
       }
 
@@ -114,12 +141,12 @@ export async function POST(request: NextRequest) {
       const prompt = buildEvaluationPrompt(
         question,
         userResponse,
-        questionType || 'conceptual',
-        content || '',
-        itemType
+        questionType || "conceptual",
+        content || "",
+        itemType,
       );
 
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const chunk of client.generate(prompt)) {
         fullResponse += chunk;
       }
@@ -133,16 +160,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(evaluation);
     }
 
-    if (action === 'hint') {
+    if (action === "hint") {
       if (!question) {
         return NextResponse.json(
-          { error: 'Missing required field: question' },
-          { status: 400 }
+          { error: "Missing required field: question" },
+          { status: 400 },
         );
       }
 
       const content = await getItemContent(itemId, itemType, workspacePath);
-      const prompt = buildHintPrompt(question, questionType || 'conceptual', content || '');
+      const prompt = buildHintPrompt(
+        question,
+        questionType || "conceptual",
+        content || "",
+      );
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -159,22 +190,36 @@ export async function POST(request: NextRequest) {
 
       return new Response(stream, {
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Transfer-Encoding': 'chunked',
+          "Content-Type": "text/plain; charset=utf-8",
+          "Transfer-Encoding": "chunked",
         },
       });
     }
 
-    if (action === 'session-summary') {
-      const { answers } = body as { answers: Array<{ question: string; response: string; score: number; mistakes: string[] }> };
+    if (action === "session-summary") {
+      const { answers } = body as {
+        answers: Array<{
+          question: string;
+          response: string;
+          score: number;
+          mistakes: string[];
+        }>;
+      };
       if (!answers || !Array.isArray(answers)) {
-        return NextResponse.json({ error: 'Missing answers array' }, { status: 400 });
+        return NextResponse.json(
+          { error: "Missing answers array" },
+          { status: 400 },
+        );
       }
 
       const content = await getItemContent(itemId, itemType, workspacePath);
-      const prompt = buildSessionSummaryPrompt(answers, content || '', itemType);
+      const prompt = buildSessionSummaryPrompt(
+        answers,
+        content || "",
+        itemType,
+      );
 
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const chunk of client.generate(prompt)) {
         fullResponse += chunk;
       }
@@ -188,17 +233,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(summary);
     }
 
-    if (action === 'generate-content') {
+    if (action === "generate-content") {
       const { answers, contentType } = body as {
-        answers: Array<{ question: string; questionType: string; response: string; score: number; mistakes: string[]; keyInsights: string[]; feedback: string; correctAnswer: string }>;
+        answers: Array<{
+          question: string;
+          questionType: string;
+          response: string;
+          score: number;
+          mistakes: string[];
+          keyInsights: string[];
+          feedback: string;
+          correctAnswer: string;
+        }>;
         contentType: string;
       };
       if (!answers || !Array.isArray(answers) || !contentType) {
-        return NextResponse.json({ error: 'Missing answers or contentType' }, { status: 400 });
+        return NextResponse.json(
+          { error: "Missing answers or contentType" },
+          { status: 400 },
+        );
       }
 
       const content = await getItemContent(itemId, itemType, workspacePath);
-      const prompt = buildGenerateContentPrompt(answers, content || '', itemType, contentType);
+      const prompt = buildGenerateContentPrompt(
+        answers,
+        content || "",
+        itemType,
+        contentType,
+      );
 
       const stream = new ReadableStream({
         async start(controller) {
@@ -215,15 +277,18 @@ export async function POST(request: NextRequest) {
 
       return new Response(stream, {
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'Transfer-Encoding': 'chunked',
+          "Content-Type": "text/plain; charset=utf-8",
+          "Transfer-Encoding": "chunked",
         },
       });
     }
 
-    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+    return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
@@ -235,45 +300,47 @@ export async function POST(request: NextRequest) {
  */
 async function nonStreamingFallback(prompt: string): Promise<string> {
   try {
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (API_KEY) headers['Authorization'] = `Bearer ${API_KEY}`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (API_KEY) headers["Authorization"] = `Bearer ${API_KEY}`;
 
     const res = await fetch(`${DEFAULT_BASE_URL}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify({
         model: MODEL,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [{ role: "user", content: prompt }],
         stream: false,
       }),
     });
 
     if (res.ok) {
-      const json = await res.json() as {
+      const json = (await res.json()) as {
         choices?: Array<{ message?: { content?: string } }>;
       };
-      return json.choices?.[0]?.message?.content || '';
+      return json.choices?.[0]?.message?.content || "";
     }
   } catch {
     // Fallback failed
   }
-  return '';
+  return "";
 }
 
 async function getItemContent(
   itemId: string,
-  itemType: 'topic' | 'problem',
-  workspacePath: string
+  itemType: "topic" | "problem",
+  workspacePath: string,
 ): Promise<string | null> {
-  if (itemType === 'topic') {
+  if (itemType === "topic") {
     const topicRepo = new FileTopicRepository(workspacePath);
     const topic = await topicRepo.getById(itemId);
     if (!topic) return null;
 
     const [overview, notes, patterns] = await Promise.all([
-      topicRepo.getContent(itemId, 'overview'),
-      topicRepo.getContent(itemId, 'notes'),
-      topicRepo.getContent(itemId, 'patterns'),
+      topicRepo.getContent(itemId, "overview"),
+      topicRepo.getContent(itemId, "notes"),
+      topicRepo.getContent(itemId, "patterns"),
     ]);
     return `Topic: ${topic.title}\nCategory: ${topic.category}\nDifficulty: ${topic.difficulty}\n\nOverview:\n${overview}\n\nNotes:\n${notes}\n\nPatterns:\n${patterns}`.trim();
   } else {
@@ -285,7 +352,7 @@ async function getItemContent(
       problemRepo.getNotes(itemId),
       problemRepo.getSolution(itemId),
     ]);
-    return `Problem: ${problem.title}\nPlatform: ${problem.platform}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(', ')}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
+    return `Problem: ${problem.title}\nPlatform: ${problem.platform}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(", ")}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
   }
 }
 
@@ -314,7 +381,9 @@ function extractJsonArray(response: string): unknown[] | null {
     const trimmed = response.trim();
     const directParse = JSON.parse(trimmed);
     if (Array.isArray(directParse)) return directParse;
-  } catch { /* fall through */ }
+  } catch {
+    /* fall through */
+  }
 
   // Try to extract from markdown code block
   const codeBlockMatch = response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
@@ -322,7 +391,9 @@ function extractJsonArray(response: string): unknown[] | null {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
       if (Array.isArray(parsed)) return parsed;
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   // Try to find JSON array in response (greedy - find the largest array)
@@ -331,18 +402,22 @@ function extractJsonArray(response: string): unknown[] | null {
     try {
       const parsed = JSON.parse(arrayMatch[0]);
       if (Array.isArray(parsed)) return parsed;
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   // Try to find from first [ to last ]
-  const firstBracket = response.indexOf('[');
-  const lastBracket = response.lastIndexOf(']');
+  const firstBracket = response.indexOf("[");
+  const lastBracket = response.lastIndexOf("]");
   if (firstBracket !== -1 && lastBracket > firstBracket) {
     try {
       const substr = response.slice(firstBracket, lastBracket + 1);
       const parsed = JSON.parse(substr);
       if (Array.isArray(parsed)) return parsed;
-    } catch { /* fall through */ }
+    } catch {
+      /* fall through */
+    }
   }
 
   return null;
@@ -350,14 +425,17 @@ function extractJsonArray(response: string): unknown[] | null {
 
 function validateQuestions(items: unknown[]): ReviewQuestion[] {
   return items
-    .filter((item): item is Record<string, unknown> =>
-      !!item && typeof item === 'object' && 'question' in item
+    .filter(
+      (item): item is Record<string, unknown> =>
+        !!item && typeof item === "object" && "question" in item,
     )
     .map((item) => ({
-      type: String(item.type || 'conceptual'),
+      type: String(item.type || "conceptual"),
       question: String(item.question),
-      expectedAnswer: String(item.expectedAnswer || item.expected_answer || item.answer || ''),
-      difficulty: String(item.difficulty || 'intermediate'),
+      expectedAnswer: String(
+        item.expectedAnswer || item.expected_answer || item.answer || "",
+      ),
+      difficulty: String(item.difficulty || "intermediate"),
     }));
 }
 
@@ -373,31 +451,39 @@ function parseEvaluation(response: string): EvaluationResult {
   const defaultResult: EvaluationResult = {
     score: 3,
     mistakes: [],
-    correctAnswer: '',
+    correctAnswer: "",
     keyInsights: [],
-    feedback: 'Unable to evaluate response.',
+    feedback: "Unable to evaluate response.",
   };
 
   try {
     const trimmed = response.trim();
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object') return validateEvaluation(parsed);
-  } catch { /* fall through */ }
+    if (parsed && typeof parsed === "object") return validateEvaluation(parsed);
+  } catch {
+    /* fall through */
+  }
 
   const codeBlockMatch = response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
-      if (parsed && typeof parsed === 'object') return validateEvaluation(parsed);
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object")
+        return validateEvaluation(parsed);
+    } catch {
+      /* fall through */
+    }
   }
 
   const objMatch = response.match(/\{[\s\S]*\}/);
   if (objMatch) {
     try {
       const parsed = JSON.parse(objMatch[0]);
-      if (parsed && typeof parsed === 'object') return validateEvaluation(parsed);
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object")
+        return validateEvaluation(parsed);
+    } catch {
+      /* fall through */
+    }
   }
 
   return defaultResult;
@@ -405,11 +491,15 @@ function parseEvaluation(response: string): EvaluationResult {
 
 function validateEvaluation(obj: Record<string, unknown>): EvaluationResult {
   return {
-    score: typeof obj.score === 'number' ? Math.min(5, Math.max(1, obj.score)) : 3,
+    score:
+      typeof obj.score === "number" ? Math.min(5, Math.max(1, obj.score)) : 3,
     mistakes: Array.isArray(obj.mistakes) ? obj.mistakes.map(String) : [],
-    correctAnswer: typeof obj.correctAnswer === 'string' ? obj.correctAnswer : '',
-    keyInsights: Array.isArray(obj.keyInsights) ? obj.keyInsights.map(String) : [],
-    feedback: typeof obj.feedback === 'string' ? obj.feedback : '',
+    correctAnswer:
+      typeof obj.correctAnswer === "string" ? obj.correctAnswer : "",
+    keyInsights: Array.isArray(obj.keyInsights)
+      ? obj.keyInsights.map(String)
+      : [],
+    feedback: typeof obj.feedback === "string" ? obj.feedback : "",
   };
 }
 
@@ -425,29 +515,35 @@ function parseSessionSummary(response: string): SessionSummary {
     recommendedConfidence: 3,
     allMistakes: [],
     focusAreas: [],
-    summary: 'Session completed.',
+    summary: "Session completed.",
   };
 
   try {
     const trimmed = response.trim();
     const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object') return validateSummary(parsed);
-  } catch { /* fall through */ }
+    if (parsed && typeof parsed === "object") return validateSummary(parsed);
+  } catch {
+    /* fall through */
+  }
 
   const codeBlockMatch = response.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
-      if (parsed && typeof parsed === 'object') return validateSummary(parsed);
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return validateSummary(parsed);
+    } catch {
+      /* fall through */
+    }
   }
 
   const objMatch = response.match(/\{[\s\S]*\}/);
   if (objMatch) {
     try {
       const parsed = JSON.parse(objMatch[0]);
-      if (parsed && typeof parsed === 'object') return validateSummary(parsed);
-    } catch { /* fall through */ }
+      if (parsed && typeof parsed === "object") return validateSummary(parsed);
+    } catch {
+      /* fall through */
+    }
   }
 
   return defaultSummary;
@@ -455,11 +551,15 @@ function parseSessionSummary(response: string): SessionSummary {
 
 function validateSummary(obj: Record<string, unknown>): SessionSummary {
   return {
-    recommendedConfidence: typeof obj.recommendedConfidence === 'number'
-      ? Math.min(5, Math.max(1, obj.recommendedConfidence))
-      : 3,
-    allMistakes: Array.isArray(obj.allMistakes) ? obj.allMistakes.map(String) : [],
+    recommendedConfidence:
+      typeof obj.recommendedConfidence === "number"
+        ? Math.min(5, Math.max(1, obj.recommendedConfidence))
+        : 3,
+    allMistakes: Array.isArray(obj.allMistakes)
+      ? obj.allMistakes.map(String)
+      : [],
     focusAreas: Array.isArray(obj.focusAreas) ? obj.focusAreas.map(String) : [],
-    summary: typeof obj.summary === 'string' ? obj.summary : 'Session completed.',
+    summary:
+      typeof obj.summary === "string" ? obj.summary : "Session completed.",
   };
 }

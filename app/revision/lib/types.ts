@@ -1,5 +1,5 @@
-import type { RevisionData } from '@/src/types/Revision';
-import type { RevisionCategory } from '@/src/revision/spaced';
+import type { RevisionData } from "@/src/types/Revision";
+import type { RevisionCategory } from "@/src/revision/spaced";
 
 export interface CategorizedItem {
   item: RevisionData;
@@ -11,7 +11,7 @@ export interface RevisionClientProps {
   dueItems: CategorizedItem[];
 }
 
-export type ViewTab = 'session' | 'schedule' | 'history';
+export type ViewTab = "session" | "schedule" | "history";
 
 /* ─── AI Review Types ─────────────────────────────────────── */
 
@@ -51,11 +51,7 @@ export interface SessionSummary {
 /* ─── Content Generation Types ─────────────────────────── */
 
 export type GeneratableContent =
-  | 'notes'
-  | 'mistakes'
-  | 'patterns'
-  | 'solution'
-  | 'flashcards';
+  "notes" | "mistakes" | "patterns" | "solution" | "flashcards";
 
 export interface GeneratedContentResult {
   type: GeneratableContent;
@@ -65,9 +61,4 @@ export interface GeneratedContentResult {
 }
 
 export type SessionPhase =
-  | 'idle'
-  | 'generating'
-  | 'answering'
-  | 'evaluating'
-  | 'feedback'
-  | 'summary';
+  "idle" | "generating" | "answering" | "evaluating" | "feedback" | "summary";

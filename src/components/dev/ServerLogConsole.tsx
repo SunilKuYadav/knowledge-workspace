@@ -9,9 +9,7 @@ export default function ServerLogConsole() {
     source.onmessage = (event) => {
       const log = JSON.parse(event.data);
 
-      console.groupCollapsed(
-        `[${log.level}] ${log.namespace}`
-      );
+      console.groupCollapsed(`[${log.level}] ${log.namespace}`);
 
       console.log(...log.args);
 

@@ -1,37 +1,44 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { saveAIContent } from '../ai-actions';
-import { useAIStatus } from '@/src/providers/AIProvider';
-import { logInput, logOutput, logError } from '@/src/ai/logger';
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { saveAIContent } from "../ai-actions";
+import { useAIStatus } from "@/src/providers/AIProvider";
+import { logInput, logOutput, logError } from "@/src/ai/logger";
 
-import type { ActionConfig } from './types';
+import type { ActionConfig } from "./types";
 import {
   TOPIC_ACTIONS,
   PROBLEM_ACTIONS,
   TOPIC_PROMPT_HELPERS,
   PROBLEM_PROMPT_HELPERS,
-} from './constants';
-import { detectGeneralQuestion } from './utils';
-import { useAIChatStore } from './chatStore';
+} from "./constants";
+import { detectGeneralQuestion } from "./utils";
+import { useAIChatStore } from "./chatStore";
 
 interface UseAISidebarParams {
-  context: 'topic' | 'problem';
+  context: "topic" | "problem";
   itemId: string;
   itemTitle?: string;
   available?: boolean;
 }
 
-export function useAISidebar({ context, itemId, itemTitle, available: availableProp }: UseAISidebarParams) {
+export function useAISidebar({
+  context,
+  itemId,
+  itemTitle,
+  available: availableProp,
+}: UseAISidebarParams) {
   const { available: contextAvailable } = useAIStatus();
   const available = availableProp ?? contextAvailable;
 
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeAction, setActiveAction] = useState<ActionConfig | null>(null);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [customPrompt, setCustomPrompt] = useState('');
+  const [saveStatus, setSaveStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [customPrompt, setCustomPrompt] = useState("");
   const [showHelpers, setShowHelpers] = useState(false);
 
   // Chat store
@@ -56,8 +63,9 @@ export function useAISidebar({ context, itemId, itemTitle, available: availableP
     getOrCreateSession(context, itemId, itemTitle || itemId);
   }, [context, itemId, itemTitle, getOrCreateSession]);
 
-  const actions = context === 'topic' ? TOPIC_ACTIONS : PROBLEM_ACTIONS;
-  const promptHelpers = context === 'topic' ? TOPIC_PROMPT_HELPERS : PROBLEM_PROMPT_HELPERS;
+  const actions = context === "topic" ? TOPIC_ACTIONS : PROBLEM_ACTIONS;
+  const promptHelpers =
+    context === "topic" ? TOPIC_PROMPT_HELPERS : PROBLEM_PROMPT_HELPERS;
 
   const router = useRouter();
 
@@ -77,118 +85,156 @@ export function useAISidebar({ context, itemId, itemTitle, available: availableP
 
     const handleMouseUp = () => {
       isResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, []);
 
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    isResizing.current = true;
-    startX.current = e.clientX;
-    startWidth.current = width;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }, [width]);
+  const handleResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      isResizing.current = true;
+      startX.current = e.clientX;
+      startWidth.current = width;
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [width],
+  );
 
   /** Build a context-aware prompt that includes conversation summary */
-  const buildContextualPrompt = useCallback((userPrompt: string, isGeneral: boolean): string => {
-    if (!sessionId) return userPrompt;
-    const summary = getSessionSummary(sessionId);
-    if (!summary) return userPrompt;
+  const buildContextualPrompt = useCallback(
+    (userPrompt: string, isGeneral: boolean): string => {
+      if (!sessionId) return userPrompt;
+      const summary = getSessionSummary(sessionId);
+      if (!summary) return userPrompt;
 
-    return [
-      'Below is a summary of the conversation so far for context:',
-      '---',
-      summary,
-      '---',
-      '',
-      'Now answer the following follow-up question based on the above context:',
-      userPrompt,
-    ].join('\n');
-  }, [sessionId, getSessionSummary]);
+      return [
+        "Below is a summary of the conversation so far for context:",
+        "---",
+        summary,
+        "---",
+        "",
+        "Now answer the following follow-up question based on the above context:",
+        userPrompt,
+      ].join("\n");
+    },
+    [sessionId, getSessionSummary],
+  );
 
-  const handleAction = useCallback(async (actionConfig: ActionConfig) => {
-    setLoading(true);
-    setActiveAction(actionConfig);
-    setSaveStatus('idle');
+  const handleAction = useCallback(
+    async (actionConfig: ActionConfig) => {
+      setLoading(true);
+      setActiveAction(actionConfig);
+      setSaveStatus("idle");
 
-    // Add user message to chat
-    const currentSession = getOrCreateSession(context, itemId, itemTitle || itemId);
-    addMessage(currentSession.id, 'user', `[Action] ${actionConfig.label}`);
-    addMessage(currentSession.id, 'assistant', '');
+      // Add user message to chat
+      const currentSession = getOrCreateSession(
+        context,
+        itemId,
+        itemTitle || itemId,
+      );
+      addMessage(currentSession.id, "user", `[Action] ${actionConfig.label}`);
+      addMessage(currentSession.id, "assistant", "");
 
-    try {
-      const requestBody = { action: actionConfig.action, itemId, context };
-      logInput(JSON.stringify(requestBody), actionConfig.action);
+      try {
+        const requestBody = { action: actionConfig.action, itemId, context };
+        logInput(JSON.stringify(requestBody), actionConfig.action);
 
-      const response = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+        const response = await fetch("/api/ai", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
 
-      if (!response.ok) {
-        logError(JSON.stringify(requestBody), `HTTP ${response.status}`);
-        const errorMsg = 'Error: Failed to generate content. Please try again.';
-        updateLastAssistantMessage(currentSession.id, errorMsg);
-        setLoading(false);
-        return;
-      }
-
-      if (actionConfig.streaming && response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let accumulated = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          accumulated += chunk;
-          updateLastAssistantMessage(currentSession.id, accumulated);
+        if (!response.ok) {
+          logError(JSON.stringify(requestBody), `HTTP ${response.status}`);
+          const errorMsg =
+            "Error: Failed to generate content. Please try again.";
+          updateLastAssistantMessage(currentSession.id, errorMsg);
+          setLoading(false);
+          return;
         }
-        logOutput(JSON.stringify(requestBody), accumulated);
-      } else {
-        const data = await response.json();
-        const formatted = JSON.stringify(data, null, 2);
-        updateLastAssistantMessage(currentSession.id, formatted);
-        logOutput(JSON.stringify(requestBody), formatted);
+
+        if (actionConfig.streaming && response.body) {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let accumulated = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            accumulated += chunk;
+            updateLastAssistantMessage(currentSession.id, accumulated);
+          }
+          logOutput(JSON.stringify(requestBody), accumulated);
+        } else {
+          const data = await response.json();
+          const formatted = JSON.stringify(data, null, 2);
+          updateLastAssistantMessage(currentSession.id, formatted);
+          logOutput(JSON.stringify(requestBody), formatted);
+        }
+      } catch {
+        updateLastAssistantMessage(
+          currentSession.id,
+          "Error: Connection failed. Please check your network.",
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      updateLastAssistantMessage(currentSession.id, 'Error: Connection failed. Please check your network.');
-    } finally {
-      setLoading(false);
-    }
-  }, [itemId, context, itemTitle, getOrCreateSession, addMessage, updateLastAssistantMessage]);
+    },
+    [
+      itemId,
+      context,
+      itemTitle,
+      getOrCreateSession,
+      addMessage,
+      updateLastAssistantMessage,
+    ],
+  );
 
   const handleSave = useCallback(async () => {
     if (!activeAction || messages.length === 0) return;
-    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    const lastAssistant = [...messages]
+      .reverse()
+      .find((m) => m.role === "assistant");
     if (!lastAssistant) return;
 
-    setSaveStatus('saving');
-    const result = await saveAIContent(itemId, context, lastAssistant.content, activeAction.filename);
+    setSaveStatus("saving");
+    const result = await saveAIContent(
+      itemId,
+      context,
+      lastAssistant.content,
+      activeAction.filename,
+    );
 
     if (result.success) {
-      setSaveStatus('saved');
+      setSaveStatus("saved");
     } else {
-      setSaveStatus('error');
+      setSaveStatus("error");
     }
   }, [activeAction, messages, itemId, context]);
 
   const handleOpenInEditor = useCallback(async () => {
     if (!activeAction) return;
-    const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+    const lastAssistant = [...messages]
+      .reverse()
+      .find((m) => m.role === "assistant");
     if (!lastAssistant) return;
 
-    const result = await saveAIContent(itemId, context, lastAssistant.content, activeAction.filename);
+    const result = await saveAIContent(
+      itemId,
+      context,
+      lastAssistant.content,
+      activeAction.filename,
+    );
     if (result.success && result.path) {
       router.push(`/edit/${result.path}`);
     }
@@ -202,43 +248,50 @@ export function useAISidebar({ context, itemId, itemTitle, available: availableP
 
     setLoading(true);
     setActiveAction({
-      id: 'custom',
-      label: 'Custom',
-      action: 'custom',
+      id: "custom",
+      label: "Custom",
+      action: "custom",
       streaming: true,
-      filename: 'ai-response.md',
+      filename: "ai-response.md",
       isGeneral,
     });
-    setSaveStatus('idle');
+    setSaveStatus("idle");
 
     // Add user message to chat
-    const currentSession = getOrCreateSession(context, itemId, itemTitle || itemId);
-    addMessage(currentSession.id, 'user', userText);
-    addMessage(currentSession.id, 'assistant', '');
-    setCustomPrompt('');
+    const currentSession = getOrCreateSession(
+      context,
+      itemId,
+      itemTitle || itemId,
+    );
+    addMessage(currentSession.id, "user", userText);
+    addMessage(currentSession.id, "assistant", "");
+    setCustomPrompt("");
 
     try {
       // Build prompt with conversation context
       const contextualPrompt = buildContextualPrompt(userText, isGeneral);
 
       const requestBody = {
-        action: 'custom',
+        action: "custom",
         itemId,
         context,
         prompt: contextualPrompt,
         isGeneral,
       };
-      logInput(userText, 'custom');
+      logInput(userText, "custom");
 
-      const response = await fetch('/api/ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         logError(userText, `HTTP ${response.status}`);
-        updateLastAssistantMessage(currentSession.id, 'Error: Failed to generate content. Please try again.');
+        updateLastAssistantMessage(
+          currentSession.id,
+          "Error: Failed to generate content. Please try again.",
+        );
         setLoading(false);
         return;
       }
@@ -246,7 +299,7 @@ export function useAISidebar({ context, itemId, itemTitle, available: availableP
       if (response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let accumulated = '';
+        let accumulated = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -258,16 +311,30 @@ export function useAISidebar({ context, itemId, itemTitle, available: availableP
         logOutput(userText, accumulated);
       } else {
         const data = await response.json();
-        const formatted = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        const formatted =
+          typeof data === "string" ? data : JSON.stringify(data, null, 2);
         updateLastAssistantMessage(currentSession.id, formatted);
         logOutput(userText, formatted);
       }
     } catch {
-      updateLastAssistantMessage(currentSession.id, 'Error: Connection failed. Please check your network.');
+      updateLastAssistantMessage(
+        currentSession.id,
+        "Error: Connection failed. Please check your network.",
+      );
     } finally {
       setLoading(false);
     }
-  }, [customPrompt, loading, itemId, context, itemTitle, getOrCreateSession, addMessage, updateLastAssistantMessage, buildContextualPrompt]);
+  }, [
+    customPrompt,
+    loading,
+    itemId,
+    context,
+    itemTitle,
+    getOrCreateSession,
+    addMessage,
+    updateLastAssistantMessage,
+    buildContextualPrompt,
+  ]);
 
   const handleClearChat = useCallback(() => {
     if (sessionId) {

@@ -25,5 +25,5 @@ export interface ComposeOptions {
  * ```
  */
 export function composePrompt({ modules, task }: ComposeOptions): string {
-  return [...modules.filter(Boolean), '', '## Task', task].join('\n\n');
+  return [...modules.filter(Boolean), "", "## Task", task].join("\n\n");
 }

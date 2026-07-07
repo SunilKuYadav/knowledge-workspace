@@ -1,19 +1,31 @@
-'use client';
+"use client";
 
-import type { SessionSummary } from '../lib/types';
+import type { SessionSummary } from "../lib/types";
 
 interface SummaryPanelProps {
   summary: SessionSummary;
 }
 
-function getPriorityBadge(priority: 'high' | 'medium' | 'low') {
+function getPriorityBadge(priority: "high" | "medium" | "low") {
   switch (priority) {
-    case 'high':
-      return { label: 'High', className: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400' };
-    case 'medium':
-      return { label: 'Medium', className: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400' };
-    case 'low':
-      return { label: 'Low', className: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' };
+    case "high":
+      return {
+        label: "High",
+        className:
+          "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400",
+      };
+    case "medium":
+      return {
+        label: "Medium",
+        className:
+          "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
+      };
+    case "low":
+      return {
+        label: "Low",
+        className:
+          "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
+      };
   }
 }
 
@@ -95,7 +107,10 @@ export function SummaryPanel({ summary }: SummaryPanelProps) {
             </thead>
             <tbody>
               {summary.alternativeSolutions.map((sol, idx) => (
-                <tr key={idx} className="border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+                <tr
+                  key={idx}
+                  className="border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+                >
                   <td className="py-2 pr-4 text-zinc-700 dark:text-zinc-300">
                     {sol.approach}
                   </td>
@@ -169,7 +184,9 @@ export function SummaryPanel({ summary }: SummaryPanelProps) {
             const badge = getPriorityBadge(item.priority);
             return (
               <div key={idx} className="flex items-start gap-3">
-                <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${badge.className}`}>
+                <span
+                  className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded ${badge.className}`}
+                >
                   {badge.label}
                 </span>
                 <span className="text-sm text-zinc-700 dark:text-zinc-300">

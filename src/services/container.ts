@@ -1,12 +1,12 @@
-import { getWorkspacePath } from '../lib/constants';
-import { FileTopicRepository } from '@/filesystem/FileTopicRepository';
-import { FileProblemRepository } from '@/filesystem/FileProblemRepository';
-import { FileRevisionRepository } from '@/filesystem/FileRevisionRepository';
-import { SearchIndex } from '@/search';
-import { TopicService } from './TopicService';
-import { ProblemService } from './ProblemService';
-import { RevisionService } from './RevisionService';
-import { SearchService } from './SearchService';
+import { getWorkspacePath } from "../lib/constants";
+import { FileTopicRepository } from "@/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/filesystem/FileProblemRepository";
+import { FileRevisionRepository } from "@/filesystem/FileRevisionRepository";
+import { SearchIndex } from "@/search";
+import { TopicService } from "./TopicService";
+import { ProblemService } from "./ProblemService";
+import { RevisionService } from "./RevisionService";
+import { SearchService } from "./SearchService";
 
 /**
  * Application container — wires concrete repository implementations

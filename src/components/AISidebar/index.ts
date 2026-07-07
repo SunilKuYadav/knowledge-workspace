@@ -1,2 +1,2 @@
-export { default } from './AISidebar';
-export type { AISidebarProps, ActionConfig, PromptHelper } from './types';
+export { default } from "./AISidebar";
+export type { AISidebarProps, ActionConfig, PromptHelper } from "./types";

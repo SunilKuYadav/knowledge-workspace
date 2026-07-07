@@ -4,8 +4,8 @@
  * and enforces timeout via setTimeout + worker.terminate().
  */
 
-import type { ExecutionRequest, ExecutionResult, TestCase } from '../lib/types';
-import { EXECUTION_TIMEOUT, MAX_OUTPUT_LENGTH } from '../lib/constants';
+import type { ExecutionRequest, ExecutionResult, TestCase } from "../lib/types";
+import { EXECUTION_TIMEOUT, MAX_OUTPUT_LENGTH } from "../lib/constants";
 
 interface WorkerRequest {
   code: string;
@@ -17,7 +17,9 @@ interface WorkerRequest {
  * Executes user code in a Web Worker with timeout enforcement.
  * Returns an ExecutionResult with console output, test results, timing, and any errors.
  */
-export function executeCode(request: ExecutionRequest): Promise<ExecutionResult> {
+export function executeCode(
+  request: ExecutionRequest,
+): Promise<ExecutionResult> {
   const timeout = request.timeout || EXECUTION_TIMEOUT;
 
   return new Promise<ExecutionResult>((resolve) => {
@@ -26,18 +28,16 @@ export function executeCode(request: ExecutionRequest): Promise<ExecutionResult>
 
     try {
       // Create worker from the bundled worker file
-      worker = new Worker(
-        new URL('./executionWorker.ts', import.meta.url)
-      );
+      worker = new Worker(new URL("./executionWorker.ts", import.meta.url));
     } catch (error) {
       // If Worker creation fails (e.g., SSR environment)
       resolve({
-        consoleOutput: '',
+        consoleOutput: "",
         testResults: [],
         executionTimeMs: 0,
         memoryUsageMb: 0,
         error: {
-          type: 'runtime',
+          type: "runtime",
           message: `Failed to create execution worker: ${(error as Error).message}`,
         },
       });
@@ -60,13 +60,13 @@ export function executeCode(request: ExecutionRequest): Promise<ExecutionResult>
       clearTimeout(timeoutId);
       worker.terminate();
       resolve({
-        consoleOutput: '',
+        consoleOutput: "",
         testResults: [],
         executionTimeMs: 0,
         memoryUsageMb: 0,
         error: {
-          type: 'runtime',
-          message: event.message || 'An unexpected worker error occurred',
+          type: "runtime",
+          message: event.message || "An unexpected worker error occurred",
         },
       });
     };
@@ -77,7 +77,7 @@ export function executeCode(request: ExecutionRequest): Promise<ExecutionResult>
       settled = true;
       worker.terminate();
       resolve({
-        consoleOutput: '',
+        consoleOutput: "",
         testResults: request.testCases.map((tc) => ({
           input: tc.input,
           expectedOutput: tc.expectedOutput,
@@ -88,7 +88,7 @@ export function executeCode(request: ExecutionRequest): Promise<ExecutionResult>
         executionTimeMs: timeout,
         memoryUsageMb: 0,
         error: {
-          type: 'timeout',
+          type: "timeout",
           message: `Execution timed out after ${timeout}ms`,
         },
       });
@@ -111,5 +111,8 @@ export function executeCode(request: ExecutionRequest): Promise<ExecutionResult>
  */
 export function truncateOutput(output: string): string {
   if (output.length <= MAX_OUTPUT_LENGTH) return output;
-  return output.slice(0, MAX_OUTPUT_LENGTH) + '\n... [output truncated at 10,000 characters]';
+  return (
+    output.slice(0, MAX_OUTPUT_LENGTH) +
+    "\n... [output truncated at 10,000 characters]"
+  );
 }

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { MarkdownRenderer } from '@/src/components/MarkdownRenderer';
-import type { ReviewQuestion } from '../../lib/types';
+import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
+import type { ReviewQuestion } from "../../lib/types";
 
 interface AnsweringPhaseProps {
   question: ReviewQuestion;
@@ -29,13 +29,13 @@ export function AnsweringPhase({
         <div className="flex items-center gap-2 mb-4">
           <span
             className={`text-xs font-medium px-2 py-0.5 rounded ${
-              question.type === 'code'
-                ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                : question.type === 'debug'
-                ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                : question.type === 'edge-case'
-                ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400'
-                : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+              question.type === "code"
+                ? "bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400"
+                : question.type === "debug"
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                  : question.type === "edge-case"
+                    ? "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400"
+                    : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
             }`}
           >
             {question.type}
@@ -45,9 +45,7 @@ export function AnsweringPhase({
 
         {/* Question */}
         <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none mb-6">
-          <MarkdownRenderer>
-            {question.question}
-          </MarkdownRenderer>
+          <MarkdownRenderer>{question.question}</MarkdownRenderer>
         </div>
 
         {/* Response input */}
@@ -59,13 +57,13 @@ export function AnsweringPhase({
             value={userResponse}
             onChange={(e) => onResponseChange(e.target.value)}
             placeholder={
-              question.type === 'code'
-                ? 'Write your code or pseudocode here...'
-                : 'Type your answer here...'
+              question.type === "code"
+                ? "Write your code or pseudocode here..."
+                : "Type your answer here..."
             }
-            rows={question.type === 'code' ? 10 : 5}
+            rows={question.type === "code" ? 10 : 5}
             className={`w-full px-4 py-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y ${
-              question.type === 'code' ? 'font-mono text-sm' : 'text-sm'
+              question.type === "code" ? "font-mono text-sm" : "text-sm"
             }`}
           />
         </div>
@@ -84,7 +82,7 @@ export function AnsweringPhase({
             disabled={hintLoading}
             className="px-4 py-2 text-sm font-medium border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 transition-colors"
           >
-            {hintLoading ? 'Loading...' : '💡 Need a Hint'}
+            {hintLoading ? "Loading..." : "💡 Need a Hint"}
           </button>
         </div>
       </div>

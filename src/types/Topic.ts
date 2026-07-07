@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Zod schema for a Topic — a self-contained study subject folder
@@ -7,9 +7,16 @@ import { z } from 'zod';
 export const TopicSchema = z.object({
   id: z.string(),
   title: z.string(),
-  category: z.enum(['dsa', 'system-design', 'database', 'networking', 'os', 'oop']),
-  difficulty: z.enum(['easy', 'medium', 'hard']),
-  status: z.enum(['not-started', 'in-progress', 'completed']),
+  category: z.enum([
+    "dsa",
+    "system-design",
+    "database",
+    "networking",
+    "os",
+    "oop",
+  ]),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  status: z.enum(["not-started", "in-progress", "completed"]),
   confidence: z.union([
     z.literal(1),
     z.literal(2),

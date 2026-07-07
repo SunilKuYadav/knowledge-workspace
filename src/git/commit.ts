@@ -1,12 +1,12 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
 
 /**
  * The type of action performed on a file.
  */
-export type GitAction = 'create' | 'update' | 'delete';
+export type GitAction = "create" | "update" | "delete";
 
 /**
  * Generates a descriptive commit message based on the action, file path, and optional item title.
@@ -20,7 +20,7 @@ export type GitAction = 'create' | 'update' | 'delete';
 export function generateCommitMessage(
   action: GitAction,
   filePath: string,
-  itemTitle?: string
+  itemTitle?: string,
 ): string {
   const actionLabel = action.charAt(0).toUpperCase() + action.slice(1);
 
@@ -37,7 +37,7 @@ export function generateCommitMessage(
  */
 export async function executeGitAdd(
   filePath: string,
-  cwd: string
+  cwd: string,
 ): Promise<void> {
   await execAsync(`git add "${filePath}"`, { cwd });
 }
@@ -48,7 +48,7 @@ export async function executeGitAdd(
  */
 export async function executeGitCommit(
   message: string,
-  cwd: string
+  cwd: string,
 ): Promise<void> {
   await execAsync(`git commit -m "${message}"`, { cwd });
 }

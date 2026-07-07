@@ -1,26 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 interface SearchResult {
   id: string;
-  type: 'topic' | 'problem' | 'note' | 'flashcard';
+  type: "topic" | "problem" | "note" | "flashcard";
   title: string;
   snippet: string;
   score: number;
   path: string;
 }
 
-type TypeFilter = '' | 'topic' | 'problem' | 'note' | 'flashcard';
+type TypeFilter = "" | "topic" | "problem" | "note" | "flashcard";
 
 /**
  * Search page with real-time debounced search, type filter dropdown,
  * and results list with links to items.
  */
 export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<TypeFilter>('');
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<TypeFilter>("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +33,7 @@ export default function SearchPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ q });
-      if (type) params.set('type', type);
+      if (type) params.set("type", type);
 
       const res = await fetch(`/api/search?${params.toString()}`);
       if (res.ok) {
@@ -94,13 +94,13 @@ export default function SearchPage() {
         </div>
 
         {/* Loading indicator */}
-        {loading && (
-          <p className="mb-4 text-sm text-gray-500">Searching...</p>
-        )}
+        {loading && <p className="mb-4 text-sm text-gray-500">Searching...</p>}
 
         {/* Results */}
         {!loading && query.length >= 2 && results.length === 0 && (
-          <p className="text-gray-500">No results found for &ldquo;{query}&rdquo;</p>
+          <p className="text-gray-500">
+            No results found for &ldquo;{query}&rdquo;
+          </p>
         )}
 
         {results.length > 0 && (
@@ -122,7 +122,9 @@ export default function SearchPage() {
                           {result.snippet}
                         </p>
                       )}
-                      <p className="mt-2 text-xs text-gray-400">{result.path}</p>
+                      <p className="mt-2 text-xs text-gray-400">
+                        {result.path}
+                      </p>
                     </div>
                   </div>
                 </Link>
@@ -147,12 +149,12 @@ export default function SearchPage() {
  */
 function getResultLink(result: SearchResult): string {
   switch (result.type) {
-    case 'topic':
+    case "topic":
       return `/topics/${result.id}`;
-    case 'problem':
+    case "problem":
       return `/problems/${result.id}`;
-    case 'flashcard':
-      return `/topics/${result.path.replace('flashcards/', '')}`;
+    case "flashcard":
+      return `/topics/${result.path.replace("flashcards/", "")}`;
     default:
       return `/topics/${result.id}`;
   }
@@ -161,17 +163,17 @@ function getResultLink(result: SearchResult): string {
 /**
  * Displays a colored badge for the content type.
  */
-function TypeBadge({ type }: { type: SearchResult['type'] }) {
+function TypeBadge({ type }: { type: SearchResult["type"] }) {
   const styles: Record<string, string> = {
-    topic: 'bg-blue-100 text-blue-800',
-    problem: 'bg-green-100 text-green-800',
-    note: 'bg-yellow-100 text-yellow-800',
-    flashcard: 'bg-purple-100 text-purple-800',
+    topic: "bg-blue-100 text-blue-800",
+    problem: "bg-green-100 text-green-800",
+    note: "bg-yellow-100 text-yellow-800",
+    flashcard: "bg-purple-100 text-purple-800",
   };
 
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[type] || 'bg-gray-100 text-gray-800'}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[type] || "bg-gray-100 text-gray-800"}`}
     >
       {type}
     </span>

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Zod schema for a Problem — a coding problem folder containing
@@ -7,11 +7,11 @@ import { z } from 'zod';
 export const ProblemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  platform: z.enum(['leetcode', 'codeforces', 'gfg']),
-  difficulty: z.enum(['easy', 'medium', 'hard']),
+  platform: z.enum(["leetcode", "codeforces", "gfg"]),
+  difficulty: z.enum(["easy", "medium", "hard"]),
   companies: z.array(z.string()),
   patterns: z.array(z.string()),
-  status: z.enum(['not-started', 'attempted', 'solved']),
+  status: z.enum(["not-started", "attempted", "solved"]),
   favorite: z.boolean(),
   url: z.string().optional(),
   createdAt: z.string(),

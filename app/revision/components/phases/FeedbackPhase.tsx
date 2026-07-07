@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { MarkdownRenderer } from '@/src/components/MarkdownRenderer';
-import type { EvaluationResult } from '../../lib/types';
+import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
+import type { EvaluationResult } from "../../lib/types";
 
 interface FeedbackPhaseProps {
   evaluation: EvaluationResult;
@@ -9,7 +9,11 @@ interface FeedbackPhaseProps {
   onNext: () => void;
 }
 
-export function FeedbackPhase({ evaluation, isLastQuestion, onNext }: FeedbackPhaseProps) {
+export function FeedbackPhase({
+  evaluation,
+  isLastQuestion,
+  onNext,
+}: FeedbackPhaseProps) {
   return (
     <div className="space-y-4">
       {/* Score card */}
@@ -21,10 +25,10 @@ export function FeedbackPhase({ evaluation, isLastQuestion, onNext }: FeedbackPh
           <div
             className={`text-2xl font-bold ${
               evaluation.score >= 4
-                ? 'text-green-600 dark:text-green-400'
+                ? "text-green-600 dark:text-green-400"
                 : evaluation.score === 3
-                ? 'text-yellow-600 dark:text-yellow-400'
-                : 'text-red-600 dark:text-red-400'
+                  ? "text-yellow-600 dark:text-yellow-400"
+                  : "text-red-600 dark:text-red-400"
             }`}
           >
             {evaluation.score}/5
@@ -81,9 +85,7 @@ export function FeedbackPhase({ evaluation, isLastQuestion, onNext }: FeedbackPh
               ✓ Expected Answer
             </h4>
             <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
-              <MarkdownRenderer>
-                {evaluation.correctAnswer}
-              </MarkdownRenderer>
+              <MarkdownRenderer>{evaluation.correctAnswer}</MarkdownRenderer>
             </div>
           </div>
         )}
@@ -95,7 +97,7 @@ export function FeedbackPhase({ evaluation, isLastQuestion, onNext }: FeedbackPh
           onClick={onNext}
           className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
-          {isLastQuestion ? 'View Summary →' : 'Next Question →'}
+          {isLastQuestion ? "View Summary →" : "Next Question →"}
         </button>
       </div>
     </div>

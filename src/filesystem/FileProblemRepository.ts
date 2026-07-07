@@ -1,8 +1,8 @@
-import { rm } from 'fs/promises';
-import path from 'path';
-import type { Problem, RevisionData } from '@/types';
-import type { ProblemRepository } from '@/repository';
-import { WORKSPACE_STRUCTURE } from '../lib/constants';
+import { rm } from "fs/promises";
+import path from "path";
+import type { Problem, RevisionData } from "@/types";
+import type { ProblemRepository } from "@/repository";
+import { WORKSPACE_STRUCTURE } from "../lib/constants";
 import {
   readJsonFile,
   writeJsonFile,
@@ -10,7 +10,7 @@ import {
   writeMarkdownFile,
   listDirectories,
   ensureDirectoryExists,
-} from './workspace';
+} from "./workspace";
 
 /**
  * Generates a URL-safe slug from a title string.
@@ -20,8 +20,8 @@ import {
 function generateSlug(title: string): string {
   return title
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /**
@@ -32,7 +32,7 @@ export class FileProblemRepository implements ProblemRepository {
   private basePath: string;
 
   constructor(workspacePath: string) {
-    this.basePath = path.join(workspacePath, 'problems');
+    this.basePath = path.join(workspacePath, "problems");
   }
 
   /**
@@ -47,7 +47,7 @@ export class FileProblemRepository implements ProblemRepository {
 
       for (const slug of slugDirs) {
         const problemJson = await readJsonFile<Problem>(
-          path.join(platformPath, slug, 'problem.json')
+          path.join(platformPath, slug, "problem.json"),
         );
         if (problemJson) {
           problems.push(problemJson);
@@ -63,7 +63,12 @@ export class FileProblemRepository implements ProblemRepository {
    */
   async getById(id: string): Promise<Problem | null> {
     for (const platform of WORKSPACE_STRUCTURE.problems) {
-      const problemPath = path.join(this.basePath, platform, id, 'problem.json');
+      const problemPath = path.join(
+        this.basePath,
+        platform,
+        id,
+        "problem.json",
+      );
       const problem = await readJsonFile<Problem>(problemPath);
       if (problem) {
         return problem;
@@ -77,7 +82,7 @@ export class FileProblemRepository implements ProblemRepository {
    * Generates slug ID from title and places folder under the platform subdirectory.
    */
   async create(
-    data: Omit<Problem, 'id' | 'createdAt' | 'updatedAt'>
+    data: Omit<Problem, "id" | "createdAt" | "updatedAt">,
   ): Promise<Problem> {
     const id = generateSlug(data.title);
     const now = new Date().toISOString();
@@ -92,9 +97,9 @@ export class FileProblemRepository implements ProblemRepository {
     const folderPath = path.join(this.basePath, data.platform, id);
     await ensureDirectoryExists(folderPath);
 
-    await writeJsonFile(path.join(folderPath, 'problem.json'), problem);
-    await writeMarkdownFile(path.join(folderPath, 'notes.md'), '');
-    await writeMarkdownFile(path.join(folderPath, 'solution.md'), '');
+    await writeJsonFile(path.join(folderPath, "problem.json"), problem);
+    await writeMarkdownFile(path.join(folderPath, "notes.md"), "");
+    await writeMarkdownFile(path.join(folderPath, "solution.md"), "");
 
     return problem;
   }
@@ -117,7 +122,7 @@ export class FileProblemRepository implements ProblemRepository {
     };
 
     const folderPath = path.join(this.basePath, existing.platform, id);
-    await writeJsonFile(path.join(folderPath, 'problem.json'), updated);
+    await writeJsonFile(path.join(folderPath, "problem.json"), updated);
 
     return updated;
   }
@@ -129,7 +134,7 @@ export class FileProblemRepository implements ProblemRepository {
     for (const platform of WORKSPACE_STRUCTURE.problems) {
       const folderPath = path.join(this.basePath, platform, id);
       const problem = await readJsonFile<Problem>(
-        path.join(folderPath, 'problem.json')
+        path.join(folderPath, "problem.json"),
       );
       if (problem) {
         await rm(folderPath, { recursive: true, force: true });
@@ -143,8 +148,8 @@ export class FileProblemRepository implements ProblemRepository {
    */
   async getNotes(id: string): Promise<string> {
     const folderPath = await this.findProblemFolder(id);
-    if (!folderPath) return '';
-    return readMarkdownFile(path.join(folderPath, 'notes.md'));
+    if (!folderPath) return "";
+    return readMarkdownFile(path.join(folderPath, "notes.md"));
   }
 
   /**
@@ -155,7 +160,7 @@ export class FileProblemRepository implements ProblemRepository {
     if (!folderPath) {
       throw new Error(`Problem not found: ${id}`);
     }
-    await writeMarkdownFile(path.join(folderPath, 'notes.md'), content);
+    await writeMarkdownFile(path.join(folderPath, "notes.md"), content);
   }
 
   /**
@@ -163,8 +168,8 @@ export class FileProblemRepository implements ProblemRepository {
    */
   async getSolution(id: string): Promise<string> {
     const folderPath = await this.findProblemFolder(id);
-    if (!folderPath) return '';
-    return readMarkdownFile(path.join(folderPath, 'solution.md'));
+    if (!folderPath) return "";
+    return readMarkdownFile(path.join(folderPath, "solution.md"));
   }
 
   /**
@@ -175,7 +180,7 @@ export class FileProblemRepository implements ProblemRepository {
     if (!folderPath) {
       throw new Error(`Problem not found: ${id}`);
     }
-    await writeMarkdownFile(path.join(folderPath, 'solution.md'), content);
+    await writeMarkdownFile(path.join(folderPath, "solution.md"), content);
   }
 
   /**
@@ -189,7 +194,7 @@ export class FileProblemRepository implements ProblemRepository {
     }
 
     const revision = await readJsonFile<RevisionData>(
-      path.join(folderPath, 'revision.json')
+      path.join(folderPath, "revision.json"),
     );
     return revision ?? this.defaultRevisionData(id);
   }
@@ -202,7 +207,7 @@ export class FileProblemRepository implements ProblemRepository {
     for (const platform of WORKSPACE_STRUCTURE.problems) {
       const folderPath = path.join(this.basePath, platform, id);
       const problem = await readJsonFile<Problem>(
-        path.join(folderPath, 'problem.json')
+        path.join(folderPath, "problem.json"),
       );
       if (problem) {
         return folderPath;
@@ -217,7 +222,7 @@ export class FileProblemRepository implements ProblemRepository {
   private defaultRevisionData(id: string): RevisionData {
     return {
       itemId: id,
-      itemType: 'problem',
+      itemType: "problem",
       lastReviewed: null,
       nextReview: new Date().toISOString(),
       confidence: 1,

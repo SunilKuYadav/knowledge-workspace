@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
+import Link from "next/link";
 
 interface CodingInterviewButtonProps {
-  source: 'problem' | 'topic' | 'revision' | 'practice' | 'interview';
+  source: "problem" | "topic" | "revision" | "practice" | "interview";
   id?: string;
   title?: string;
   category?: string;
   tags?: string[];
   concepts?: string[];
-  difficulty?: 'easy' | 'medium' | 'hard';
+  difficulty?: "easy" | "medium" | "hard";
   /** Display variant: 'button' shows a standard button, 'card' shows a larger card-style link */
-  variant?: 'button' | 'card';
+  variant?: "button" | "card";
 }
 
 /**
@@ -26,28 +26,30 @@ export default function CodingInterviewButton({
   tags,
   concepts,
   difficulty,
-  variant = 'button',
+  variant = "button",
 }: CodingInterviewButtonProps) {
   const params = new URLSearchParams();
-  params.set('source', source);
+  params.set("source", source);
 
-  if (id) params.set('id', id);
-  if (title) params.set('title', title);
-  if (category) params.set('category', category);
-  if (tags?.length) params.set('tags', tags.join(','));
-  if (concepts?.length) params.set('concepts', concepts.join(','));
-  if (difficulty) params.set('difficulty', difficulty);
+  if (id) params.set("id", id);
+  if (title) params.set("title", title);
+  if (category) params.set("category", category);
+  if (tags?.length) params.set("tags", tags.join(","));
+  if (concepts?.length) params.set("concepts", concepts.join(","));
+  if (difficulty) params.set("difficulty", difficulty);
 
   const href = `/coding-interview?${params.toString()}`;
 
-  if (variant === 'card') {
+  if (variant === "card") {
     return (
       <Link
         href={href}
         className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all block"
       >
         <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden="true">💻</span>
+          <span className="text-2xl" aria-hidden="true">
+            💻
+          </span>
           <div>
             <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
               Coding Interview

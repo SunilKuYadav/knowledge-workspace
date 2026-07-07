@@ -1,45 +1,57 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import type { ReviewQuestion, EvaluationResult, AnswerRecord, SessionSummary } from '@/app/revision/lib/types';
+import { useState, useCallback } from "react";
+import type {
+  ReviewQuestion,
+  EvaluationResult,
+  AnswerRecord,
+  SessionSummary,
+} from "@/app/revision/lib/types";
 
 interface SelfTestButtonProps {
   itemId: string;
-  itemType: 'topic' | 'problem';
+  itemType: "topic" | "problem";
   confidence: number;
 }
 
-type Phase = 'closed' | 'generating' | 'answering' | 'evaluating' | 'feedback' | 'summary';
+type Phase =
+  "closed" | "generating" | "answering" | "evaluating" | "feedback" | "summary";
 
-export default function SelfTestButton({ itemId, itemType, confidence }: SelfTestButtonProps) {
-  const [phase, setPhase] = useState<Phase>('closed');
+export default function SelfTestButton({
+  itemId,
+  itemType,
+  confidence,
+}: SelfTestButtonProps) {
+  const [phase, setPhase] = useState<Phase>("closed");
   const [questions, setQuestions] = useState<ReviewQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [userResponse, setUserResponse] = useState('');
+  const [userResponse, setUserResponse] = useState("");
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
-  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
-  const [hint, setHint] = useState('');
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(
+    null,
+  );
+  const [hint, setHint] = useState("");
   const [hintLoading, setHintLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const startTest = useCallback(async () => {
-    setPhase('generating');
-    setError('');
+    setPhase("generating");
+    setError("");
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setAnswers([]);
     setSessionSummary(null);
-    setHint('');
-    setUserResponse('');
+    setHint("");
+    setUserResponse("");
     setEvaluation(null);
 
     try {
-      const res = await fetch('/api/ai/review-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai/review-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'generate',
+          action: "generate",
           itemId,
           itemType,
           confidence,
@@ -47,39 +59,39 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
       });
 
       if (!res.ok) {
-        setError('Failed to generate questions. Is the AI service running?');
-        setPhase('closed');
+        setError("Failed to generate questions. Is the AI service running?");
+        setPhase("closed");
         return;
       }
 
       const data = await res.json();
       if (!data.questions || data.questions.length === 0) {
-        setError('No questions generated. Try again.');
-        setPhase('closed');
+        setError("No questions generated. Try again.");
+        setPhase("closed");
         return;
       }
 
       setQuestions(data.questions);
-      setPhase('answering');
+      setPhase("answering");
     } catch {
-      setError('Connection failed. Please try again.');
-      setPhase('closed');
+      setError("Connection failed. Please try again.");
+      setPhase("closed");
     }
   }, [itemId, itemType, confidence]);
 
   const submitAnswer = useCallback(async () => {
     if (!userResponse.trim()) return;
-    setPhase('evaluating');
-    setError('');
+    setPhase("evaluating");
+    setError("");
 
     const currentQuestion = questions[currentQuestionIndex];
 
     try {
-      const res = await fetch('/api/ai/review-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai/review-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'evaluate',
+          action: "evaluate",
           itemId,
           itemType,
           question: currentQuestion.question,
@@ -89,8 +101,8 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
       });
 
       if (!res.ok) {
-        setError('Failed to evaluate response.');
-        setPhase('answering');
+        setError("Failed to evaluate response.");
+        setPhase("answering");
         return;
       }
 
@@ -111,28 +123,28 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
         },
       ]);
 
-      setPhase('feedback');
+      setPhase("feedback");
     } catch {
-      setError('Connection failed during evaluation.');
-      setPhase('answering');
+      setError("Connection failed during evaluation.");
+      setPhase("answering");
     }
   }, [userResponse, questions, currentQuestionIndex, itemId, itemType]);
 
   const nextQuestion = useCallback(async () => {
     const nextIdx = currentQuestionIndex + 1;
-    setHint('');
-    setUserResponse('');
+    setHint("");
+    setUserResponse("");
     setEvaluation(null);
 
     if (nextIdx >= questions.length) {
       // Get summary
-      setPhase('evaluating');
+      setPhase("evaluating");
       try {
-        const res = await fetch('/api/ai/review-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch("/api/ai/review-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            action: 'session-summary',
+            action: "session-summary",
             itemId,
             itemType,
             answers,
@@ -145,26 +157,26 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
       } catch {
         // Non-critical
       }
-      setPhase('summary');
+      setPhase("summary");
     } else {
       setCurrentQuestionIndex(nextIdx);
-      setPhase('answering');
+      setPhase("answering");
     }
   }, [currentQuestionIndex, questions.length, itemId, itemType, answers]);
 
   const requestHint = useCallback(async () => {
     if (hintLoading) return;
     setHintLoading(true);
-    setHint('');
+    setHint("");
 
     const currentQuestion = questions[currentQuestionIndex];
 
     try {
-      const res = await fetch('/api/ai/review-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/ai/review-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'hint',
+          action: "hint",
           itemId,
           itemType,
           question: currentQuestion.question,
@@ -175,7 +187,7 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
       if (res.ok && res.body) {
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
-        let accumulated = '';
+        let accumulated = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -183,29 +195,29 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
           setHint(accumulated);
         }
       } else {
-        setHint('Unable to get hint right now.');
+        setHint("Unable to get hint right now.");
       }
     } catch {
-      setHint('Unable to get hint right now.');
+      setHint("Unable to get hint right now.");
     } finally {
       setHintLoading(false);
     }
   }, [hintLoading, questions, currentQuestionIndex, itemId, itemType]);
 
   const close = () => {
-    setPhase('closed');
+    setPhase("closed");
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setAnswers([]);
     setSessionSummary(null);
-    setHint('');
-    setUserResponse('');
+    setHint("");
+    setUserResponse("");
     setEvaluation(null);
-    setError('');
+    setError("");
   };
 
   // ─── Button only (closed state) ───
-  if (phase === 'closed') {
+  if (phase === "closed") {
     return (
       <div>
         <button
@@ -251,7 +263,9 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
           <div className="h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden mb-5">
             <div
               className="h-full bg-emerald-500 rounded-full transition-all"
-              style={{ width: `${((currentQuestionIndex + (phase === 'feedback' || phase === 'summary' ? 1 : 0)) / questions.length) * 100}%` }}
+              style={{
+                width: `${((currentQuestionIndex + (phase === "feedback" || phase === "summary" ? 1 : 0)) / questions.length) * 100}%`,
+              }}
             />
           </div>
         )}
@@ -264,15 +278,17 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
         )}
 
         {/* Generating */}
-        {phase === 'generating' && (
+        {phase === "generating" && (
           <div className="text-center py-10">
             <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Generating questions...</p>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+              Generating questions...
+            </p>
           </div>
         )}
 
         {/* Answering */}
-        {phase === 'answering' && questions[currentQuestionIndex] && (
+        {phase === "answering" && questions[currentQuestionIndex] && (
           <div>
             <div className="mb-4">
               <span className="text-xs font-medium px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
@@ -285,8 +301,12 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
 
             {hint && (
               <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Hint</p>
-                <p className="text-sm text-amber-800 dark:text-amber-300">{hint}</p>
+                <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
+                  Hint
+                </p>
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  {hint}
+                </p>
               </div>
             )}
 
@@ -304,7 +324,7 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
                 disabled={hintLoading}
                 className="text-xs text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50"
               >
-                {hintLoading ? 'Loading hint...' : '💡 Get a hint'}
+                {hintLoading ? "Loading hint..." : "💡 Get a hint"}
               </button>
               <button
                 onClick={submitAnswer}
@@ -318,47 +338,65 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
         )}
 
         {/* Evaluating */}
-        {phase === 'evaluating' && (
+        {phase === "evaluating" && (
           <div className="text-center py-10">
             <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
-            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Evaluating...</p>
+            <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
+              Evaluating...
+            </p>
           </div>
         )}
 
         {/* Feedback */}
-        {phase === 'feedback' && evaluation && (
+        {phase === "feedback" && evaluation && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className={`text-sm font-bold ${evaluation.score >= 7 ? 'text-green-600' : evaluation.score >= 4 ? 'text-yellow-600' : 'text-red-600'}`}>
+              <span
+                className={`text-sm font-bold ${evaluation.score >= 7 ? "text-green-600" : evaluation.score >= 4 ? "text-yellow-600" : "text-red-600"}`}
+              >
                 Score: {evaluation.score}/10
               </span>
             </div>
 
             <div className="mb-4 p-3 rounded-lg bg-zinc-50 dark:bg-zinc-800">
-              <p className="text-sm text-zinc-700 dark:text-zinc-300">{evaluation.feedback}</p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                {evaluation.feedback}
+              </p>
             </div>
 
             {evaluation.correctAnswer && (
               <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">Correct Answer</p>
-                <p className="text-sm text-blue-800 dark:text-blue-300">{evaluation.correctAnswer}</p>
+                <p className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
+                  Correct Answer
+                </p>
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  {evaluation.correctAnswer}
+                </p>
               </div>
             )}
 
             {evaluation.mistakes.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">Mistakes</p>
+                <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">
+                  Mistakes
+                </p>
                 <ul className="list-disc list-inside text-sm text-zinc-700 dark:text-zinc-300 space-y-0.5">
-                  {evaluation.mistakes.map((m, i) => <li key={i}>{m}</li>)}
+                  {evaluation.mistakes.map((m, i) => (
+                    <li key={i}>{m}</li>
+                  ))}
                 </ul>
               </div>
             )}
 
             {evaluation.keyInsights.length > 0 && (
               <div className="mb-4">
-                <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">Key Insights</p>
+                <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">
+                  Key Insights
+                </p>
                 <ul className="list-disc list-inside text-sm text-zinc-700 dark:text-zinc-300 space-y-0.5">
-                  {evaluation.keyInsights.map((k, i) => <li key={i}>{k}</li>)}
+                  {evaluation.keyInsights.map((k, i) => (
+                    <li key={i}>{k}</li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -368,14 +406,16 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
                 onClick={nextQuestion}
                 className="px-4 py-2 rounded-md text-sm font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
               >
-                {currentQuestionIndex >= questions.length - 1 ? 'See Summary' : 'Next Question'}
+                {currentQuestionIndex >= questions.length - 1
+                  ? "See Summary"
+                  : "Next Question"}
               </button>
             </div>
           </div>
         )}
 
         {/* Summary */}
-        {phase === 'summary' && (
+        {phase === "summary" && (
           <div>
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
               Test Complete 🎉
@@ -384,9 +424,16 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
             {/* Score overview */}
             <div className="grid grid-cols-3 gap-3 mb-4">
               {answers.map((a, i) => (
-                <div key={i} className="text-center p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800">
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400">Q{i + 1}</p>
-                  <p className={`text-sm font-bold ${a.score >= 7 ? 'text-green-600' : a.score >= 4 ? 'text-yellow-600' : 'text-red-600'}`}>
+                <div
+                  key={i}
+                  className="text-center p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800"
+                >
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Q{i + 1}
+                  </p>
+                  <p
+                    className={`text-sm font-bold ${a.score >= 7 ? "text-green-600" : a.score >= 4 ? "text-yellow-600" : "text-red-600"}`}
+                  >
                     {a.score}/10
                   </p>
                 </div>
@@ -395,13 +442,19 @@ export default function SelfTestButton({ itemId, itemType, confidence }: SelfTes
 
             {sessionSummary && (
               <div className="space-y-3">
-                <p className="text-sm text-zinc-700 dark:text-zinc-300">{sessionSummary.summary}</p>
+                <p className="text-sm text-zinc-700 dark:text-zinc-300">
+                  {sessionSummary.summary}
+                </p>
 
                 {sessionSummary.focusAreas.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Focus Areas</p>
+                    <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+                      Focus Areas
+                    </p>
                     <ul className="list-disc list-inside text-sm text-zinc-700 dark:text-zinc-300 space-y-0.5">
-                      {sessionSummary.focusAreas.map((f, i) => <li key={i}>{f}</li>)}
+                      {sessionSummary.focusAreas.map((f, i) => (
+                        <li key={i}>{f}</li>
+                      ))}
                     </ul>
                   </div>
                 )}

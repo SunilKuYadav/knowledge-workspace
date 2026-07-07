@@ -1,11 +1,11 @@
 /**
  * Quiz generation prompt builder.
  */
-import { composePrompt } from '../utils/compose';
-import { IDENTITY_CONTEXT } from '../system/identity';
-import { TEACHING_CONTEXT } from '../system/teaching';
-import { JSON_CONTEXT } from '../system/json';
-import { QUIZ_SCHEMA } from '../schemas/quiz';
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+import { TEACHING_CONTEXT } from "../system/teaching";
+import { JSON_CONTEXT } from "../system/json";
+import { QUIZ_SCHEMA } from "../schemas/quiz";
 
 export function buildQuizPrompt(content: string): string {
   return composePrompt({

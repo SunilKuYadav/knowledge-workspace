@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import type { CategorizedItem } from '../lib/types';
+import type { CategorizedItem } from "../lib/types";
 
 interface HistoryViewProps {
   categorizedItems: CategorizedItem[];
@@ -8,7 +8,7 @@ interface HistoryViewProps {
 
 export function HistoryView({ categorizedItems }: HistoryViewProps) {
   const itemsWithHistory = categorizedItems.filter(
-    (ci) => ci.item.history.length > 0
+    (ci) => ci.item.history.length > 0,
   );
 
   if (itemsWithHistory.length === 0) {
@@ -41,7 +41,7 @@ export function HistoryView({ categorizedItems }: HistoryViewProps) {
               </p>
             </div>
             <span className="text-xs text-zinc-400">
-              Next: {ci.item.nextReview.split('T')[0]}
+              Next: {ci.item.nextReview.split("T")[0]}
             </span>
           </div>
 
@@ -56,7 +56,7 @@ export function HistoryView({ categorizedItems }: HistoryViewProps) {
                   key={entry.id}
                   className="flex-1 rounded-t bg-blue-500 dark:bg-blue-400 transition-all"
                   style={{ height: `${(entry.confidence / 5) * 100}%` }}
-                  title={`${entry.date.split('T')[0]}: ${entry.confidence}/5`}
+                  title={`${entry.date.split("T")[0]}: ${entry.confidence}/5`}
                 />
               ))}
             </div>
@@ -77,15 +77,15 @@ export function HistoryView({ categorizedItems }: HistoryViewProps) {
                     className="flex items-center justify-between text-xs"
                   >
                     <span className="text-zinc-600 dark:text-zinc-400">
-                      {entry.date.split('T')[0]}
+                      {entry.date.split("T")[0]}
                     </span>
                     <span
                       className={`font-medium ${
                         entry.confidence >= 4
-                          ? 'text-green-600 dark:text-green-400'
+                          ? "text-green-600 dark:text-green-400"
                           : entry.confidence === 3
-                          ? 'text-yellow-600 dark:text-yellow-400'
-                          : 'text-red-600 dark:text-red-400'
+                            ? "text-yellow-600 dark:text-yellow-400"
+                            : "text-red-600 dark:text-red-400"
                       }`}
                     >
                       {entry.confidence}/5

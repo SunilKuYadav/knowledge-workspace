@@ -31,7 +31,7 @@ const INTERVAL_MULTIPLIERS: Record<Confidence, number> = {
  */
 export function calculateInterval(
   confidence: Confidence,
-  previousInterval: number = 1
+  previousInterval: number = 1,
 ): number {
   const interval = previousInterval <= 0 ? 1 : previousInterval;
   const multiplier = INTERVAL_MULTIPLIERS[confidence];

@@ -5,14 +5,14 @@
  */
 export function extractTags(content: string): string[] {
   // Remove code blocks to avoid matching inside them
-  const withoutCodeBlocks = content.replace(/```[\s\S]*?```/g, '');
+  const withoutCodeBlocks = content.replace(/```[\s\S]*?```/g, "");
 
   // Match hashtags: # followed by word chars and hyphens, not at line start (headings)
   const tagPattern = /(?:^|[^\w#])#([a-zA-Z][a-zA-Z0-9-]*)/gm;
   const tags = new Set<string>();
 
   // Filter out lines that are headings (start with one or more #)
-  const lines = withoutCodeBlocks.split('\n');
+  const lines = withoutCodeBlocks.split("\n");
   for (const line of lines) {
     // Skip heading lines
     if (/^\s*#{1,6}\s/.test(line)) {
@@ -47,7 +47,7 @@ export function extractCodeBlocks(content: string): CodeBlock[] {
   let match: RegExpExecArray | null;
   while ((match = codeBlockPattern.exec(content)) !== null) {
     blocks.push({
-      language: match[1] || '',
+      language: match[1] || "",
       code: match[2],
     });
   }

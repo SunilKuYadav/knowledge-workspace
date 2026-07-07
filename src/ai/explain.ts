@@ -9,9 +9,13 @@
  * Requirements: 5.4, 5.5
  */
 
-import type { Problem } from '@/types';
-import type { AIClient } from './client';
-import { buildExplainPrompt, buildSimilarProblemsPrompt, buildInterviewPrepPrompt } from './prompts';
+import type { Problem } from "@/types";
+import type { AIClient } from "./client";
+import {
+  buildExplainPrompt,
+  buildSimilarProblemsPrompt,
+  buildInterviewPrepPrompt,
+} from "./prompts";
 
 /**
  * Streams an explanation of a concept given surrounding context.
@@ -24,11 +28,11 @@ import { buildExplainPrompt, buildSimilarProblemsPrompt, buildInterviewPrepPromp
 export async function* explainConcept(
   concept: string,
   context: string,
-  client: AIClient
+  client: AIClient,
 ): AsyncGenerator<string> {
   const available = await client.isAvailable();
   if (!available) {
-    yield 'AI is currently unavailable. Please check your AI service configuration.';
+    yield "AI is currently unavailable. Please check your AI service configuration.";
     return;
   }
 
@@ -39,7 +43,7 @@ export async function* explainConcept(
       yield chunk;
     }
   } catch {
-    yield '\n\n[Error: Explanation generation failed. Please try again.]';
+    yield "\n\n[Error: Explanation generation failed. Please try again.]";
   }
 }
 
@@ -52,7 +56,7 @@ export async function* explainConcept(
  */
 export async function suggestSimilarProblems(
   problem: Problem,
-  client: AIClient
+  client: AIClient,
 ): Promise<string[]> {
   try {
     const available = await client.isAvailable();
@@ -64,11 +68,11 @@ export async function suggestSimilarProblems(
       problem.title,
       problem.platform,
       problem.difficulty,
-      problem.patterns.join(', '),
-      problem.companies.join(', ')
+      problem.patterns.join(", "),
+      problem.companies.join(", "),
     );
 
-    let fullResponse = '';
+    let fullResponse = "";
     for await (const chunk of client.generate(prompt)) {
       fullResponse += chunk;
     }
@@ -88,11 +92,11 @@ export async function suggestSimilarProblems(
  */
 export async function* generateInterviewPrep(
   problem: Problem,
-  client: AIClient
+  client: AIClient,
 ): AsyncGenerator<string> {
   const available = await client.isAvailable();
   if (!available) {
-    yield 'AI is currently unavailable. Please check your AI service configuration.';
+    yield "AI is currently unavailable. Please check your AI service configuration.";
     return;
   }
 
@@ -100,7 +104,7 @@ export async function* generateInterviewPrep(
     problem.title,
     problem.platform,
     problem.difficulty,
-    problem.patterns.join(', ')
+    problem.patterns.join(", "),
   );
 
   try {
@@ -108,7 +112,7 @@ export async function* generateInterviewPrep(
       yield chunk;
     }
   } catch {
-    yield '\n\n[Error: Interview prep generation failed. Please try again.]';
+    yield "\n\n[Error: Interview prep generation failed. Please try again.]";
   }
 }
 
@@ -120,7 +124,7 @@ function parseSuggestions(response: string): string[] {
     const trimmed = response.trim();
     const parsed = JSON.parse(trimmed);
     if (Array.isArray(parsed)) {
-      return parsed.filter((item): item is string => typeof item === 'string');
+      return parsed.filter((item): item is string => typeof item === "string");
     }
   } catch {
     // Fall through
@@ -132,7 +136,9 @@ function parseSuggestions(response: string): string[] {
     try {
       const parsed = JSON.parse(codeBlockMatch[1].trim());
       if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === 'string');
+        return parsed.filter(
+          (item): item is string => typeof item === "string",
+        );
       }
     } catch {
       // Fall through
@@ -145,7 +151,9 @@ function parseSuggestions(response: string): string[] {
     try {
       const parsed = JSON.parse(arrayMatch[0]);
       if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === 'string');
+        return parsed.filter(
+          (item): item is string => typeof item === "string",
+        );
       }
     } catch {
       // Give up

@@ -5,7 +5,7 @@
  * calculation to the review date.
  */
 
-import { calculateInterval } from './confidence';
+import { calculateInterval } from "./confidence";
 
 export interface SchedulerInput {
   currentConfidence: 1 | 2 | 3 | 4 | 5;
@@ -35,7 +35,7 @@ export function computeNextReview(input: SchedulerInput): SchedulerOutput {
   const reviewDateObj = new Date(reviewDate);
   reviewDateObj.setDate(reviewDateObj.getDate() + intervalDays);
 
-  const nextReview = reviewDateObj.toISOString().split('T')[0];
+  const nextReview = reviewDateObj.toISOString().split("T")[0];
 
   return { nextReview, intervalDays };
 }

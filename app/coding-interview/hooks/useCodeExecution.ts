@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { useInterviewStore } from '../store/interviewStore';
-import { executeCode } from '../services/executionService';
-import { evaluateCode } from '../lib/api';
-import { EXECUTION_TIMEOUT } from '../lib/constants';
+import { useState, useCallback } from "react";
+import { useInterviewStore } from "../store/interviewStore";
+import { executeCode } from "../services/executionService";
+import { evaluateCode } from "../lib/api";
+import { EXECUTION_TIMEOUT } from "../lib/constants";
 
 interface UseCodeExecutionReturn {
   isExecuting: boolean;
@@ -57,14 +57,15 @@ export function useCodeExecution(): UseCodeExecutionReturn {
         executionCount: state.executionCount + 1,
       }));
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Code execution failed';
+      const message =
+        err instanceof Error ? err.message : "Code execution failed";
       useInterviewStore.setState({
         lastExecutionResult: {
-          consoleOutput: '',
+          consoleOutput: "",
           testResults: [],
           executionTimeMs: 0,
           memoryUsageMb: 0,
-          error: { type: 'runtime', message },
+          error: { type: "runtime", message },
         },
       });
     } finally {
@@ -85,7 +86,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
 
     // Store submitted code
     useInterviewStore.setState({ submittedCode: code });
-    setPhase('evaluating');
+    setPhase("evaluating");
     setError(null);
 
     try {
@@ -97,15 +98,25 @@ export function useCodeExecution(): UseCodeExecutionReturn {
       });
 
       setEvaluation(evaluation);
-      setPhase('follow-up');
+      setPhase("follow-up");
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Evaluation failed';
+      const message = err instanceof Error ? err.message : "Evaluation failed";
       setError(message);
-      setPhase('error');
+      setPhase("error");
     } finally {
       setIsExecuting(false);
     }
-  }, [code, problem, language, lastExecutionResult, isExecuting, pauseTimer, setPhase, setError, setEvaluation]);
+  }, [
+    code,
+    problem,
+    language,
+    lastExecutionResult,
+    isExecuting,
+    pauseTimer,
+    setPhase,
+    setError,
+    setEvaluation,
+  ]);
 
   return { isExecuting, runCode, submitCode };
 }

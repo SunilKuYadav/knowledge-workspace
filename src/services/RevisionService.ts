@@ -1,5 +1,5 @@
-import type { RevisionData, RevisionEntry } from '@/types';
-import type { RevisionRepository } from '@/repository';
+import type { RevisionData, RevisionEntry } from "@/types";
+import type { RevisionRepository } from "@/repository";
 
 /**
  * Application service for Revision scheduling operations.
@@ -13,14 +13,14 @@ export class RevisionService {
    * Returns items due for review. Defaults currentDate to today's ISO date string.
    */
   async getDueItems(currentDate?: string): Promise<RevisionData[]> {
-    const date = currentDate ?? new Date().toISOString().split('T')[0];
+    const date = currentDate ?? new Date().toISOString().split("T")[0];
     return this.repository.getDueItems(date);
   }
 
   async updateRevision(
     itemId: string,
-    itemType: 'topic' | 'problem',
-    entry: RevisionEntry
+    itemType: "topic" | "problem",
+    entry: RevisionEntry,
   ): Promise<RevisionData> {
     return this.repository.updateRevision(itemId, itemType, entry);
   }

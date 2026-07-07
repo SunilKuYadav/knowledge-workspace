@@ -1,11 +1,11 @@
 /**
  * Form parsing prompt builders (topic & problem).
  */
-import { composePrompt } from '../utils/compose';
-import { IDENTITY_CONTEXT } from '../system/identity';
-import { JSON_CONTEXT } from '../system/json';
-import { TOPIC_PARSE_SCHEMA } from '../schemas/topic';
-import { PROBLEM_PARSE_SCHEMA } from '../schemas/problem';
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+import { JSON_CONTEXT } from "../system/json";
+import { TOPIC_PARSE_SCHEMA } from "../schemas/topic";
+import { PROBLEM_PARSE_SCHEMA } from "../schemas/problem";
 
 export function buildTopicParsePrompt(text: string): string {
   return composePrompt({

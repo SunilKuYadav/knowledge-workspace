@@ -9,7 +9,7 @@
  * - Is idempotent: format(format(code)) === format(code)
  */
 
-export type SupportedLanguage = 'javascript' | 'typescript';
+export type SupportedLanguage = "javascript" | "typescript";
 
 export interface FormatResult {
   formatted: string;
@@ -22,7 +22,7 @@ export interface FormatResult {
  */
 function checkBraceBalance(code: string): string | null {
   const stack: string[] = [];
-  const pairs: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
+  const pairs: Record<string, string> = { ")": "(", "]": "[", "}": "{" };
   let inSingleLineComment = false;
   let inMultiLineComment = false;
   let inString: string | null = null;
@@ -38,7 +38,7 @@ function checkBraceBalance(code: string): string | null {
       continue;
     }
 
-    if (ch === '\\' && inString !== null) {
+    if (ch === "\\" && inString !== null) {
       escaped = true;
       continue;
     }
@@ -47,7 +47,7 @@ function checkBraceBalance(code: string): string | null {
     if (inString !== null) {
       if (ch === inString) {
         // Handle template literal expressions
-        if (inString === '`' && ch === '`') {
+        if (inString === "`" && ch === "`") {
           inString = null;
         } else {
           inString = null;
@@ -58,14 +58,14 @@ function checkBraceBalance(code: string): string | null {
 
     // Handle comments
     if (inSingleLineComment) {
-      if (ch === '\n') {
+      if (ch === "\n") {
         inSingleLineComment = false;
       }
       continue;
     }
 
     if (inMultiLineComment) {
-      if (ch === '*' && next === '/') {
+      if (ch === "*" && next === "/") {
         inMultiLineComment = false;
         i++; // skip /
       }
@@ -73,28 +73,28 @@ function checkBraceBalance(code: string): string | null {
     }
 
     // Detect comment starts
-    if (ch === '/' && next === '/') {
+    if (ch === "/" && next === "/") {
       inSingleLineComment = true;
       i++;
       continue;
     }
 
-    if (ch === '/' && next === '*') {
+    if (ch === "/" && next === "*") {
       inMultiLineComment = true;
       i++;
       continue;
     }
 
     // Detect string starts
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === "'" || ch === "`") {
       inString = ch;
       continue;
     }
 
     // Track brackets
-    if (ch === '(' || ch === '[' || ch === '{') {
+    if (ch === "(" || ch === "[" || ch === "{") {
       stack.push(ch);
-    } else if (ch === ')' || ch === ']' || ch === '}') {
+    } else if (ch === ")" || ch === "]" || ch === "}") {
       const expected = pairs[ch];
       if (stack.length === 0 || stack[stack.length - 1] !== expected) {
         return `Unmatched '${ch}' at position ${i}`;
@@ -104,7 +104,7 @@ function checkBraceBalance(code: string): string | null {
   }
 
   if (inMultiLineComment) {
-    return 'Unterminated multi-line comment';
+    return "Unterminated multi-line comment";
   }
 
   if (inString !== null) {
@@ -124,7 +124,10 @@ function checkBraceBalance(code: string): string | null {
  * For TypeScript, falls back to brace matching only since we can't
  * parse TS syntax without a full compiler.
  */
-function detectSyntaxError(code: string, language: SupportedLanguage): string | null {
+function detectSyntaxError(
+  code: string,
+  language: SupportedLanguage,
+): string | null {
   // Always check brace balance first (applies to both JS and TS)
   const braceError = checkBraceBalance(code);
   if (braceError) {
@@ -132,7 +135,7 @@ function detectSyntaxError(code: string, language: SupportedLanguage): string | 
   }
 
   // For JavaScript, additionally try Function constructor for deeper syntax checks
-  if (language === 'javascript') {
+  if (language === "javascript") {
     try {
       new Function(code);
     } catch (e) {
@@ -165,7 +168,7 @@ function countBrackets(line: string): { opens: number; closes: number } {
       continue;
     }
 
-    if (ch === '\\' && inString !== null) {
+    if (ch === "\\" && inString !== null) {
       escaped = true;
       continue;
     }
@@ -181,19 +184,19 @@ function countBrackets(line: string): { opens: number; closes: number } {
       continue;
     }
 
-    if (ch === '/' && next === '/') {
+    if (ch === "/" && next === "/") {
       inSingleLineComment = true;
       continue;
     }
 
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === "'" || ch === "`") {
       inString = ch;
       continue;
     }
 
-    if (ch === '{' || ch === '(' || ch === '[') {
+    if (ch === "{" || ch === "(" || ch === "[") {
       opens++;
-    } else if (ch === '}' || ch === ')' || ch === ']') {
+    } else if (ch === "}" || ch === ")" || ch === "]") {
       closes++;
     }
   }
@@ -207,7 +210,7 @@ function countBrackets(line: string): { opens: number; closes: number } {
 function startsWithClose(trimmedLine: string): boolean {
   if (trimmedLine.length === 0) return false;
   const first = trimmedLine[0];
-  return first === '}' || first === ')' || first === ']';
+  return first === "}" || first === ")" || first === "]";
 }
 
 /**
@@ -224,7 +227,10 @@ function startsWithClose(trimmedLine: string): boolean {
  * @param language - 'javascript' or 'typescript'
  * @returns FormatResult with formatted code or original code + error
  */
-export function formatCode(code: string, language: SupportedLanguage = 'javascript'): FormatResult {
+export function formatCode(
+  code: string,
+  language: SupportedLanguage = "javascript",
+): FormatResult {
   // Handle empty/whitespace-only code
   if (!code || code.trim().length === 0) {
     return { formatted: code };
@@ -236,10 +242,10 @@ export function formatCode(code: string, language: SupportedLanguage = 'javascri
     return { formatted: code, error: `Formatting failed: ${syntaxError}` };
   }
 
-  const lines = code.split('\n');
+  const lines = code.split("\n");
   const formattedLines: string[] = [];
   let indentLevel = 0;
-  const INDENT = '  '; // 2-space indentation
+  const INDENT = "  "; // 2-space indentation
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
@@ -247,7 +253,7 @@ export function formatCode(code: string, language: SupportedLanguage = 'javascri
 
     // Preserve empty lines
     if (trimmedLine.length === 0) {
-      formattedLines.push('');
+      formattedLines.push("");
       continue;
     }
 
@@ -280,14 +286,14 @@ export function formatCode(code: string, language: SupportedLanguage = 'javascri
   }
 
   // Remove trailing newline inconsistencies: preserve original trailing newline behavior
-  let formatted = formattedLines.join('\n');
+  let formatted = formattedLines.join("\n");
 
   // If original code ended with a newline, ensure formatted does too
-  if (code.endsWith('\n') && !formatted.endsWith('\n')) {
-    formatted += '\n';
+  if (code.endsWith("\n") && !formatted.endsWith("\n")) {
+    formatted += "\n";
   }
   // If original code did NOT end with a newline, ensure formatted doesn't either
-  if (!code.endsWith('\n') && formatted.endsWith('\n')) {
+  if (!code.endsWith("\n") && formatted.endsWith("\n")) {
     formatted = formatted.slice(0, -1);
   }
 

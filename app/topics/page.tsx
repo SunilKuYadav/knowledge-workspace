@@ -1,8 +1,8 @@
-import Link from 'next/link';
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileTopicRepository } from '@/src/filesystem/FileTopicRepository';
-import { TopicService } from '@/src/services/TopicService';
-import TopicsListClient from './TopicsListClient';
+import Link from "next/link";
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { TopicService } from "@/src/services/TopicService";
+import TopicsListClient from "./TopicsListClient";
 
 export default async function TopicsPage() {
   const workspacePath = getWorkspacePath();
@@ -25,7 +25,8 @@ export default async function TopicsPage() {
             All Topics
           </h1>
           <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-            {topics.length} topic{topics.length !== 1 ? 's' : ''} in your workspace
+            {topics.length} topic{topics.length !== 1 ? "s" : ""} in your
+            workspace
           </p>
         </div>
         <Link

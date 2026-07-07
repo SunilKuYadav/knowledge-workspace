@@ -1,4 +1,4 @@
-import type { ZodSchema } from 'zod';
+import type { ZodSchema } from "zod";
 
 /**
  * Safely parses a JSON string and validates it against a Zod schema.

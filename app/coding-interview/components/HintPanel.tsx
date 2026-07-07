@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useInterviewStore } from '../store/interviewStore';
+import { useInterviewStore } from "../store/interviewStore";
 
 interface HintPanelProps {
   onRequestHint: (level: number) => void;
@@ -9,13 +9,17 @@ interface HintPanelProps {
 }
 
 const levelLabels: Record<number, string> = {
-  1: 'Clarification',
-  2: 'Algorithmic Approach',
-  3: 'Data Structure',
-  4: 'Pseudocode',
+  1: "Clarification",
+  2: "Algorithmic Approach",
+  3: "Data Structure",
+  4: "Pseudocode",
 };
 
-export function HintPanel({ onRequestHint, onShowSolution, isLoading = false }: HintPanelProps) {
+export function HintPanel({
+  onRequestHint,
+  onShowSolution,
+  isLoading = false,
+}: HintPanelProps) {
   const hintsUsed = useInterviewStore((s) => s.hintsUsed);
   const hints = useInterviewStore((s) => s.hints);
 
@@ -35,8 +39,8 @@ export function HintPanel({ onRequestHint, onShowSolution, isLoading = false }: 
               key={level}
               className={`w-2 h-2 rounded-full ${
                 level <= hintsUsed
-                  ? 'bg-blue-500 dark:bg-blue-400'
-                  : 'bg-zinc-200 dark:bg-zinc-700'
+                  ? "bg-blue-500 dark:bg-blue-400"
+                  : "bg-zinc-200 dark:bg-zinc-700"
               }`}
             />
           ))}
@@ -75,7 +79,7 @@ export function HintPanel({ onRequestHint, onShowSolution, isLoading = false }: 
             <span>Generating hint...</span>
           </>
         ) : allHintsConsumed ? (
-          'All hints used'
+          "All hints used"
         ) : (
           `Request Hint ${nextLevel} — ${levelLabels[nextLevel]}`
         )}

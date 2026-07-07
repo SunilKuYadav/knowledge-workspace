@@ -1,41 +1,51 @@
-'use client';
+"use client";
 
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import { InterviewModule } from './index';
-import type { InterviewModuleProps, InterviewContext, InterviewSource } from './lib/types';
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { InterviewModule } from "./index";
+import type {
+  InterviewModuleProps,
+  InterviewContext,
+  InterviewSource,
+} from "./lib/types";
 
 function InterviewPageContent() {
   const searchParams = useSearchParams();
 
-  const source = (searchParams.get('source') || 'practice') as InterviewSource;
-  const language = (searchParams.get('language') || 'javascript') as 'javascript' | 'typescript';
-  const difficulty = searchParams.get('difficulty') as 'easy' | 'medium' | 'hard' | null;
-  const duration = searchParams.get('duration') ? parseInt(searchParams.get('duration')!, 10) : undefined;
+  const source = (searchParams.get("source") || "practice") as InterviewSource;
+  const language = (searchParams.get("language") || "javascript") as
+    "javascript" | "typescript";
+  const difficulty = searchParams.get("difficulty") as
+    "easy" | "medium" | "hard" | null;
+  const duration = searchParams.get("duration")
+    ? parseInt(searchParams.get("duration")!, 10)
+    : undefined;
 
   // Build context from search params
   let context: InterviewContext | undefined;
 
-  if (source === 'problem') {
-    const id = searchParams.get('id');
-    const title = searchParams.get('title');
-    const category = searchParams.get('category') || '';
-    const tags = searchParams.get('tags')?.split(',').filter(Boolean) || [];
+  if (source === "problem") {
+    const id = searchParams.get("id");
+    const title = searchParams.get("title");
+    const category = searchParams.get("category") || "";
+    const tags = searchParams.get("tags")?.split(",").filter(Boolean) || [];
     if (id && title) {
-      context = { source: 'problem', id, title, category, tags };
+      context = { source: "problem", id, title, category, tags };
     }
-  } else if (source === 'topic') {
-    const id = searchParams.get('id');
-    const title = searchParams.get('title');
-    const concepts = searchParams.get('concepts')?.split(',').filter(Boolean) || [];
+  } else if (source === "topic") {
+    const id = searchParams.get("id");
+    const title = searchParams.get("title");
+    const concepts =
+      searchParams.get("concepts")?.split(",").filter(Boolean) || [];
     if (id && title) {
-      context = { source: 'topic', id, title, concepts };
+      context = { source: "topic", id, title, concepts };
     }
-  } else if (source === 'revision') {
-    const sessionId = searchParams.get('sessionId') || '';
-    const topicIds = searchParams.get('topicIds')?.split(',').filter(Boolean) || [];
+  } else if (source === "revision") {
+    const sessionId = searchParams.get("sessionId") || "";
+    const topicIds =
+      searchParams.get("topicIds")?.split(",").filter(Boolean) || [];
     if (sessionId) {
-      context = { source: 'revision', sessionId, topicIds };
+      context = { source: "revision", sessionId, topicIds };
     }
   }
 

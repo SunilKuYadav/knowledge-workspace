@@ -1,20 +1,24 @@
-export { createAIClient, createOllamaClient } from './client';
-export type { AIClient, AIClientOptions, OllamaClient } from './client';
+export { createAIClient, createOllamaClient } from "./client";
+export type { AIClient, AIClientOptions, OllamaClient } from "./client";
 
-export { logInput, logOutput, logError, installAIFetchLogger } from './logger';
+export { logInput, logOutput, logError, installAIFetchLogger } from "./logger";
 
-export { generateSummary } from './summarize';
+export { generateSummary } from "./summarize";
 
-export { generateQuiz } from './generateQuiz';
-export type { QuizQuestion } from './generateQuiz';
+export { generateQuiz } from "./generateQuiz";
+export type { QuizQuestion } from "./generateQuiz";
 
-export { generateFlashcards } from './generateFlashcards';
+export { generateFlashcards } from "./generateFlashcards";
 
-export { explainConcept, suggestSimilarProblems, generateInterviewPrep } from './explain';
+export {
+  explainConcept,
+  suggestSimilarProblems,
+  generateInterviewPrep,
+} from "./explain";
 
-export { getAIStatus, startHealthCheck, stopHealthCheck } from './status';
+export { getAIStatus, startHealthCheck, stopHealthCheck } from "./status";
 
-export { SYSTEM_CONTEXT, withContext } from './prompts';
+export { SYSTEM_CONTEXT, withContext } from "./prompts";
 export {
   buildSummaryPrompt,
   buildExplainPrompt,
@@ -32,4 +36,4 @@ export {
   buildHintPrompt,
   buildSessionSummaryPrompt,
   buildGenerateContentPrompt,
-} from './prompts';
+} from "./prompts";

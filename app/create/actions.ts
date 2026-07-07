@@ -1,12 +1,12 @@
-'use server';
+"use server";
 
-import { redirect } from 'next/navigation';
-import { getWorkspacePath } from '@/src/lib/constants';
-import { FileTopicRepository } from '@/src/filesystem/FileTopicRepository';
-import { FileProblemRepository } from '@/src/filesystem/FileProblemRepository';
-import { TopicService } from '@/src/services/TopicService';
-import { ProblemService } from '@/src/services/ProblemService';
-import type { Topic, Problem } from '@/src/types';
+import { redirect } from "next/navigation";
+import { getWorkspacePath } from "@/src/lib/constants";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { TopicService } from "@/src/services/TopicService";
+import { ProblemService } from "@/src/services/ProblemService";
+import type { Topic, Problem } from "@/src/types";
 
 export type CreateTopicState = {
   error?: string;
@@ -24,27 +24,30 @@ export type CreateProblemState = {
  */
 export async function createTopic(
   _prevState: CreateTopicState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateTopicState> {
-  const title = formData.get('title') as string;
-  const category = formData.get('category') as Topic['category'];
-  const difficulty = formData.get('difficulty') as Topic['difficulty'];
-  const tagsRaw = formData.get('tags') as string;
+  const title = formData.get("title") as string;
+  const category = formData.get("category") as Topic["category"];
+  const difficulty = formData.get("difficulty") as Topic["difficulty"];
+  const tagsRaw = formData.get("tags") as string;
 
   if (!title || !title.trim()) {
-    return { error: 'Title is required.' };
+    return { error: "Title is required." };
   }
 
   if (!category) {
-    return { error: 'Category is required.' };
+    return { error: "Category is required." };
   }
 
   if (!difficulty) {
-    return { error: 'Difficulty is required.' };
+    return { error: "Difficulty is required." };
   }
 
   const tags = tagsRaw
-    ? tagsRaw.split(',').map((t) => t.trim()).filter(Boolean)
+    ? tagsRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
 
   const workspacePath = getWorkspacePath();
@@ -55,7 +58,7 @@ export async function createTopic(
       title: title.trim(),
       category,
       difficulty,
-      status: 'not-started',
+      status: "not-started",
       confidence: 1,
       tags,
     });
@@ -63,14 +66,16 @@ export async function createTopic(
     redirect(`/topics/${topic.id}`);
   } catch (err: unknown) {
     // redirect() throws a special error in Next.js — rethrow it
-    if (err instanceof Error && err.message === 'NEXT_REDIRECT') {
+    if (err instanceof Error && err.message === "NEXT_REDIRECT") {
       throw err;
     }
     // Next.js redirect throws with digest property
-    if (err && typeof err === 'object' && 'digest' in err) {
+    if (err && typeof err === "object" && "digest" in err) {
       throw err;
     }
-    return { error: `Failed to create topic: ${err instanceof Error ? err.message : 'Unknown error'}` };
+    return {
+      error: `Failed to create topic: ${err instanceof Error ? err.message : "Unknown error"}`,
+    };
   }
 }
 
@@ -80,37 +85,45 @@ export async function createTopic(
  */
 export async function createProblem(
   _prevState: CreateProblemState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CreateProblemState> {
-  const title = formData.get('title') as string;
-  const platform = formData.get('platform') as Problem['platform'];
-  const difficulty = formData.get('difficulty') as Problem['difficulty'];
-  const companiesRaw = formData.get('companies') as string;
-  const patternsRaw = formData.get('patterns') as string;
-  const url = formData.get('url') as string;
+  const title = formData.get("title") as string;
+  const platform = formData.get("platform") as Problem["platform"];
+  const difficulty = formData.get("difficulty") as Problem["difficulty"];
+  const companiesRaw = formData.get("companies") as string;
+  const patternsRaw = formData.get("patterns") as string;
+  const url = formData.get("url") as string;
 
   if (!title || !title.trim()) {
-    return { error: 'Title is required.' };
+    return { error: "Title is required." };
   }
 
   if (!platform) {
-    return { error: 'Platform is required.' };
+    return { error: "Platform is required." };
   }
 
   if (!difficulty) {
-    return { error: 'Difficulty is required.' };
+    return { error: "Difficulty is required." };
   }
 
   const companies = companiesRaw
-    ? companiesRaw.split(',').map((c) => c.trim()).filter(Boolean)
+    ? companiesRaw
+        .split(",")
+        .map((c) => c.trim())
+        .filter(Boolean)
     : [];
 
   const patterns = patternsRaw
-    ? patternsRaw.split(',').map((p) => p.trim()).filter(Boolean)
+    ? patternsRaw
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean)
     : [];
 
   const workspacePath = getWorkspacePath();
-  const problemService = new ProblemService(new FileProblemRepository(workspacePath));
+  const problemService = new ProblemService(
+    new FileProblemRepository(workspacePath),
+  );
 
   try {
     const problem = await problemService.createProblem({
@@ -119,7 +132,7 @@ export async function createProblem(
       difficulty,
       companies,
       patterns,
-      status: 'not-started',
+      status: "not-started",
       favorite: false,
       url: url?.trim() || undefined,
     });
@@ -127,12 +140,14 @@ export async function createProblem(
     redirect(`/problems/${problem.id}`);
   } catch (err: unknown) {
     // redirect() throws a special error in Next.js — rethrow it
-    if (err instanceof Error && err.message === 'NEXT_REDIRECT') {
+    if (err instanceof Error && err.message === "NEXT_REDIRECT") {
       throw err;
     }
-    if (err && typeof err === 'object' && 'digest' in err) {
+    if (err && typeof err === "object" && "digest" in err) {
       throw err;
     }
-    return { error: `Failed to create problem: ${err instanceof Error ? err.message : 'Unknown error'}` };
+    return {
+      error: `Failed to create problem: ${err instanceof Error ? err.message : "Unknown error"}`,
+    };
   }
 }

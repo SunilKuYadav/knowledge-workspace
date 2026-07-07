@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import type { EvaluationReport } from '../lib/types';
+import type { EvaluationReport } from "../lib/types";
 
 interface EvaluationPanelProps {
   evaluation: EvaluationReport;
@@ -19,7 +19,8 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
           Correctness
         </h3>
         <p className="text-sm text-zinc-700 dark:text-zinc-300 mb-3">
-          {evaluation.correctness.testsPassed}/{evaluation.correctness.testsTotal} tests passed
+          {evaluation.correctness.testsPassed}/
+          {evaluation.correctness.testsTotal} tests passed
         </p>
         <div className="space-y-2">
           {evaluation.correctness.results.map((result, idx) => (
@@ -27,17 +28,17 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
               key={idx}
               className={`flex items-center gap-2 text-sm px-3 py-2 rounded ${
                 result.passed
-                  ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                  : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                  ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400"
+                  : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
               }`}
             >
-              <span>{result.passed ? '✓' : '✗'}</span>
+              <span>{result.passed ? "✓" : "✗"}</span>
               <span className="font-mono text-xs truncate">
                 Input: {JSON.stringify(result.input)}
               </span>
               {!result.passed && (
                 <span className="ml-auto text-xs">
-                  Expected: {JSON.stringify(result.expectedOutput)} | Got:{' '}
+                  Expected: {JSON.stringify(result.expectedOutput)} | Got:{" "}
                   {JSON.stringify(result.actualOutput)}
                 </span>
               )}
@@ -53,10 +54,16 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         </h3>
         <div className="flex flex-wrap items-center gap-3 mb-3">
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Submitted: <span className="font-mono">{evaluation.algorithmChoice.submittedComplexity}</span>
+            Submitted:{" "}
+            <span className="font-mono">
+              {evaluation.algorithmChoice.submittedComplexity}
+            </span>
           </span>
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Optimal: <span className="font-mono">{evaluation.algorithmChoice.optimalComplexity}</span>
+            Optimal:{" "}
+            <span className="font-mono">
+              {evaluation.algorithmChoice.optimalComplexity}
+            </span>
           </span>
           {evaluation.algorithmChoice.isOptimal ? (
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
@@ -80,10 +87,16 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         </h3>
         <div className="flex gap-4 mb-3">
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Time: <span className="font-mono">{evaluation.complexityAnalysis.timeComplexity}</span>
+            Time:{" "}
+            <span className="font-mono">
+              {evaluation.complexityAnalysis.timeComplexity}
+            </span>
           </span>
           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-            Space: <span className="font-mono">{evaluation.complexityAnalysis.spaceComplexity}</span>
+            Space:{" "}
+            <span className="font-mono">
+              {evaluation.complexityAnalysis.spaceComplexity}
+            </span>
           </span>
         </div>
         <p className="text-sm text-zinc-700 dark:text-zinc-300">
@@ -101,10 +114,15 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         </h3>
         {evaluation.codeQuality.positives.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">Positives</p>
+            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+              Positives
+            </p>
             <ul className="list-disc list-inside space-y-1">
               {evaluation.codeQuality.positives.map((item, idx) => (
-                <li key={idx} className="text-sm text-zinc-700 dark:text-zinc-300">
+                <li
+                  key={idx}
+                  className="text-sm text-zinc-700 dark:text-zinc-300"
+                >
                   {item}
                 </li>
               ))}
@@ -113,10 +131,15 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         )}
         {evaluation.codeQuality.improvements.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">Improvements</p>
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
+              Improvements
+            </p>
             <ul className="list-disc list-inside space-y-1">
               {evaluation.codeQuality.improvements.map((item, idx) => (
-                <li key={idx} className="text-sm text-zinc-700 dark:text-zinc-300">
+                <li
+                  key={idx}
+                  className="text-sm text-zinc-700 dark:text-zinc-300"
+                >
                   {item}
                 </li>
               ))}
@@ -132,10 +155,15 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         </h3>
         {evaluation.edgeCaseHandling.handled.length > 0 && (
           <div className="mb-3">
-            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">Handled</p>
+            <p className="text-xs font-medium text-green-700 dark:text-green-400 mb-1">
+              Handled
+            </p>
             <ul className="list-disc list-inside space-y-1">
               {evaluation.edgeCaseHandling.handled.map((item, idx) => (
-                <li key={idx} className="text-sm text-zinc-700 dark:text-zinc-300">
+                <li
+                  key={idx}
+                  className="text-sm text-zinc-700 dark:text-zinc-300"
+                >
                   {item}
                 </li>
               ))}
@@ -144,10 +172,15 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         )}
         {evaluation.edgeCaseHandling.missed.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">Missed</p>
+            <p className="text-xs font-medium text-red-700 dark:text-red-400 mb-1">
+              Missed
+            </p>
             <ul className="list-disc list-inside space-y-1">
               {evaluation.edgeCaseHandling.missed.map((item, idx) => (
-                <li key={idx} className="text-sm text-zinc-700 dark:text-zinc-300">
+                <li
+                  key={idx}
+                  className="text-sm text-zinc-700 dark:text-zinc-300"
+                >
                   {item}
                 </li>
               ))}
@@ -166,10 +199,15 @@ export function EvaluationPanel({ evaluation }: EvaluationPanelProps) {
         </p>
         {evaluation.errorHandling.suggestions.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">Suggestions</p>
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
+              Suggestions
+            </p>
             <ul className="list-disc list-inside space-y-1">
               {evaluation.errorHandling.suggestions.map((item, idx) => (
-                <li key={idx} className="text-sm text-zinc-700 dark:text-zinc-300">
+                <li
+                  key={idx}
+                  className="text-sm text-zinc-700 dark:text-zinc-300"
+                >
                   {item}
                 </li>
               ))}
