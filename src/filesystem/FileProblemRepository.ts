@@ -1,6 +1,6 @@
 import { rm } from "fs/promises";
 import path from "path";
-import type { Problem, RevisionData } from "@/types";
+import type { Problem, RevisionData, ProblemDescription } from "@/types";
 import type { ProblemRepository } from "@/repository";
 import { WORKSPACE_STRUCTURE } from "../lib/constants";
 import {
@@ -197,6 +197,27 @@ export class FileProblemRepository implements ProblemRepository {
       path.join(folderPath, "revision.json"),
     );
     return revision ?? this.defaultRevisionData(id);
+  }
+
+  /**
+   * Reads description.json from the problem folder.
+   * Returns null if not yet generated.
+   */
+  async getDescription(id: string): Promise<ProblemDescription | null> {
+    const folderPath = await this.findProblemFolder(id);
+    if (!folderPath) return null;
+    return readJsonFile<ProblemDescription>(
+      path.join(folderPath, "description.json"),
+    );
+  }
+
+  /**
+   * Writes description.json to the problem folder.
+   */
+  async saveDescription(id: string, description: ProblemDescription): Promise<void> {
+    const folderPath = await this.findProblemFolder(id);
+    if (!folderPath) throw new Error(`Problem not found: ${id}`);
+    await writeJsonFile(path.join(folderPath, "description.json"), description);
   }
 
   /**

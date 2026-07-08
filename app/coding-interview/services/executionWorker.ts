@@ -9,6 +9,7 @@
 /// <reference lib="webworker" />
 
 import { deepEqual } from "./deepEqual";
+import { transform } from "sucrase";
 
 interface WorkerTestCase {
   input: unknown;
@@ -81,6 +82,19 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
   const startTime = performance.now();
   const consoleOutput: string[] = [];
 
+  // Strip TypeScript type annotations to produce valid JavaScript
+  let jsCode: string;
+  try {
+    const result = transform(code, {
+      transforms: ["typescript"],
+      disableESTransforms: true,
+    });
+    jsCode = result.code;
+  } catch {
+    // If stripping fails, try running as-is (may already be JS)
+    jsCode = code;
+  }
+
   // Override console.log to capture output
   const originalLog = console.log;
   console.log = (...args: unknown[]) => {
@@ -112,7 +126,7 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     let userFunction: Function;
     try {
       userFunction = new Function(
-        code + '\nreturn typeof solution === "function" ? solution : null;',
+        jsCode + '\nreturn typeof solution === "function" ? solution : null;',
       )();
     } catch (syntaxError) {
       const err = syntaxError as Error;
@@ -139,11 +153,11 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     if (!userFunction) {
       try {
         // Try wrapping the code and looking for the exported function
-        userFunction = new Function(code + "\nreturn solution;")();
+        userFunction = new Function(jsCode + "\nreturn solution;")();
       } catch {
         // If still no function, run the code and try to get the last expression
         try {
-          userFunction = new Function("return " + code)();
+          userFunction = new Function("return " + jsCode)();
         } catch {
           response.error = {
             type: "runtime",

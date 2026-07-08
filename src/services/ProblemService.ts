@@ -1,10 +1,8 @@
-import type { Problem, RevisionData } from "@/types";
+import type { Problem, RevisionData, ProblemDescription } from "@/types";
 import type { ProblemRepository } from "@/repository";
 
 /**
  * Application service for Problem operations.
- * Delegates to a ProblemRepository instance, providing a decoupling
- * layer between UI and data access implementation.
  */
 export class ProblemService {
   constructor(private readonly repository: ProblemRepository) {}
@@ -49,5 +47,13 @@ export class ProblemService {
 
   async getRevision(id: string): Promise<RevisionData> {
     return this.repository.getRevision(id);
+  }
+
+  async getDescription(id: string): Promise<ProblemDescription | null> {
+    return this.repository.getDescription(id);
+  }
+
+  async saveDescription(id: string, description: ProblemDescription): Promise<void> {
+    return this.repository.saveDescription(id, description);
   }
 }

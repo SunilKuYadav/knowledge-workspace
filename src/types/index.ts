@@ -4,6 +4,17 @@ export type { Topic } from "./Topic";
 export { ProblemSchema, ProblemFrequencySchema, ComplexitySchema } from "./Problem";
 export type { Problem, ProblemFrequency, Complexity } from "./Problem";
 
+export {
+  ProblemDescriptionSchema,
+  ProblemVariationSchema,
+  TestCaseSchema,
+} from "./ProblemDescription";
+export type {
+  ProblemDescription,
+  ProblemVariation,
+  TestCase as ProblemTestCase,
+} from "./ProblemDescription";
+
 export { ArtifactSchema, ARTIFACT_LABELS, ARTIFACT_ORDER } from "./Artifact";
 export type { ArtifactType } from "./Artifact";
 
