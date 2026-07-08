@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
+import { buildGenerateDescriptionPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import type { ProblemDescription } from "@/types";
@@ -25,76 +26,6 @@ interface RequestBody {
   patterns: string[];
   companies: string[];
   url?: string;
-}
-
-function buildPrompt(body: RequestBody): string {
-  return `You are a senior software engineer and coding interview expert.
-
-Generate a complete problem description for the following LeetCode-style coding problem.
-The output must be compatible with both a problem workspace and a timed coding interview module.
-
-Problem Title: ${body.title}
-Difficulty: ${body.difficulty}
-Patterns: ${body.patterns.join(", ")}
-Companies: ${body.companies.join(", ") || "Not specified"}
-${body.url ? `Original URL: ${body.url}` : ""}
-
-Return ONLY a valid JSON object with this exact structure (no markdown, no commentary):
-{
-  "description": "Full problem statement in Markdown. Include context, requirements, and any relevant background.",
-  "category": "string - primary category e.g., Arrays, Trees, Dynamic Programming, Graphs, Strings, etc.",
-  "tags": ["string array - at least 2 relevant algorithm/data-structure tags from the patterns"],
-  "constraints": ["1 <= n <= 10^5", "...", "..."],
-  "inputFormat": "string - description of what the function receives as input",
-  "outputFormat": "string - description of what the function should return",
-  "examples": [
-    {
-      "input": "nums = [2,7,11,15], target = 9",
-      "expectedOutput": "[0,1]",
-      "explanation": "Because nums[0] + nums[1] == 9, we return [0, 1]."
-    },
-    {
-      "input": "nums = [3,2,4], target = 6",
-      "expectedOutput": "[1,2]",
-      "explanation": "Because nums[1] + nums[2] == 6, we return [1, 2]."
-    }
-  ],
-  "edgeCases": [
-    {
-      "description": "string - what edge case this tests",
-      "input": "string - edge case input",
-      "expectedOutput": "string - expected output for this edge case"
-    }
-  ],
-  "testCases": [
-    { "input": "...", "expectedOutput": "..." },
-    { "input": "...", "expectedOutput": "..." },
-    { "input": "...", "expectedOutput": "..." },
-    { "input": "...", "expectedOutput": "..." },
-    { "input": "...", "expectedOutput": "..." }
-  ],
-  "timeComplexity": "O(n)",
-  "spaceComplexity": "O(n)",
-  "companyTags": ["string array - 1 to 5 companies known to ask this or similar questions"],
-  "boilerplate": "function twoSum(nums: number[], target: number): number[] {\\n  // Your code here\\n}"
-}
-
-Requirements:
-- description: comprehensive, interview-quality problem statement in Markdown
-- category: a single primary category (e.g., Arrays, Trees, Dynamic Programming)
-- tags: at least 2 algorithm/data-structure tags
-- constraints: realistic input constraints (3-6 items)
-- inputFormat: clear description of function parameters
-- outputFormat: clear description of expected return value
-- examples: 2-3 worked examples with step-by-step explanations
-- edgeCases: at least 2 edge cases with description, input, and expectedOutput
-- testCases: 5-8 hidden test cases covering normal and edge scenarios
-- timeComplexity / spaceComplexity: the expected optimal solution complexity in Big-O
-- companyTags: 1-5 companies that ask this or similar questions
-- boilerplate: TypeScript function signature with a TODO comment
-- The problem must be solvable within 45 minutes in an interview setting
-
-Respond with ONLY the JSON. No markdown fences, no extra text.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -123,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildPrompt(body);
+    const prompt = buildGenerateDescriptionPrompt(body);
 
     // Streaming mode: stream raw tokens to client, then send final JSON event
     if (streamMode) {

@@ -23,6 +23,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
+import {
+  buildOpeningFollowUpPrompt,
+  buildFollowUpPrompt,
+  MAX_INTERVIEWER_QUESTIONS,
+} from "@/ai/prompts";
 import type {
   ConversationMessage,
   EvaluationReport,
@@ -35,7 +40,6 @@ const API_KEY = process.env.OPENAI_API_KEY || "";
 const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 const MAX_RESPONSE_LENGTH = 2000;
-const MAX_INTERVIEWER_QUESTIONS = 8;
 
 interface FollowUpRequest {
   code: string;
@@ -45,102 +49,8 @@ interface FollowUpRequest {
   userResponse: string;
 }
 
-const TOPIC_AREAS = [
-  "alternative approaches (different algorithms or data structures that could solve this)",
-  "time/space trade-offs (how changing one affects the other)",
-  "behavior with large inputs (scalability, performance at scale)",
-  "memory considerations (memory usage patterns, garbage collection, buffer management)",
-  "iterative versus recursive solutions (pros/cons, when to choose one over the other)",
-  "production considerations (error handling, logging, testing, maintainability)",
-];
-
 function countInterviewerMessages(history: ConversationMessage[]): number {
   return history.filter((msg) => msg.role === "interviewer").length;
-}
-
-function buildOpeningPrompt(body: FollowUpRequest): string {
-  const { code, evaluation, problem } = body;
-
-  return `You are a senior software engineer conducting a coding interview follow-up discussion.
-
-The candidate has just submitted their solution. Your role is to ask insightful follow-up questions that explore their understanding of the problem and their approach.
-
-Problem:
-${problem.title} (${problem.difficulty})
-${problem.statement}
-
-Candidate's submitted code:
-${code}
-
-Evaluation summary:
-- Tests passed: ${evaluation.correctness.testsPassed}/${evaluation.correctness.testsTotal}
-- Algorithm optimal: ${evaluation.algorithmChoice.isOptimal ? "Yes" : "No"}
-- Time complexity: ${evaluation.complexityAnalysis.timeComplexity}
-- Space complexity: ${evaluation.complexityAnalysis.spaceComplexity}
-- Code quality score: ${evaluation.codeQuality.score}/100
-
-Generate an opening follow-up question that references specific details from the candidate's code. The question should be conversational, as a senior engineer would ask in a real interview.
-
-Choose from these topic areas for your questions throughout the discussion:
-${TOPIC_AREAS.map((t, i) => `${i + 1}. ${t}`).join("\n")}
-
-Start with a question about their approach choice or a notable aspect of their implementation.
-
-Respond with ONLY the question text. Do not include any prefix or labels.`;
-}
-
-function buildFollowUpPrompt(body: FollowUpRequest): string {
-  const { code, evaluation, conversationHistory, problem, userResponse } = body;
-
-  const historyText = conversationHistory
-    .map(
-      (msg) =>
-        `${msg.role === "interviewer" ? "Interviewer" : "Candidate"}: ${msg.content}`,
-    )
-    .join("\n\n");
-
-  const questionsAsked = countInterviewerMessages(conversationHistory);
-  const remainingQuestions = MAX_INTERVIEWER_QUESTIONS - questionsAsked;
-
-  // Determine which topics have been covered
-  const coveredTopicsHint =
-    questionsAsked > 0
-      ? `\nYou have asked ${questionsAsked} questions so far. You have ${remainingQuestions} questions remaining. Try to cover different topic areas from the list below that haven't been explored yet.`
-      : "";
-
-  return `You are a senior software engineer conducting a coding interview follow-up discussion.
-
-Problem:
-${problem.title} (${problem.difficulty})
-${problem.statement}
-
-Candidate's submitted code:
-${code}
-
-Evaluation summary:
-- Tests passed: ${evaluation.correctness.testsPassed}/${evaluation.correctness.testsTotal}
-- Algorithm optimal: ${evaluation.algorithmChoice.isOptimal ? "Yes" : "No"}
-- Time complexity: ${evaluation.complexityAnalysis.timeComplexity}
-- Space complexity: ${evaluation.complexityAnalysis.spaceComplexity}
-
-Conversation so far:
-${historyText}
-
-Candidate's latest response:
-${userResponse}
-${coveredTopicsHint}
-
-Topic areas to explore:
-${TOPIC_AREAS.map((t, i) => `${i + 1}. ${t}`).join("\n")}
-
-Instructions:
-- Analyze the candidate's latest response carefully.
-- If the response is incomplete, vague, or incorrect, provide a brief hint about what aspect they should reconsider, then ask a narrower follow-up question to guide them.
-- If the response demonstrates good understanding, acknowledge briefly and move to a new topic area.
-- Reference specific details from their code or previous answers.
-- Keep your response concise and conversational.
-
-Respond with ONLY the follow-up question (including any hint if needed). Do not include labels or prefixes.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -208,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Build appropriate prompt
     const prompt =
       body.conversationHistory.length === 0
-        ? buildOpeningPrompt(body)
+        ? buildOpeningFollowUpPrompt(body)
         : buildFollowUpPrompt(body);
 
     const client = createAIClient({

@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
+import { buildProblemGenerationPrompt } from "@/ai/prompts";
 import type {
   InterviewSource,
   InterviewContext,
@@ -27,103 +28,6 @@ interface GenerateProblemRequest {
   language?: "javascript" | "typescript";
   difficulty?: "easy" | "medium" | "hard";
   userPrompt?: string;
-}
-
-function buildProblemGenerationPrompt(body: GenerateProblemRequest): string {
-  const {
-    source,
-    context,
-    language = "javascript",
-    difficulty,
-    userPrompt,
-  } = body;
-
-  let contextSection = "";
-  if (userPrompt) {
-    contextSection = `
-The user has requested the following type of problem:
-"${userPrompt}"
-Generate a problem that matches this description.`;
-  } else if (context) {
-    if (context.source === "problem") {
-      contextSection = `
-The problem should be related to:
-- Category: ${context.category}
-- Tags: ${context.tags.join(", ")}
-- Reference problem: "${context.title}"
-Generate a problem whose category or tags overlap with these.`;
-    } else if (context.source === "topic") {
-      contextSection = `
-The problem should cover concepts from:
-- Topic: "${context.title}"
-- Concepts: ${context.concepts.join(", ")}
-Generate a problem whose tags or category overlap with these concepts.`;
-    } else if (context.source === "revision") {
-      contextSection = `
-This is a revision session. Generate a problem that tests retention of previously studied topics.`;
-    }
-  }
-
-  const difficultySection = difficulty
-    ? `\nDifficulty MUST be exactly: "${difficulty}"`
-    : "\nChoose an appropriate difficulty (easy, medium, or hard).";
-
-  return `You are a senior software engineer and coding interview expert. Generate a realistic coding interview problem.
-
-${contextSection}
-${difficultySection}
-
-Language: ${language}
-Source context: ${source}
-
-Generate a complete coding interview problem and respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation) matching this exact structure:
-
-{
-  "title": "string - descriptive problem title",
-  "difficulty": "easy" | "medium" | "hard",
-  "category": "string - e.g., Arrays, Trees, Dynamic Programming, Graphs, etc.",
-  "tags": ["string array - at least 2 relevant algorithm/data-structure tags"],
-  "statement": "string - full problem description with context and requirements",
-  "constraints": ["string array - input constraints like '1 <= n <= 10^5'"],
-  "inputFormat": "string - description of input format",
-  "outputFormat": "string - description of expected output format",
-  "samples": [
-    {
-      "input": "string - example input",
-      "output": "string - expected output",
-      "explanation": "string - step-by-step explanation"
-    }
-  ],
-  "edgeCases": [
-    {
-      "description": "string - what edge case this tests",
-      "input": "string - edge case input",
-      "expectedOutput": "string - expected output for this edge case"
-    }
-  ],
-  "hiddenTestCases": [
-    {
-      "input": "any - test input value",
-      "expectedOutput": "any - expected output value"
-    }
-  ],
-  "expectedTimeComplexity": "string - Big-O notation e.g., O(n log n)",
-  "expectedSpaceComplexity": "string - Big-O notation e.g., O(n)",
-  "companyTags": ["string array - 1 to 5 companies that ask similar questions"],
-  "boilerplate": "string - starter code in ${language} with function signature and TODO comment"
-}
-
-Requirements:
-- tags: at least 2 items
-- samples: at least 2 items, each with input, output, and explanation
-- edgeCases: at least 2 items
-- hiddenTestCases: at least 5 items covering various scenarios
-- companyTags: between 1 and 5 items
-- expectedTimeComplexity and expectedSpaceComplexity must be valid Big-O notation
-- boilerplate must be valid ${language} code with a clear function signature
-- The problem must have at least one valid solution implementable within 45 minutes
-
-Respond with ONLY the JSON object.`;
 }
 
 function validateGeneratedProblem(data: unknown): data is GeneratedProblem {

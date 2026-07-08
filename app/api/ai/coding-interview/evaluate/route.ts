@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
+import { buildEvaluatePrompt } from "@/ai/prompts";
 import type {
   GeneratedProblem,
   TestCaseResult,
@@ -95,85 +96,6 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-/* ─── Prompt Builder ─── */
-
-function buildEvaluatePrompt(
-  code: string,
-  language: string,
-  problem: GeneratedProblem,
-  testResults: TestCaseResult[],
-): string {
-  const passedCount = testResults.filter((r) => r.passed).length;
-  const totalCount = testResults.length;
-
-  return `You are a senior software engineer conducting a coding interview evaluation.
-Evaluate the following ${language} solution to the problem described below.
-
-## Problem
-Title: ${problem.title}
-Difficulty: ${problem.difficulty}
-Category: ${problem.category}
-
-Statement:
-${problem.statement}
-
-Constraints:
-${problem.constraints.join("\n")}
-
-Expected Time Complexity: ${problem.expectedTimeComplexity}
-Expected Space Complexity: ${problem.expectedSpaceComplexity}
-
-## Submitted Code
-\`\`\`${language}
-${code}
-\`\`\`
-
-## Test Results
-Passed: ${passedCount}/${totalCount}
-${testResults
-  .map(
-    (r, i) =>
-      `Test ${i + 1}: ${r.passed ? "PASS" : "FAIL"} | Input: ${JSON.stringify(r.input)} | Expected: ${JSON.stringify(r.expectedOutput)} | Got: ${JSON.stringify(r.actualOutput)} | Time: ${r.executionTimeMs}ms`,
-  )
-  .join("\n")}
-
-## Instructions
-Provide a detailed evaluation as a JSON object with the following structure:
-{
-  "correctness": {
-    "testsPassed": <number>,
-    "testsTotal": <number>,
-    "results": [] // leave empty, will be filled from actual test results
-  },
-  "algorithmChoice": {
-    "submittedComplexity": "<Big-O of submitted solution>",
-    "optimalComplexity": "${problem.expectedTimeComplexity}",
-    "isOptimal": <boolean>,
-    "feedback": "<1-3 sentences about the algorithm choice>"
-  },
-  "complexityAnalysis": {
-    "timeComplexity": "<Big-O time>",
-    "spaceComplexity": "<Big-O space>",
-    "explanation": "<1-3 sentences explaining the complexity>"
-  },
-  "codeQuality": {
-    "positives": ["<at least 1 specific positive observation>"],
-    "improvements": ["<at least 1 specific improvement suggestion>"],
-    "score": <0-100>
-  },
-  "edgeCaseHandling": {
-    "handled": ["<edge cases the code handles>"],
-    "missed": ["<edge cases from the problem that are not handled>"]
-  },
-  "errorHandling": {
-    "assessment": "<1-3 sentences about error/robustness handling>",
-    "suggestions": ["<specific improvement suggestions>"]
-  }
-}
-
-Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 }
 
 /* ─── Response Parser ─── */

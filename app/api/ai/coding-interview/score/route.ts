@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
+import { buildScorePrompt } from "@/ai/prompts";
 import {
   getReadiness,
   calculatePenalty,
@@ -145,84 +146,6 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-/* ─── Prompt Builder ─── */
-
-function buildScorePrompt(
-  evaluation: EvaluationReport,
-  conversationHistory: ConversationMessage[],
-  code: string,
-  hintsUsed: number,
-  executionCount: number,
-  elapsedSeconds: number,
-  duration: number,
-): string {
-  const conversationSummary =
-    conversationHistory.length > 0
-      ? conversationHistory.map((m) => `${m.role}: ${m.content}`).join("\n")
-      : "No follow-up discussion took place.";
-
-  return `You are a senior software engineer scoring a coding interview session.
-Based on the evaluation data and follow-up discussion below, provide dimension scores and a session summary.
-
-## Evaluation Results
-- Correctness: ${evaluation.correctness.testsPassed}/${evaluation.correctness.testsTotal} tests passed
-- Algorithm: ${evaluation.algorithmChoice.feedback}
-- Is Optimal: ${evaluation.algorithmChoice.isOptimal}
-- Time Complexity: ${evaluation.complexityAnalysis.timeComplexity}
-- Space Complexity: ${evaluation.complexityAnalysis.spaceComplexity}
-- Code Quality Score: ${evaluation.codeQuality.score}/100
-- Positives: ${evaluation.codeQuality.positives.join("; ")}
-- Improvements: ${evaluation.codeQuality.improvements.join("; ")}
-- Edge Cases Handled: ${evaluation.edgeCaseHandling.handled.join("; ") || "None identified"}
-- Edge Cases Missed: ${evaluation.edgeCaseHandling.missed.join("; ") || "None identified"}
-- Error Handling: ${evaluation.errorHandling.assessment}
-
-## Session Metrics
-- Hints Used: ${hintsUsed}
-- Execution Attempts: ${executionCount}
-- Time Elapsed: ${Math.floor(elapsedSeconds / 60)}m ${elapsedSeconds % 60}s / ${duration}m allowed
-
-## Submitted Code
-\`\`\`
-${code.slice(0, 2000)}
-\`\`\`
-
-## Follow-Up Discussion
-${conversationSummary.slice(0, 3000)}
-
-## Instructions
-Respond with a JSON object containing two keys: "scoring" and "sessionSummary".
-
-"scoring" must have:
-{
-  "overallScore": <0-100 integer>,
-  "dimensions": {
-    "communication": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "codingAbility": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "problemSolving": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "algorithmSelection": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "complexityAnalysis": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "edgeCaseCoverage": { "score": <0-100>, "justification": "<1-3 sentences>" },
-    "codeQuality": { "score": <0-100>, "justification": "<1-3 sentences>" }
-  },
-  "confidence": <0-100 integer>
-}
-
-"sessionSummary" must have:
-{
-  "strengths": ["<1-5 items>"],
-  "weaknesses": ["<1-5 items>"],
-  "missedEdgeCases": [{ "case": "<description>", "explanation": "<why it matters>" }],
-  "alternativeSolutions": [{ "approach": "<name>", "timeComplexity": "<Big-O>", "spaceComplexity": "<Big-O>" }], // 1-3 items
-  "studyRecommendations": ["<2-5 items>"],
-  "similarProblems": [{ "title": "<problem title>", "targetSkill": "<skill>" }], // 2-5 items
-  "nextTopics": ["<1-3 items>"],
-  "improvementPlan": [{ "action": "<action>", "priority": "high|medium|low" }] // 3-7 items, ordered high→low
-}
-
-Respond ONLY with valid JSON. No markdown, no explanation outside the JSON.`;
 }
 
 /* ─── Response Parser ─── */

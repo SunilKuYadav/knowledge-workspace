@@ -29,3 +29,32 @@ export {
   buildHintPrompt,
   buildSessionSummaryPrompt,
 } from "./review";
+
+// ─── Coding Interview Module ────────────────────────────────────────────────
+export {
+  buildProblemGenerationPrompt,
+  buildEvaluatePrompt,
+  buildCodingInterviewHintPrompt,
+  buildOpeningFollowUpPrompt,
+  buildFollowUpPrompt,
+  buildScorePrompt,
+  FOLLOW_UP_TOPIC_AREAS,
+  MAX_INTERVIEWER_QUESTIONS,
+} from "./coding-interview";
+export type {
+  GenerateProblemParams,
+  HintParams,
+  FollowUpParams,
+} from "./coding-interview";
+
+// ─── Problem Module ─────────────────────────────────────────────────────────
+export {
+  buildGenerateDescriptionPrompt,
+  buildGenerateNotePrompt,
+  buildGenerateVariationPrompt,
+} from "./problem";
+export type {
+  GenerateDescriptionParams,
+  GenerateNoteParams,
+  GenerateVariationParams,
+} from "./problem";

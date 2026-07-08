@@ -56,6 +56,27 @@ export {
   buildEvaluationPrompt,
   buildHintPrompt,
   buildSessionSummaryPrompt,
+  // Coding Interview Module
+  buildProblemGenerationPrompt,
+  buildEvaluatePrompt,
+  buildCodingInterviewHintPrompt,
+  buildOpeningFollowUpPrompt,
+  buildFollowUpPrompt,
+  buildScorePrompt,
+  FOLLOW_UP_TOPIC_AREAS,
+  MAX_INTERVIEWER_QUESTIONS,
+  // Problem Module
+  buildGenerateDescriptionPrompt,
+  buildGenerateNotePrompt,
+  buildGenerateVariationPrompt,
+} from "./builders";
+export type {
+  GenerateProblemParams,
+  HintParams,
+  FollowUpParams,
+  GenerateDescriptionParams,
+  GenerateNoteParams,
+  GenerateVariationParams,
 } from "./builders";
 
 // ─── Schemas ───
