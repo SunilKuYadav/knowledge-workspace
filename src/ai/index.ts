@@ -1,5 +1,5 @@
-export { createAIClient, createOllamaClient } from "./client";
-export type { AIClient, AIClientOptions, OllamaClient } from "./client";
+export { createAIClient } from "./client";
+export type { AIClient, AIClientOptions } from "./client";
 
 export { logInput, logOutput, logError, installAIFetchLogger } from "./logger";
 

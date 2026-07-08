@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createAIClient, createOllamaClient } from "./client";
+import { createAIClient } from "./client";
 
 describe("createAIClient", () => {
   const baseUrl = "https://api.openai.com/v1";
@@ -257,37 +257,4 @@ describe("createAIClient", () => {
   });
 });
 
-describe("createOllamaClient (deprecated compatibility)", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("appends /v1 to base URL and creates a valid client", async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true });
-
-    const client = createOllamaClient("http://localhost:11434");
-    const result = await client.isAvailable();
-
-    expect(result).toBe(true);
-    expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:11434/v1/models",
-      expect.any(Object),
-    );
-  });
-
-  it("does not double-append /v1 if already present", async () => {
-    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true });
-
-    const client = createOllamaClient("http://localhost:11434/v1");
-    await client.isAvailable();
-
-    expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:11434/v1/models",
-      expect.any(Object),
-    );
-  });
-});

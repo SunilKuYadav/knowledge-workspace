@@ -1,8 +1,8 @@
 /**
  * OpenAI-compatible client for communicating with an AI model server.
  *
- * The client connects to any OpenAI-compatible API (OpenAI, Ollama with
- * OpenAI compatibility, LM Studio, vLLM, etc.) and exposes:
+ * The client connects to any OpenAI-compatible API (OpenAI, AI Studio,
+ * LM Studio, vLLM, etc.) and exposes:
  * - `isAvailable()`: health check returning true if the server responds
  * - `generate()`: async generator that streams response tokens via SSE
  *
@@ -28,7 +28,7 @@ export interface AIClientOptions {
  * Creates an AIClient connected to an OpenAI-compatible API.
  *
  * @param options - Configuration for the AI client
- * @param options.baseUrl - The API base URL (e.g., "https://api.openai.com/v1" or "http://localhost:11434/v1")
+ * @param options.baseUrl - The API base URL (e.g., "https://api.openai.com/v1")
  * @param options.apiKey - Optional API key for authentication
  * @param options.defaultModel - Default model to use (defaults to "gpt-3.5-turbo")
  */
@@ -153,17 +153,4 @@ export function createAIClient(options: AIClientOptions): AIClient {
   };
 }
 
-/**
- * @deprecated Use createAIClient instead. This is a compatibility alias.
- */
-export const createOllamaClient = (baseUrl: string): AIClient => {
-  // Convert old Ollama base URL to OpenAI-compatible format
-  // Ollama supports OpenAI-compatible API at /v1
-  const openaiBaseUrl = baseUrl.endsWith("/v1") ? baseUrl : `${baseUrl}/v1`;
-  return createAIClient({ baseUrl: openaiBaseUrl, defaultModel: "llama3" });
-};
 
-/**
- * @deprecated Use AIClient instead.
- */
-export type OllamaClient = AIClient;

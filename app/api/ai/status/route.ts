@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import { createAIClient } from "@/src/ai/client";
 
 const client = createAIClient({
-  baseUrl: process.env.OPENAI_BASE_URL || "http://localhost:11434/v1",
+  baseUrl: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
   apiKey: process.env.OPENAI_API_KEY || "",
 });
 
