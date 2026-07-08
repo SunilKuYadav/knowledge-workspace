@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { ProblemService } from "@/src/services/ProblemService";
-import ProblemsListClient from "./ProblemsListClient";
+import ProblemsListClient from "./problems-list-client";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 
 export default async function ProblemsPage() {

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { TopicService } from "@/src/services/TopicService";
-import TopicsListClient from "./TopicsListClient";
+import TopicsListClient from "./topics-list-client";
 
 export default async function TopicsPage() {
   const workspacePath = getWorkspacePath();

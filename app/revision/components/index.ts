@@ -1,4 +1,4 @@
-export { TabButton } from "./TabButton";
-export { InteractiveReviewSession } from "./InteractiveReviewSession";
-export { ScheduleView } from "./ScheduleView";
-export { HistoryView } from "./HistoryView";
+export { TabButton } from "./tab-button";
+export { InteractiveReviewSession } from "./interactive-review-session";
+export { ScheduleView } from "./schedule-view";
+export { HistoryView } from "./history-view";

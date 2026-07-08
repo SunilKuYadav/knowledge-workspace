@@ -6,7 +6,7 @@ import { ProblemService } from "@/src/services/ProblemService";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import AISidebar from "@/src/components/AISidebar";
-import ProblemWorkspace from "./ProblemWorkspace";
+import ProblemWorkspace from "./problem-workspace";
 
 export default async function ProblemDetailPage({
   params,

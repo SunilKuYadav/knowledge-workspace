@@ -5,7 +5,7 @@ import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { categorizeRevisionItem, sortByPriority } from "@/src/revision/spaced";
 import type { RevisionCategory } from "@/src/revision/spaced";
 import type { RevisionData } from "@/src/types/Revision";
-import RevisionClient from "./RevisionClient";
+import RevisionClient from "./revision-client";
 
 /**
  * Server component that fetches all revision data and passes it

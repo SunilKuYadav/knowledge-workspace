@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { TopicService } from "@/src/services/TopicService";
-import TopicTabs from "./TopicTabs";
+import TopicTabs from "./topic-tabs";
 import AISidebar from "@/src/components/AISidebar";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import SelfTestButton from "@/src/components/SelfTestButton";
