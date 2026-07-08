@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import type { Problem, ProblemDescription, RevisionData } from "@/types";
 import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
 import {
@@ -51,14 +51,59 @@ export default function ProblemWorkspace({
     useState<ExecutionResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
-  // Generate description + test cases
+  // Streaming state
+  const [descStreamContent, setDescStreamContent] = useState("");
+  const [variationStreamContent, setVariationStreamContent] = useState("");
+  const descAbortRef = useRef<AbortController | null>(null);
+  const noteAbortRef = useRef<AbortController | null>(null);
+  const variationAbortRef = useRef<AbortController | null>(null);
+
+  // Cancel description generation
+  const handleCancelDescription = useCallback(() => {
+    if (descAbortRef.current) {
+      descAbortRef.current.abort();
+      descAbortRef.current = null;
+    }
+    setGenerating(false);
+    setDescStreamContent("");
+  }, []);
+
+  // Cancel note generation
+  const handleCancelNote = useCallback(() => {
+    if (noteAbortRef.current) {
+      noteAbortRef.current.abort();
+      noteAbortRef.current = null;
+    }
+    setIsGenNote(false);
+    setNoteGenContent("");
+  }, []);
+
+  // Cancel variation generation
+  const handleCancelVariation = useCallback(() => {
+    if (variationAbortRef.current) {
+      variationAbortRef.current.abort();
+      variationAbortRef.current = null;
+    }
+    setVariationLoading(false);
+    setVariationStreamContent("");
+  }, []);
+
+  // Generate description + test cases (streaming)
   const handleGenerateDescription = useCallback(async () => {
     setGenerating(true);
     setGenError(null);
+    setDescStreamContent("");
+
+    const controller = new AbortController();
+    descAbortRef.current = controller;
+
     try {
       const res = await fetch("/api/ai/problem/generate-description", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-stream": "true",
+        },
         body: JSON.stringify({
           problemId: problem.id,
           title: problem.title,
@@ -67,25 +112,60 @@ export default function ProblemWorkspace({
           companies: problem.companies,
           url: problem.url,
         }),
+        signal: controller.signal,
       });
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(
           (err as { error?: string }).error || "Generation failed",
         );
       }
-      const { description } = await res.json();
-      setDesc(description);
-      if (description.boilerplate && !code.trim()) {
-        setCode(description.boilerplate);
+
+      if (!res.body) throw new Error("No response body");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6);
+          try {
+            const event = JSON.parse(json);
+            if (event.type === "token") {
+              setDescStreamContent((prev) => prev + event.content);
+            } else if (event.type === "done") {
+              setDesc(event.description);
+              if (event.description.boilerplate && !code.trim()) {
+                setCode(event.description.boilerplate);
+              }
+              setDescStreamContent("");
+            } else if (event.type === "error") {
+              setGenError(event.error);
+            }
+          } catch {
+            // Skip malformed events
+          }
+        }
       }
-      setActiveTab("description");
     } catch (err) {
-      setGenError(
-        err instanceof Error ? err.message : "Failed to generate",
-      );
+      if ((err as Error).name !== "AbortError") {
+        setGenError(
+          err instanceof Error ? err.message : "Failed to generate",
+        );
+      }
     } finally {
       setGenerating(false);
+      descAbortRef.current = null;
     }
   }, [problem, code]);
 
@@ -119,6 +199,10 @@ export default function ProblemWorkspace({
     if (!code.trim()) return;
     setIsGenNote(true);
     setNoteGenContent("");
+
+    const controller = new AbortController();
+    noteAbortRef.current = controller;
+
     try {
       const res = await fetch("/api/ai/problem/generate-note", {
         method: "POST",
@@ -129,6 +213,7 @@ export default function ProblemWorkspace({
           patterns: problem.patterns,
           difficulty: problem.difficulty,
         }),
+        signal: controller.signal,
       });
       if (!res.ok || !res.body) throw new Error("Generation failed");
       const reader = res.body.getReader();
@@ -146,21 +231,32 @@ export default function ProblemWorkspace({
         : accumulated;
       setNotes(newNotes);
       await saveProblemNotes(problem.id, newNotes);
-    } catch {
-      // Silent fail — user can see the partial content
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        // Silent fail — user can see the partial content
+      }
     } finally {
       setIsGenNote(false);
+      noteAbortRef.current = null;
     }
   }, [code, problem, notes]);
 
-  // Generate variation
+  // Generate variation (streaming)
   const handleGenerateVariation = useCallback(async () => {
     if (!desc) return;
     setVariationLoading(true);
+    setVariationStreamContent("");
+
+    const controller = new AbortController();
+    variationAbortRef.current = controller;
+
     try {
       const res = await fetch("/api/ai/problem/generate-variation", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-stream": "true",
+        },
         body: JSON.stringify({
           problemId: problem.id,
           title: problem.title,
@@ -168,22 +264,56 @@ export default function ProblemWorkspace({
           difficulty: problem.difficulty,
           patterns: problem.patterns,
         }),
+        signal: controller.signal,
       });
-      if (!res.ok) throw new Error("Variation generation failed");
-      const { variation } = await res.json();
-      setDesc((prev) =>
-        prev
-          ? {
-              ...prev,
-              variations: [...(prev.variations || []), variation],
-              updatedAt: new Date().toISOString(),
+
+      if (!res.ok || !res.body) throw new Error("Variation generation failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6);
+          try {
+            const event = JSON.parse(json);
+            if (event.type === "token") {
+              setVariationStreamContent((prev) => prev + event.content);
+            } else if (event.type === "done") {
+              setDesc((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      variations: [...(prev.variations || []), event.variation],
+                      updatedAt: new Date().toISOString(),
+                    }
+                  : prev,
+              );
+              setVariationStreamContent("");
+            } else if (event.type === "error") {
+              // User can retry
             }
-          : prev,
-      );
-    } catch {
-      // User can retry
+          } catch {
+            // Skip malformed events
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        // User can retry
+      }
     } finally {
       setVariationLoading(false);
+      variationAbortRef.current = null;
     }
   }, [desc, problem]);
 
@@ -284,7 +414,7 @@ export default function ProblemWorkspace({
         {/* Description Tab */}
         {activeTab === "description" && (
           <div className="p-6">
-            {!desc ? (
+            {!desc && !generating ? (
               <div className="text-center py-12">
                 <p className="text-zinc-500 dark:text-zinc-400 mb-4">
                   No description generated yet.
@@ -294,9 +424,7 @@ export default function ProblemWorkspace({
                   disabled={generating}
                   className="px-5 py-2.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {generating
-                    ? "Generating..."
-                    : "Generate Description & Test Cases"}
+                  Generate Description & Test Cases
                 </button>
                 {genError && (
                   <p className="mt-3 text-sm text-red-600 dark:text-red-400">
@@ -304,20 +432,44 @@ export default function ProblemWorkspace({
                   </p>
                 )}
               </div>
+            ) : generating ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+                      Generating description...
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleCancelDescription}
+                    className="px-3 py-1.5 text-xs font-medium rounded-md border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {descStreamContent && (
+                  <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 p-4 max-h-96 overflow-y-auto">
+                    <pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-mono">
+                      {descStreamContent}
+                    </pre>
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="space-y-6">
                 <div className="prose prose-zinc dark:prose-invert max-w-none">
-                  <MarkdownRenderer>{desc.description}</MarkdownRenderer>
+                  <MarkdownRenderer>{desc!.description}</MarkdownRenderer>
                 </div>
 
                 {/* Constraints */}
-                {desc.constraints.length > 0 && (
+                {desc!.constraints.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
                       Constraints
                     </h3>
                     <ul className="list-disc list-inside text-sm text-zinc-600 dark:text-zinc-400 space-y-1">
-                      {desc.constraints.map((c, i) => (
+                      {desc!.constraints.map((c, i) => (
                         <li key={i}>{c}</li>
                       ))}
                     </ul>
@@ -325,13 +477,13 @@ export default function ProblemWorkspace({
                 )}
 
                 {/* Examples */}
-                {desc.examples.length > 0 && (
+                {desc!.examples.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-2">
                       Examples
                     </h3>
                     <div className="space-y-4">
-                      {desc.examples.map((ex, i) => (
+                      {desc!.examples.map((ex, i) => (
                         <div
                           key={i}
                           className="rounded-lg border border-zinc-200 dark:border-zinc-700 p-4 space-y-2"
@@ -363,21 +515,21 @@ export default function ProblemWorkspace({
                 )}
 
                 {/* Complexity */}
-                {(desc.timeComplexity || desc.spaceComplexity) && (
+                {(desc!.timeComplexity || desc!.spaceComplexity) && (
                   <div className="flex gap-4 text-sm">
-                    {desc.timeComplexity && (
+                    {desc!.timeComplexity && (
                       <span className="text-zinc-600 dark:text-zinc-400">
                         Time:{" "}
                         <code className="font-mono">
-                          {desc.timeComplexity}
+                          {desc!.timeComplexity}
                         </code>
                       </span>
                     )}
-                    {desc.spaceComplexity && (
+                    {desc!.spaceComplexity && (
                       <span className="text-zinc-600 dark:text-zinc-400">
                         Space:{" "}
                         <code className="font-mono">
-                          {desc.spaceComplexity}
+                          {desc!.spaceComplexity}
                         </code>
                       </span>
                     )}
@@ -605,9 +757,17 @@ export default function ProblemWorkspace({
               {isGenNote && noteGenContent && (
                 <div className="px-4 pb-4 shrink-0">
                   <div className="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/30 p-4">
-                    <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400 mb-2">
-                      Generating note from your solution...
-                    </p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                        Generating note from your solution...
+                      </p>
+                      <button
+                        onClick={handleCancelNote}
+                        className="px-2 py-1 text-xs font-medium rounded-md border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                     <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
                       <MarkdownRenderer>{noteGenContent}</MarkdownRenderer>
                     </div>
@@ -669,13 +829,22 @@ export default function ProblemWorkspace({
                   Solve the problem first, then generate a note from your
                   solution.
                 </p>
-                <button
-                  onClick={handleGenerateNote}
-                  disabled={isGenNote || !code.trim()}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {isGenNote ? "Generating..." : "✨ Generate Note from Code"}
-                </button>
+                {isGenNote ? (
+                  <button
+                    onClick={handleCancelNote}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                  >
+                    Cancel Generation
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGenerateNote}
+                    disabled={isGenNote || !code.trim()}
+                    className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  >
+                    ✨ Generate Note from Code
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -688,14 +857,42 @@ export default function ProblemWorkspace({
               <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                 Problem Variations
               </h3>
-              <button
-                onClick={handleGenerateVariation}
-                disabled={variationLoading || !desc}
-                className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-              >
-                {variationLoading ? "Generating..." : "🔀 New Variation"}
-              </button>
+              {variationLoading ? (
+                <button
+                  onClick={handleCancelVariation}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                >
+                  Cancel
+                </button>
+              ) : (
+                <button
+                  onClick={handleGenerateVariation}
+                  disabled={variationLoading || !desc}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                >
+                  🔀 New Variation
+                </button>
+              )}
             </div>
+
+            {/* Streaming preview while generating */}
+            {variationLoading && (
+              <div className="rounded-lg border border-indigo-200 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-950/30 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                    Generating variation...
+                  </span>
+                </div>
+                {variationStreamContent && (
+                  <div className="rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 max-h-64 overflow-y-auto">
+                    <pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-mono">
+                      {variationStreamContent}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
 
             {!desc && (
               <p className="text-sm text-zinc-400">
