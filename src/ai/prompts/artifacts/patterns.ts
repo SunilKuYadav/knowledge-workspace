@@ -29,13 +29,13 @@ Specific conditions where this is the optimal choice.
 Common traps where this looks applicable but isn't. What to use instead and why.
 
 ### Template
-A reusable TypeScript template. Include:
+A reusable pseudocode template for this pattern. Include:
 - The skeleton structure.
 - Inline comments explaining WHERE to customize.
 - Common variable names that interviewers recognize.
 
-\`\`\`typescript
-// Template here
+\`\`\`
+// Pseudocode template here
 \`\`\`
 
 ### Complexity

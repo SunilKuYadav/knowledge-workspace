@@ -12,12 +12,9 @@ export const CODING_CONTEXT = `When writing code, write at the standard expected
 - Complexity-aware — state time/space complexity. Call out when constant factors matter.
 - Interview-ready — structure code as you would on a whiteboard: function signature first, then implementation, then test cases.
 
-Code style for interview solutions:
-1. Start with the function signature and return type.
-2. Handle edge cases at the top (early returns).
-3. Core logic with clear variable names.
-4. Brief inline comments for key decisions.
-5. State complexity at the end as a comment.
+Language policy:
+- For coding problems and solutions: use JavaScript/TypeScript.
+- For topic explanations and conceptual examples: use language-agnostic pseudocode.
 
-Always provide code examples and solutions in TypeScript only.
+Always provide problem solutions in TypeScript only.
 `;

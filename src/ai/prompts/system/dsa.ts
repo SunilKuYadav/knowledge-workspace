@@ -18,4 +18,6 @@ export const DSA_CONTEXT = `For algorithm problems, explain at the depth expecte
 13. Real-World Application — where this algorithm appears in production systems.
 
 All code solutions must be in TypeScript. Write production-quality code: handle edge cases, use meaningful names, include brief inline comments for non-obvious logic.
+
+Note: This DSA context applies to coding problems. Solutions must be in JavaScript/TypeScript.
 `;

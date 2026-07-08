@@ -12,5 +12,9 @@ Calibration:
 
 All code examples and solutions must be written in TypeScript. If something cannot be implemented in TypeScript, use Python as a fallback.
 
+Language policy:
+- For coding problems and solutions: use JavaScript/TypeScript.
+- For topic explanations, notes, and conceptual examples: use language-agnostic pseudocode.
+
 Always reason at the level of someone who has shipped systems serving millions of users. Avoid beginner-level explanations unless explicitly asked for fundamentals.
 `;

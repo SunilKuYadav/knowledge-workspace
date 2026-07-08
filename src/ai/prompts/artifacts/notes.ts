@@ -33,10 +33,9 @@ Rules that are ALWAYS true. These are what you prove correct in an interview.
 Exhaustive list including: empty input, single element, duplicates, max constraints, integer overflow, negative numbers, circular references. Include the correct behavior for each.
 
 # Code Examples
-Two or three TypeScript examples showing:
-1. Canonical implementation (clean, production-quality).
-2. A subtle variation or optimization.
-Include inline comments for non-obvious logic. State complexity after each function.
+Two or three examples in pseudocode demonstrating the key operations.
+Use clear, language-agnostic pseudocode (not JavaScript/TypeScript — those are reserved for problem solutions).
+Include inline comments explaining non-obvious steps.
 
 # ASCII Diagrams
 At least one diagram showing internal structure or a key operation. Use text art.
@@ -60,6 +59,6 @@ What a Google/Meta L5 answer looks like vs L6. Specifically what needs to be dem
 Rules:
 - Explain WHY before HOW.
 - Go deeper than any textbook or LeetCode editorial.
-- All code in TypeScript unless the concept is language-independent.
+- Use pseudocode for all code examples (not TypeScript — that is reserved for coding problem solutions).
 - Include at least one counterintuitive insight that separates senior engineers from juniors.`;
 
