@@ -29,3 +29,20 @@ export { FlashcardSchema, FlashcardDeckSchema } from "./Flashcard";
 export type { Flashcard, FlashcardDeck } from "./Flashcard";
 
 export type { FilesystemError, AIError, GitError } from "./errors";
+
+export {
+  PromptConfigSchema,
+  ExperienceLevelSchema,
+  PromptOverrideSchema,
+  EXPERIENCE_LEVELS,
+  PROMPT_ACTION_KEYS,
+  DEFAULT_PROMPT_CONFIG,
+  EXPERIENCE_PRESETS,
+} from "./PromptConfig";
+export type {
+  PromptConfig,
+  ExperienceLevel,
+  PromptActionKey,
+  PromptOverride,
+  ExperiencePreset,
+} from "./PromptConfig";

@@ -11,6 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildProblemGenerationPrompt } from "@/ai/prompts";
+import { loadPromptConfig } from "@/ai/prompts/loadConfig";
+import { getPromptForAction } from "@/ai/prompts/config";
 import type {
   InterviewSource,
   InterviewContext,
@@ -168,6 +170,11 @@ export async function POST(request: NextRequest) {
     });
     const prompt = buildProblemGenerationPrompt(body);
 
+    // Prepend experience-calibrated coding interview context
+    const promptConfig = await loadPromptConfig();
+    const codingInterviewContext = getPromptForAction("codingInterview", promptConfig);
+    const fullPrompt = codingInterviewContext + "\n\n" + prompt;
+
     // Use AbortController for 30s timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT);
@@ -175,7 +182,7 @@ export async function POST(request: NextRequest) {
     let fullResponse = "";
 
     try {
-      const generator = client.generate(prompt);
+      const generator = client.generate(fullPrompt);
 
       for await (const chunk of generator) {
         if (controller.signal.aborted) {

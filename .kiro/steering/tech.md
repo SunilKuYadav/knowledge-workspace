@@ -28,6 +28,10 @@
 
 - **OpenAI** via AI Studio (OpenAI-compatible API)
 - Model: configurable via `OPENAI_MODEL` env var (default: gpt-4o)
+- **Prompt Config**: User-configurable experience level (5/10/15 YOE) stored in `~/knowledge-workspace/.config/prompt-config.json`
+  - Managed via `/settings` UI or `PUT /api/settings/prompt-config`
+  - All prompts adapt dynamically via `src/ai/prompts/config.ts`
+  - Default: 5 years experience (Senior L4/L5)
 
 ## Common Commands
 

@@ -21,6 +21,10 @@ import {
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,
 } from "@/ai";
+import { loadPromptConfig } from "@/ai/prompts/loadConfig";
+import { getPromptForAction } from "@/ai/prompts/config";
+import { composeWithConfig } from "@/ai/prompts/utils/compose";
+import { MARKDOWN_CONTEXT } from "@/ai/prompts/system";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
@@ -65,21 +69,29 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Load user's prompt config for experience-calibrated prompts
+      const promptConfig = await loadPromptConfig();
       let fullPrompt: string;
 
       if (isGeneral) {
-        // General question — no item-specific context
-        fullPrompt = buildCustomGeneralPrompt(prompt);
+        // General question — use config-aware identity + teaching
+        fullPrompt = composeWithConfig({
+          actionKeys: ["identity", "teaching"],
+          extraModules: [MARKDOWN_CONTEXT],
+          task: `Answer the following question:\n\n${prompt}`,
+          config: promptConfig,
+        });
       } else {
         // Item-specific question — include context from the problem/topic
         const contextContent =
           content ||
           (await getItemContextByType(itemId, context || null, workspacePath));
-        fullPrompt = buildCustomItemPrompt(
-          prompt,
-          context || "topic/problem",
-          contextContent,
-        );
+        fullPrompt = composeWithConfig({
+          actionKeys: ["identity", "teaching"],
+          extraModules: [MARKDOWN_CONTEXT],
+          task: `The user is studying a ${context || "topic/problem"}. Here is the relevant context:\n\n${contextContent}\n\nUser question: ${prompt}`,
+          config: promptConfig,
+        });
       }
 
       const generator = client.generate(fullPrompt);

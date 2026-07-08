@@ -20,7 +20,8 @@ app/                              # Next.js App Router — pages and API routes
 │   ├── ai/                       # AI generation endpoints (generate-text, enhance-prompt, etc.)
 │   │   └── coding-interview/     # Interview-specific AI (evaluate, follow-up, hint, score)
 │   ├── logs/                     # Dev logging endpoint
-│   └── search/                   # Search API
+│   ├── search/                   # Search API
+│   └── settings/                 # Settings API (prompt-config, prompt-preview)
 ├── coding-interview/             # Interactive coding interview module (self-contained)
 │   ├── components/               # Module-specific UI components
 │   ├── hooks/                    # Module-specific React hooks
@@ -33,12 +34,19 @@ app/                              # Next.js App Router — pages and API routes
 ├── problems/[id]/                # Problem detail view
 ├── revision/                     # Spaced repetition (session, schedule, history)
 ├── search/                       # Search UI
+├── settings/                     # Prompt configuration page (experience level, overrides)
 ├── topics/[id]/                  # Topic detail with tabbed content
 ├── layout.tsx                    # Root layout with AIProvider
 └── page.tsx                      # Dashboard
 
 src/                              # Shared application logic
 ├── ai/                           # OpenAI client, generation functions, prompts
+│   └── prompts/                  # Modular prompt system
+│       ├── system/               # Static system context modules
+│       ├── builders/             # Feature-specific prompt builders
+│       ├── utils/                # compose, composeWithConfig, format helpers
+│       ├── config.ts             # Experience-level-aware prompt generators
+│       └── loadConfig.ts         # Server-side config loader from workspace
 ├── components/                   # Shared client components (MarkdownEditor, AISidebar, etc.)
 ├── filesystem/                   # File-based repository implementations
 ├── git/                          # Git auto-commit service
@@ -49,7 +57,8 @@ src/                              # Shared application logic
 ├── revision/                     # Spaced repetition scheduler (pure functions)
 ├── search/                       # MiniSearch index, query, builder
 ├── services/                     # Application services + DI container
-└── types/                        # Zod schemas and TypeScript types
+├── stores/                       # Shared Zustand stores (promptConfigStore)
+└── types/                        # Zod schemas and TypeScript types (incl. PromptConfig)
 ```
 
 ## Key Patterns
@@ -71,6 +80,8 @@ Tests live alongside source code in `__test__/` or `__tests__/` directories (e.g
 ### Workspace Data Structure
 ```
 ~/knowledge-workspace/
+├── .config/                      # User configuration
+│   └── prompt-config.json        # AI prompt settings (experience level, overrides)
 ├── notes/{category}/{slug}/      # Topics (topic.json + .md files)
 ├── problems/{platform}/{slug}/   # Problems (problem.json + .md files)
 ├── templates/

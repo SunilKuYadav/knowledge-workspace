@@ -66,12 +66,20 @@ export default async function Dashboard() {
             Your learning dashboard
           </p>
         </div>
-        <Link
-          href="/create"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          + Create
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/settings"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            ⚙ Prompts
+          </Link>
+          <Link
+            href="/create"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            + Create
+          </Link>
+        </div>
       </header>
 
       {/* Summary Stats */}

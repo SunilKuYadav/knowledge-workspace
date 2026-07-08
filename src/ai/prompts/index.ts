@@ -92,9 +92,13 @@ export {
 } from "./schemas";
 
 // ─── Utils ───
-export { composePrompt } from "./utils/compose";
-export type { ComposeOptions } from "./utils/compose";
+export { composePrompt, composeWithConfig } from "./utils/compose";
+export type { ComposeOptions, ComposeWithConfigOptions } from "./utils/compose";
 export { section, field, metadata, joinBlocks } from "./utils/format";
+
+// ─── Config-Aware Prompts ───
+export { getPromptForAction } from "./config";
+export { loadPromptConfig } from "./loadConfig";
 
 // ─── Backward Compatibility ───
 // The old SYSTEM_CONTEXT and withContext are kept for gradual migration.
