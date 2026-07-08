@@ -12,6 +12,10 @@ export { buildQuizPrompt } from "./quiz";
 export { buildFlashcardsPrompt } from "./flashcards";
 export { buildTopicParsePrompt, buildProblemParsePrompt } from "./parser";
 export {
+  buildEnhancePromptForTopic,
+  buildEnhancePromptForProblem,
+} from "./enhance";
+export {
   buildGenerateTextPrompt,
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,

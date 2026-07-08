@@ -1,2 +1,2 @@
-export { parseFormWithAI } from "./api";
+export { parseFormWithAI, enhancePromptWithAI } from "./api";
 export type { TopicFormData, ProblemFormData, FormType } from "./types";

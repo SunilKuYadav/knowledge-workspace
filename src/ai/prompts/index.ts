@@ -44,6 +44,8 @@ export {
   buildFlashcardsPrompt,
   buildTopicParsePrompt,
   buildProblemParsePrompt,
+  buildEnhancePromptForTopic,
+  buildEnhancePromptForProblem,
   buildGenerateTextPrompt,
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,

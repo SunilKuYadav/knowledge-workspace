@@ -1,0 +1,48 @@
+/**
+ * Prompt builder for enhancing/refining user input before form parsing.
+ *
+ * Takes a rough user description and generates a more detailed, structured
+ * prompt that will produce better results when used to fill form fields.
+ */
+import { composePrompt } from "../utils/compose";
+import { IDENTITY_CONTEXT } from "../system/identity";
+
+export function buildEnhancePromptForTopic(text: string): string {
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT],
+    task: `You are an expert at refining vague descriptions into clear, detailed prompts for creating coding/CS study topics.
+
+Given the user's rough input, generate an enhanced version that is:
+- More specific about what the topic covers
+- Includes appropriate difficulty level if not specified
+- Suggests relevant tags/keywords
+- Keeps the user's original intent intact
+
+User's input: "${text}"
+
+Return ONLY a single enhanced prompt string (no JSON, no explanation, no quotes around it). The enhanced prompt should read naturally, like:
+"A hard DSA topic about graph traversal algorithms including BFS, DFS, and shortest path algorithms with tags graphs, bfs, dfs, dijkstra"
+
+Keep it concise but detailed enough to extract structured data from.`,
+  });
+}
+
+export function buildEnhancePromptForProblem(text: string): string {
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT],
+    task: `You are an expert at refining vague descriptions into clear, detailed prompts for creating coding problem entries.
+
+Given the user's rough input, generate an enhanced version that is:
+- More specific about the problem details
+- Includes platform, difficulty, companies, and patterns if they can be inferred
+- Includes a problem URL format if the platform is known
+- Keeps the user's original intent intact
+
+User's input: "${text}"
+
+Return ONLY a single enhanced prompt string (no JSON, no explanation, no quotes around it). The enhanced prompt should read naturally, like:
+"Two Sum from LeetCode, easy difficulty, frequently asked at Google and Amazon, uses hash map and two-pointers patterns, URL: https://leetcode.com/problems/two-sum"
+
+Keep it concise but detailed enough to extract structured data from.`,
+  });
+}
