@@ -14,6 +14,7 @@ export { buildTopicParsePrompt, buildProblemParsePrompt } from "./parser";
 export {
   buildEnhancePromptForTopic,
   buildEnhancePromptForProblem,
+  buildEnhancePromptForText,
 } from "./enhance";
 export {
   buildGenerateTextPrompt,

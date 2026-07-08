@@ -46,3 +46,31 @@ Return ONLY a single enhanced prompt string (no JSON, no explanation, no quotes 
 Keep it concise but detailed enough to extract structured data from.`,
   });
 }
+
+export function buildEnhancePromptForText(
+  text: string,
+  context?: string,
+): string {
+  const contextSnippet = context
+    ? `\n\nExisting document context (first 500 chars):\n"""${context.slice(0, 500)}"""`
+    : "";
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT],
+    task: `You are an expert at refining vague writing prompts into clear, detailed instructions for generating markdown content.
+
+Given the user's rough input, generate an enhanced version that is:
+- More specific about what to write (scope, structure, depth)
+- Suggests the tone and format (bullet list, table, explanation, tutorial, etc.)
+- Includes any inferred technical details or constraints
+- Keeps the user's original intent intact
+${contextSnippet}
+
+User's input: "${text}"
+
+Return ONLY a single enhanced prompt string (no JSON, no explanation, no quotes around it). The enhanced prompt should read like a clear instruction, for example:
+"Write a detailed explanation of binary search tree operations including insertion, deletion, and search, using code examples in TypeScript, formatted with headers for each operation"
+
+Keep it concise but specific enough to produce high-quality markdown output.`,
+  });
+}

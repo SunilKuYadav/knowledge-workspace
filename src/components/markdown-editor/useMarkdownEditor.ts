@@ -17,10 +17,14 @@ export function useMarkdownEditor(content: string, filePath: string) {
   const [showAIPrompt, setShowAIPrompt] = useState(false);
   const [aiPrompt, setAIPrompt] = useState("");
   const [aiError, setAIError] = useState<string | null>(null);
+  const [enhancedPrompt, setEnhancedPrompt] = useState("");
+  const [showEnhanced, setShowEnhanced] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const { generate, isGenerating } = useAIGenerate();
 
   const handleAIGenerate = useCallback(async () => {
-    if (!aiPrompt.trim() || isGenerating) return;
+    const promptToUse = showEnhanced ? enhancedPrompt : aiPrompt;
+    if (!promptToUse.trim() || isGenerating) return;
     setAIError(null);
 
     const textarea = textareaRef.current;
@@ -29,18 +33,58 @@ export function useMarkdownEditor(content: string, filePath: string) {
     // We'll collect chunks and append to markdown at the cursor position
     let generated = "";
     try {
-      await generate(aiPrompt.trim(), markdown, (chunk) => {
+      await generate(promptToUse.trim(), markdown, (chunk) => {
         generated += chunk;
         const newContent =
           markdown.slice(0, insertPos) + generated + markdown.slice(insertPos);
         setMarkdown(newContent);
       });
       setAIPrompt("");
+      setEnhancedPrompt("");
+      setShowEnhanced(false);
       setShowAIPrompt(false);
     } catch (err) {
       setAIError(err instanceof Error ? err.message : "Generation failed");
     }
-  }, [aiPrompt, isGenerating, generate, markdown]);
+  }, [aiPrompt, enhancedPrompt, showEnhanced, isGenerating, generate, markdown]);
+
+  const handleAIEnhance = useCallback(async () => {
+    if (!aiPrompt.trim() || isEnhancing) return;
+    setAIError(null);
+    setIsEnhancing(true);
+
+    try {
+      const response = await fetch("/api/ai/enhance-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: aiPrompt.trim(),
+          formType: "text",
+          context: markdown,
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.error || "Failed to enhance prompt");
+      }
+
+      setEnhancedPrompt(json.enhanced);
+      setShowEnhanced(true);
+    } catch (err) {
+      setAIError(
+        err instanceof Error ? err.message : "Failed to enhance prompt",
+      );
+    } finally {
+      setIsEnhancing(false);
+    }
+  }, [aiPrompt, isEnhancing, markdown]);
+
+  const handleDiscardEnhanced = useCallback(() => {
+    setEnhancedPrompt("");
+    setShowEnhanced(false);
+  }, []);
 
   const insertFormatting = useCallback(
     (action: FormatAction) => {
@@ -140,7 +184,13 @@ export function useMarkdownEditor(content: string, filePath: string) {
     setAIPrompt,
     aiError,
     isGenerating,
+    isEnhancing,
+    enhancedPrompt,
+    setEnhancedPrompt,
+    showEnhanced,
     handleAIGenerate,
+    handleAIEnhance,
+    handleDiscardEnhanced,
     insertFormatting,
     handleSave,
   };

@@ -46,6 +46,7 @@ export {
   buildProblemParsePrompt,
   buildEnhancePromptForTopic,
   buildEnhancePromptForProblem,
+  buildEnhancePromptForText,
   buildGenerateTextPrompt,
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,

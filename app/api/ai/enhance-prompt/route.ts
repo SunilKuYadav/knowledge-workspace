@@ -10,6 +10,7 @@ import { createAIClient } from "@/ai";
 import {
   buildEnhancePromptForTopic,
   buildEnhancePromptForProblem,
+  buildEnhancePromptForText,
 } from "@/src/ai/prompts";
 
 const DEFAULT_BASE_URL =
@@ -20,9 +21,10 @@ const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, formType } = body as {
+    const { text, formType, context } = body as {
       text: string;
-      formType: "topic" | "problem";
+      formType: "topic" | "problem" | "text";
+      context?: string;
     };
 
     if (!text || !formType) {
@@ -52,7 +54,9 @@ export async function POST(request: NextRequest) {
     const prompt =
       formType === "topic"
         ? buildEnhancePromptForTopic(text)
-        : buildEnhancePromptForProblem(text);
+        : formType === "problem"
+          ? buildEnhancePromptForProblem(text)
+          : buildEnhancePromptForText(text, context);
 
     let result = "";
     for await (const token of client.generate(prompt)) {
