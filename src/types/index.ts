@@ -1,8 +1,11 @@
 export { TopicSchema } from "./Topic";
 export type { Topic } from "./Topic";
 
-export { ProblemSchema } from "./Problem";
-export type { Problem } from "./Problem";
+export { ProblemSchema, ProblemFrequencySchema, ComplexitySchema } from "./Problem";
+export type { Problem, ProblemFrequency, Complexity } from "./Problem";
+
+export { ArtifactSchema, ARTIFACT_LABELS, ARTIFACT_ORDER } from "./Artifact";
+export type { ArtifactType } from "./Artifact";
 
 export {
   ConfidenceSchema,

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import { mkdtemp, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { FileTopicRepository } from "./FileTopicRepository";
+import { FileTopicRepository } from "../FileTopicRepository";
 import type { Topic } from "@/types";
 
 describe("FileTopicRepository", () => {
@@ -28,7 +28,7 @@ describe("FileTopicRepository", () => {
   };
 
   describe("create", () => {
-    it("creates topic folder with topic.json and all template markdown files", async () => {
+    it("creates topic folder with topic.json and overview.md", async () => {
       const topic = await repo.create(sampleTopicInput);
 
       expect(topic.id).toBe("binary-trees");
@@ -36,34 +36,24 @@ describe("FileTopicRepository", () => {
       expect(topic.category).toBe("dsa");
       expect(topic.createdAt).toBeDefined();
       expect(topic.updatedAt).toBeDefined();
+      // New fields default correctly
+      expect(topic.prerequisites).toEqual([]);
+      expect(topic.relatedTopics).toEqual([]);
+      expect(topic.slug).toBe("binary-trees");
 
-      // Verify files exist
+      // Verify required files exist
       const folderPath = path.join(tempDir, "notes", "dsa", "binary-trees");
       const topicJson = JSON.parse(
         await readFile(path.join(folderPath, "topic.json"), "utf-8"),
       );
       expect(topicJson.id).toBe("binary-trees");
 
+      // Only overview.md is created by default — all other artifacts are on-demand
       const overview = await readFile(
         path.join(folderPath, "overview.md"),
         "utf-8",
       );
       expect(overview).toContain("# Binary Trees");
-
-      const notes = await readFile(path.join(folderPath, "notes.md"), "utf-8");
-      expect(notes).toContain("# Binary Trees - Notes");
-
-      const patterns = await readFile(
-        path.join(folderPath, "patterns.md"),
-        "utf-8",
-      );
-      expect(patterns).toContain("# Binary Trees - Patterns");
-
-      const mistakes = await readFile(
-        path.join(folderPath, "mistakes.md"),
-        "utf-8",
-      );
-      expect(mistakes).toContain("# Binary Trees - Common Mistakes");
     });
 
     it("generates slug from title correctly", async () => {

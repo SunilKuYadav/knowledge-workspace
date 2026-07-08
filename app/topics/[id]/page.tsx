@@ -24,15 +24,11 @@ export default async function TopicDetailPage({
     notFound();
   }
 
-  const [overview, notes, patterns, mistakes, flashcards, revision] =
-    await Promise.all([
-      topicService.getTopicContent(id, "overview"),
-      topicService.getTopicContent(id, "notes"),
-      topicService.getTopicContent(id, "patterns"),
-      topicService.getTopicContent(id, "mistakes"),
-      topicService.getFlashcards(id),
-      topicService.getRevision(id),
-    ]);
+  const [artifacts, flashcards, revision] = await Promise.all([
+    topicService.getArtifacts(id),
+    topicService.getFlashcards(id),
+    topicService.getRevision(id),
+  ]);
 
   const difficultyColor: Record<string, string> = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -118,11 +114,11 @@ export default async function TopicDetailPage({
         {/* Tabbed content */}
         <section className="mb-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
           <TopicTabs
-            overview={overview}
-            notes={notes}
-            patterns={patterns}
-            mistakes={mistakes}
+            artifacts={artifacts}
             editBasePath={`/edit/notes/${topic.category}/${topic.id}`}
+            topicId={topic.id}
+            topicTitle={topic.title}
+            topicCategory={topic.category}
           />
         </section>
 

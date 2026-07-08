@@ -1,4 +1,4 @@
-import type { Topic, FlashcardDeck, RevisionData } from "@/types";
+import type { Topic, FlashcardDeck, RevisionData, ArtifactType } from "@/types";
 import type { TopicRepository } from "@/repository";
 
 /**
@@ -31,16 +31,28 @@ export class TopicService {
     return this.repository.delete(id);
   }
 
+  /**
+   * Returns all present artifacts for a topic as a name → content map.
+   * Only files that exist on disk are included.
+   */
+  async getArtifacts(id: string): Promise<Record<string, string>> {
+    return this.repository.getArtifacts(id);
+  }
+
+  /**
+   * Reads a single artifact file. Returns empty string if it doesn't exist.
+   * Accepts any artifact name — not restricted to a fixed list.
+   */
   async getTopicContent(
     id: string,
-    file: "overview" | "notes" | "patterns" | "mistakes",
+    file: ArtifactType | string,
   ): Promise<string> {
     return this.repository.getContent(id, file);
   }
 
   async saveTopicContent(
     id: string,
-    file: "overview" | "notes" | "patterns" | "mistakes",
+    file: ArtifactType | string,
     content: string,
   ): Promise<void> {
     return this.repository.saveContent(id, file, content);

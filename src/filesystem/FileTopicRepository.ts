@@ -1,6 +1,7 @@
 import path from "path";
-import { rm } from "fs/promises";
-import type { Topic, FlashcardDeck, RevisionData } from "@/types";
+import { rm, readdir } from "fs/promises";
+import type { Topic, FlashcardDeck, RevisionData, ArtifactType } from "@/types";
+import { ARTIFACT_ORDER } from "@/types";
 import type { TopicRepository } from "@/repository";
 import { WORKSPACE_STRUCTURE } from "../lib/constants";
 import {
@@ -27,6 +28,9 @@ function generateSlug(title: string): string {
  * FileTopicRepository implements TopicRepository using the local filesystem.
  * Topics are stored as folders under `notes/{category}/{slug}/` with
  * topic.json metadata and associated Markdown content files.
+ *
+ * Content discovery is file-driven: `getArtifacts()` reads whatever `.md` files
+ * exist in the topic folder, so new artifact types require no code changes.
  */
 export class FileTopicRepository implements TopicRepository {
   private basePath: string;
@@ -70,8 +74,9 @@ export class FileTopicRepository implements TopicRepository {
   }
 
   /**
-   * Creates a new topic folder with topic.json and all template Markdown files.
-   * Generates a slug ID from the title and places it in the correct category subdirectory.
+   * Creates a new topic folder with topic.json and a minimal overview.md.
+   * Only overview.md is written by default — all other artifacts are optional
+   * and created on demand (via AI generation or manual editing).
    */
   async create(
     data: Omit<Topic, "id" | "createdAt" | "updatedAt">,
@@ -82,6 +87,9 @@ export class FileTopicRepository implements TopicRepository {
     const topic: Topic = {
       ...data,
       id: slug,
+      slug,
+      prerequisites: data.prerequisites ?? [],
+      relatedTopics: data.relatedTopics ?? [],
       createdAt: now,
       updatedAt: now,
     };
@@ -92,22 +100,11 @@ export class FileTopicRepository implements TopicRepository {
     // Write topic.json metadata
     await writeJsonFile(path.join(topicDir, "topic.json"), topic);
 
-    // Write template Markdown files
+    // Only write overview.md as the initial artifact.
+    // All others are created on demand.
     await writeMarkdownFile(
       path.join(topicDir, "overview.md"),
-      `# ${data.title}\n\n## Overview\n\n`,
-    );
-    await writeMarkdownFile(
-      path.join(topicDir, "notes.md"),
-      `# ${data.title} - Notes\n\n`,
-    );
-    await writeMarkdownFile(
-      path.join(topicDir, "patterns.md"),
-      `# ${data.title} - Patterns\n\n`,
-    );
-    await writeMarkdownFile(
-      path.join(topicDir, "mistakes.md"),
-      `# ${data.title} - Common Mistakes\n\n`,
+      `# ${data.title}\n\n`,
     );
 
     return topic;
@@ -132,8 +129,8 @@ export class FileTopicRepository implements TopicRepository {
     const updated: Topic = {
       ...existing,
       ...data,
-      id: existing.id, // Preserve original ID
-      createdAt: existing.createdAt, // Preserve creation date
+      id: existing.id,
+      createdAt: existing.createdAt,
       updatedAt: new Date().toISOString(),
     };
 
@@ -154,13 +151,58 @@ export class FileTopicRepository implements TopicRepository {
   }
 
   /**
-   * Reads a content Markdown file (overview, notes, patterns, or mistakes) from the topic folder.
-   * Returns an empty string if the file does not exist.
+   * Discovers all `.md` files that currently exist in the topic folder and
+   * returns a map of artifact name → content, sorted by ARTIFACT_ORDER.
+   *
+   * Only present files are included — empty/missing files are omitted,
+   * so the UI can render exactly what exists with no hardcoded list.
    */
-  async getContent(
-    id: string,
-    file: "overview" | "notes" | "patterns" | "mistakes",
-  ): Promise<string> {
+  async getArtifacts(id: string): Promise<Record<string, string>> {
+    const topicPath = await this.findTopicPath(id);
+    if (!topicPath) {
+      return {};
+    }
+
+    // List all .md files in the topic directory
+    let entries: string[] = [];
+    try {
+      const dirEntries = await readdir(topicPath);
+      entries = dirEntries.filter((f) => f.endsWith(".md"));
+    } catch {
+      return {};
+    }
+
+    // Extract artifact names (strip .md extension)
+    const artifactNames = entries.map((f) => f.replace(/\.md$/, ""));
+
+    // Sort by ARTIFACT_ORDER; unknown artifacts go to the end
+    const ordered = [...artifactNames].sort((a, b) => {
+      const ai = ARTIFACT_ORDER.indexOf(a as ArtifactType);
+      const bi = ARTIFACT_ORDER.indexOf(b as ArtifactType);
+      const aIdx = ai === -1 ? Infinity : ai;
+      const bIdx = bi === -1 ? Infinity : bi;
+      return aIdx - bIdx;
+    });
+
+    // Read all files in parallel
+    const entries2 = await Promise.all(
+      ordered.map(async (name) => {
+        const content = await readMarkdownFile(
+          path.join(topicPath, `${name}.md`),
+        );
+        return [name, content] as [string, string];
+      }),
+    );
+
+    // Return only non-empty artifacts
+    return Object.fromEntries(entries2.filter(([, content]) => content.trim().length > 0));
+  }
+
+  /**
+   * Reads a single content artifact from the topic folder.
+   * Accepts any artifact name — returns empty string if the file does not exist.
+   */
+  async getContent(id: string, file: ArtifactType | string): Promise<string> {
     const topicPath = await this.findTopicPath(id);
     if (!topicPath) {
       return "";
@@ -170,11 +212,12 @@ export class FileTopicRepository implements TopicRepository {
   }
 
   /**
-   * Writes content to a Markdown file in the topic folder.
+   * Writes content to a named artifact file in the topic folder.
+   * Creates the file if it doesn't exist.
    */
   async saveContent(
     id: string,
-    file: "overview" | "notes" | "patterns" | "mistakes",
+    file: ArtifactType | string,
     content: string,
   ): Promise<void> {
     const topicPath = await this.findTopicPath(id);

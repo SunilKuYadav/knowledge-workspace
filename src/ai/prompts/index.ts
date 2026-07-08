@@ -48,6 +48,7 @@ export {
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,
   buildGenerateContentPrompt,
+  buildArtifactPrompt,
   buildReviewPrompt,
   buildEvaluationPrompt,
   buildHintPrompt,

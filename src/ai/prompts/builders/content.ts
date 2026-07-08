@@ -5,6 +5,10 @@ import { composePrompt } from "../utils/compose";
 import { IDENTITY_CONTEXT } from "../system/identity";
 import { TEACHING_CONTEXT } from "../system/teaching";
 import { MARKDOWN_CONTEXT } from "../system/markdown";
+import { ARTIFACT_PROMPTS } from "../artifacts";
+import type { ArtifactType } from "@/types";
+
+// ─── Generic text generation ───────────────────────────────────────────────
 
 export function buildGenerateTextPrompt(
   userPrompt: string,
@@ -42,6 +46,53 @@ export function buildCustomItemPrompt(
   });
 }
 
+// ─── Master artifact generation ─────────────────────────────────────────────
+
+/**
+ * Builds a prompt that generates a complete artifact from scratch for a topic.
+ *
+ * Composes: IDENTITY + TEACHING + MARKDOWN + artifact-specific instructions.
+ * Substitutes {{TOPIC}}, {{CATEGORY}}, and {{ARTIFACT}} in the instructions.
+ *
+ * @param topic    The topic title (e.g. "Binary Search Tree")
+ * @param category The topic category (e.g. "dsa")
+ * @param artifact The artifact type to generate (e.g. "notes")
+ */
+export function buildArtifactPrompt(
+  topic: string,
+  category: string,
+  artifact: ArtifactType,
+): string {
+  const artifactInstructions = ARTIFACT_PROMPTS[artifact]
+    .replace(/\{\{TOPIC\}\}/g, topic)
+    .replace(/\{\{CATEGORY\}\}/g, category)
+    .replace(/\{\{ARTIFACT\}\}/g, artifact);
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
+    task: `## Topic
+${topic}
+
+## Category
+${category}
+
+## Artifact to generate
+${artifact}
+
+${artifactInstructions}
+
+Generate ONLY the requested artifact. Do NOT generate content for any other artifact.
+Start directly with the content. Do not include introductory or closing remarks.`,
+  });
+}
+
+// ─── Review session content generation ──────────────────────────────────────
+
+/**
+ * Builds a prompt that generates or updates a content artifact based on
+ * a completed review session. Each artifact type has specific instructions
+ * for how to incorporate session insights.
+ */
 export function buildGenerateContentPrompt(
   answers: Array<{
     question: string;
@@ -64,16 +115,17 @@ export function buildGenerateContentPrompt(
     )
     .join("\n\n");
 
-  const contentTypePrompts: Record<string, string> = {
+  const contentTypeInstructions: Record<string, string> = {
     notes: `Generate updated/improved notes in Markdown format. Include key concepts, important details, and things the user should remember. Merge with any existing notes content — do not lose existing information, but add new insights from this session.`,
     mistakes: `Generate a consolidated list of common mistakes and pitfalls in Markdown format. Include mistakes from this session AND any from the existing content. Each mistake should have a brief explanation of why it's wrong and how to avoid it. Format as a clear list.`,
     patterns: `Generate coding patterns and approaches in Markdown format. Include patterns relevant to this topic/problem that were tested in the session. Merge with existing patterns. Each pattern should include when to use it and a brief example or explanation.`,
     solution: `Generate an improved solution explanation in Markdown format. Based on the review session Q&A, provide a clear solution approach with explanation. Include time/space complexity if relevant. Build upon existing solution content.`,
+    implementation: `Generate implementation guidance in Markdown format. Based on session insights, include key implementation steps, common bugs identified in the session, and reusable templates. Merge with existing content.`,
     flashcards: `Generate flashcards in Markdown format. Create Q&A pairs based on the review session insights and existing content. Format each as:\n\n### Card N\n**Q:** question\n**A:** answer\n\nFocus on key concepts, common mistakes, and important patterns that need to be memorized.`,
   };
 
   const instruction =
-    contentTypePrompts[contentType] || contentTypePrompts.notes;
+    contentTypeInstructions[contentType] ?? contentTypeInstructions.notes;
 
   return composePrompt({
     modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],

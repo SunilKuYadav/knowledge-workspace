@@ -16,6 +16,7 @@ export {
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,
   buildGenerateContentPrompt,
+  buildArtifactPrompt,
 } from "./content";
 export {
   buildReviewPrompt,
