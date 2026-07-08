@@ -12,7 +12,7 @@ import { createAIClient } from "./client";
 
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
 const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "https://api.openai.com/v1";
+  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
 const API_KEY = process.env.OPENAI_API_KEY || "";
 
 let available = false;

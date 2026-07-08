@@ -48,7 +48,7 @@
 |----------|---------|-------------|
 | `WORKSPACE_PATH` | `~/knowledge-workspace` | Root directory for workspace files |
 | `OPENAI_API_KEY` | — | API key for OpenAI / AI Studio |
-| `OPENAI_BASE_URL` | `https://api.openai.com/v1` | Base URL for the OpenAI-compatible API |
+| `OPENAI_BASE_URL` | `http://127.0.0.1:1234/v1` | Base URL for the OpenAI-compatible API |
 | `OPENAI_MODEL` | `gpt-4o` | Model name to use for AI generation |
 
 ## Path Aliases (tsconfig)

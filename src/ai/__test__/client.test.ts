@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createAIClient } from "./client";
+import { createAIClient } from "../client";
 
 describe("createAIClient", () => {
-  const baseUrl = "https://api.openai.com/v1";
+  const baseUrl = "http://127.0.0.1:1234/v1";
   const apiKey = "sk-test-key";
 
   beforeEach(() => {

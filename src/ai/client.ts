@@ -28,7 +28,7 @@ export interface AIClientOptions {
  * Creates an AIClient connected to an OpenAI-compatible API.
  *
  * @param options - Configuration for the AI client
- * @param options.baseUrl - The API base URL (e.g., "https://api.openai.com/v1")
+ * @param options.baseUrl - The API base URL (e.g., "http://127.0.0.1:1234/v1")
  * @param options.apiKey - Optional API key for authentication
  * @param options.defaultModel - Default model to use (defaults to "gpt-3.5-turbo")
  */
