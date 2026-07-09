@@ -11,6 +11,7 @@ import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import SelfTestButton from "@/src/components/SelfTestButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import LinkProblemButton from "@/src/components/LinkProblemButton";
+import MarkInProgressButton from "@/app/self-test/components/mark-in-progress-button/MarkInProgressButton";
 
 export default async function TopicDetailPage({
   params,
@@ -148,6 +149,7 @@ export default async function TopicDetailPage({
               )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              <MarkInProgressButton topicId={id} status={topic.status} />
               <CodingInterviewButton
                 source="topic"
                 id={id}
