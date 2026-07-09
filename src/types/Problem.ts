@@ -65,6 +65,12 @@ export const ProblemSchema = z.object({
    * Space complexity of the user's best solution.
    */
   spaceComplexity: ComplexitySchema.optional(),
+  /**
+   * Topic IDs that are related to this problem.
+   * Powers "study these topics before attempting" and
+   * "you've mastered these topics, try these problems" flows.
+   */
+  relatedTopicIds: z.array(z.string()).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

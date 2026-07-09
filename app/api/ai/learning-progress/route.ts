@@ -20,7 +20,7 @@ const DEFAULT_BASE_URL =
 const API_KEY = process.env.OPENAI_API_KEY || "";
 const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
-type ActionType = "assess-readiness" | "generate-plan" | "suggest-topics" | "suggest-problems";
+type ActionType = "assess-readiness" | "generate-plan" | "suggest-topics" | "suggest-problems" | "ready-problems";
 
 interface ProgressRequestBody {
   action: ActionType;
@@ -153,6 +153,26 @@ Suggest 10-15 problems, ordered by priority. Focus on patterns that are:
 1. Missing from their current problem set
 2. Frequently tested at ${config.targetCompanies.join(", ")} for ${config.targetRole}
 3. Appropriate difficulty progression for ${config.experienceLevel} YOE`;
+      break;
+
+    case "ready-problems":
+      task = `${statsBlock}
+
+## Ready-to-Attempt Problems Request
+${category ? `Focus pattern/category: ${category}` : "Across all patterns."}
+
+Based on the user's COMPLETED topics (confidence >= 3) and their existing problem set, identify problems they are NOW READY to attempt.
+
+The key insight: match completed topics to problem patterns. If a user has studied "Hash Tables" with confidence 4/5 and "Arrays" with confidence 3/5, they're ready for "Two Sum" (hash map + arrays).
+
+Provide:
+1. **Ready Now** — Problems they should be able to solve given their current knowledge. For each:
+   - Title, Pattern, Difficulty, Why they're ready (cite specific topics they've mastered)
+2. **Almost Ready** — Problems they're close to being ready for, with what's missing:
+   - Title, Pattern, Missing prerequisite (what to study next to unlock this)
+3. **Level-Up Path** — The 3-5 topics that would unlock the most problems if completed next
+
+Format as clear Markdown with sections. Be specific about which completed topics map to which problems.`;
       break;
   }
 

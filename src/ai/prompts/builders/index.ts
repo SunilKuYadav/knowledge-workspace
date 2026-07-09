@@ -58,3 +58,15 @@ export type {
   GenerateNoteParams,
   GenerateVariationParams,
 } from "./problem";
+
+// ─── Creation Assist Module ─────────────────────────────────────────────────
+export {
+  buildTopicCreationAssistPrompt,
+  buildProblemCreationAssistPrompt,
+  buildStudyPlanPrompt,
+} from "./creation-assist";
+export type {
+  TopicCreationAssistParams,
+  ProblemCreationAssistParams,
+  StudyPlanGenerationParams,
+} from "./creation-assist";

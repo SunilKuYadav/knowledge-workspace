@@ -29,8 +29,8 @@ interface ProgressPanelProps {
   problemsSummary: string;
 }
 
-type ActionType = "assess-readiness" | "generate-plan" | "suggest-topics" | "suggest-problems";
-type TabType = "overview" | "readiness" | "plan" | "suggestions";
+type ActionType = "assess-readiness" | "generate-plan" | "suggest-topics" | "suggest-problems" | "ready-problems";
+type TabType = "overview" | "readiness" | "plan" | "suggestions" | "ready";
 
 const CATEGORIES = [
   { value: "", label: "All Categories" },
@@ -116,6 +116,27 @@ export default function ProgressPanel({
     callAI("generate-plan", selectedCategory);
   };
 
+  const handleSavePlan = async () => {
+    if (!aiOutput || activeTab !== "plan") return;
+
+    try {
+      const res = await fetch("/api/ai/study-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: selectedCategory || undefined,
+          timelineWeeks: 4,
+        }),
+      });
+
+      if (res.ok) {
+        window.location.href = "/study-plans";
+      }
+    } catch {
+      // Silently fail
+    }
+  };
+
   const handleSuggestTopics = () => {
     setActiveTab("suggestions");
     callAI("suggest-topics", selectedCategory);
@@ -124,6 +145,11 @@ export default function ProgressPanel({
   const handleSuggestProblems = () => {
     setActiveTab("suggestions");
     callAI("suggest-problems", selectedCategory);
+  };
+
+  const handleReadyProblems = () => {
+    setActiveTab("ready");
+    callAI("ready-problems", selectedCategory);
   };
 
   // Coverage by category
@@ -219,9 +245,17 @@ export default function ProgressPanel({
 
       {/* Action Buttons */}
       <section>
-        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-          AI-Powered Analysis
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+            AI-Powered Analysis
+          </h2>
+          <a
+            href="/study-plans"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            View Saved Plans →
+          </a>
+        </div>
         <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
           <div className="flex flex-wrap items-center gap-3 mb-4">
             <select
@@ -238,7 +272,7 @@ export default function ProgressPanel({
             </select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <ActionButton
               onClick={handleAssessReadiness}
               disabled={loading}
@@ -267,6 +301,13 @@ export default function ProgressPanel({
               label="Suggest Problems"
               description="Get problems to practice"
             />
+            <ActionButton
+              onClick={handleReadyProblems}
+              disabled={loading}
+              icon="🎯"
+              label="Ready to Solve"
+              description="Problems you can tackle now based on mastered topics"
+            />
           </div>
         </div>
       </section>
@@ -280,12 +321,23 @@ export default function ProgressPanel({
                 {activeTab === "readiness" && "Readiness Assessment"}
                 {activeTab === "plan" && "Study Plan"}
                 {activeTab === "suggestions" && "Suggestions"}
+                {activeTab === "ready" && "Ready to Solve"}
               </h3>
-              {loading && (
-                <span className="text-sm text-blue-600 dark:text-blue-400 animate-pulse">
-                  Analyzing...
-                </span>
-              )}
+              <div className="flex items-center gap-3">
+                {activeTab === "plan" && aiOutput && !loading && (
+                  <button
+                    onClick={handleSavePlan}
+                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                  >
+                    Save & Track Plan
+                  </button>
+                )}
+                {loading && (
+                  <span className="text-sm text-blue-600 dark:text-blue-400 animate-pulse">
+                    Analyzing...
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="p-6">

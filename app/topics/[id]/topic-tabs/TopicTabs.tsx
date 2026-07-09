@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
 import GenerateArtifactButton from "../generate-artifact-button";
+import RegenerateArtifactButton from "../regenerate-artifact-button";
 import { useTopicTabs } from "./useTopicTabs";
 import type { TopicTabsProps } from "./types";
 
@@ -56,14 +57,23 @@ export default function TopicTabs({
           />
         </div>
 
-        {/* Edit button for the active tab (only shown when a tab is active) */}
+        {/* Action buttons for the active tab */}
         {activeTab && (
-          <Link
-            href={`${editBasePath}/${activeTab}.md`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shrink-0"
-          >
-            Edit
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <RegenerateArtifactButton
+              topicId={topicId}
+              topicTitle={topicTitle}
+              topicCategory={topicCategory}
+              activeTab={activeTab}
+              onRegenerated={handleGenerated}
+            />
+            <Link
+              href={`${editBasePath}/${activeTab}.md`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shrink-0"
+            >
+              Edit
+            </Link>
+          </div>
         )}
       </div>
 

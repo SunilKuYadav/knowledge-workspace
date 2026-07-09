@@ -69,6 +69,10 @@ export {
   buildGenerateDescriptionPrompt,
   buildGenerateNotePrompt,
   buildGenerateVariationPrompt,
+  // Creation Assist Module
+  buildTopicCreationAssistPrompt,
+  buildProblemCreationAssistPrompt,
+  buildStudyPlanPrompt,
 } from "./builders";
 export type {
   GenerateProblemParams,
@@ -77,6 +81,9 @@ export type {
   GenerateDescriptionParams,
   GenerateNoteParams,
   GenerateVariationParams,
+  TopicCreationAssistParams,
+  ProblemCreationAssistParams,
+  StudyPlanGenerationParams,
 } from "./builders";
 
 // ─── Schemas ───
