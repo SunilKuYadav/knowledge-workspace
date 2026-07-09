@@ -3,7 +3,6 @@
  */
 export const PROBLEM_PARSE_SCHEMA = `Return ONLY valid JSON (no markdown, no explanation) with these fields:
 - title (string, required): The problem name
-- platform (string, one of: leetcode, codeforces, gfg)
 - difficulty (string, one of: easy, medium, hard)
 - companies (array of strings): companies that ask this problem
 - patterns (array of strings): algorithmic patterns used

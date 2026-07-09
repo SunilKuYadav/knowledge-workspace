@@ -13,7 +13,6 @@ export function ProblemForm() {
     FormData
   >(createProblem, {});
   const [title, setTitle] = useState("");
-  const [platform, setPlatform] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [companies, setCompanies] = useState("");
   const [patterns, setPatterns] = useState("");
@@ -32,7 +31,6 @@ export function ProblemForm() {
   function handleAIResult(data: TopicFormData | ProblemFormData) {
     const d = data as ProblemFormData;
     if (d.title) setTitle(d.title);
-    if (d.platform) setPlatform(d.platform);
     if (d.difficulty) setDifficulty(d.difficulty);
     if (d.companies) setCompanies(d.companies.join(", "));
     if (d.patterns) setPatterns(d.patterns.join(", "));
@@ -40,8 +38,8 @@ export function ProblemForm() {
   }
 
   const handleGetSuggestions = useCallback(async () => {
-    if (!title.trim() || !platform || !difficulty) {
-      setAssistError("Please fill in title, platform, and difficulty first.");
+    if (!title.trim() || !difficulty) {
+      setAssistError("Please fill in title and difficulty first.");
       return;
     }
 
@@ -52,7 +50,6 @@ export function ProblemForm() {
     try {
       const result = await getProblemCreationAssist({
         title: title.trim(),
-        platform,
         difficulty,
         patterns: patterns
           .split(",")
@@ -81,7 +78,7 @@ export function ProblemForm() {
     } finally {
       setAssistLoading(false);
     }
-  }, [title, platform, difficulty, patterns, companies]);
+  }, [title, difficulty, patterns, companies]);
 
   const handleQuickCreateTopic = useCallback(async (topicTitle: string) => {
     setCreatingTopic(topicTitle);
@@ -143,28 +140,6 @@ export function ProblemForm() {
             placeholder="e.g., Valid Parentheses"
             className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-        </div>
-
-        <div>
-          <label
-            htmlFor="problem-platform"
-            className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-          >
-            Platform <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="problem-platform"
-            name="platform"
-            required
-            value={platform}
-            onChange={(e) => setPlatform(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          >
-            <option value="">Select a platform</option>
-            <option value="leetcode">LeetCode</option>
-            <option value="codeforces">Codeforces</option>
-            <option value="gfg">GeeksForGeeks</option>
-          </select>
         </div>
 
         <div>
@@ -261,7 +236,7 @@ export function ProblemForm() {
             <button
               type="button"
               onClick={handleGetSuggestions}
-              disabled={assistLoading || !title.trim() || !platform || !difficulty}
+              disabled={assistLoading || !title.trim() || !difficulty}
               className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {assistLoading ? "Analyzing..." : "Check Readiness & Link Topics"}

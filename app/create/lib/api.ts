@@ -99,7 +99,6 @@ export async function getTopicCreationAssist(params: {
  */
 export async function getProblemCreationAssist(params: {
   title: string;
-  platform: string;
   difficulty: string;
   patterns: string[];
   companies: string[];

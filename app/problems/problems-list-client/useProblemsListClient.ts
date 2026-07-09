@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from "react";
 import type { Problem } from "@/src/types";
-import type { DifficultyFilter, StatusFilter, PlatformFilter } from "./types";
+import type { DifficultyFilter, StatusFilter } from "./types";
 
-export type SortField = "title" | "difficulty" | "updatedAt" | "platform";
+export type SortField = "title" | "difficulty" | "updatedAt";
 export type SortDirection = "asc" | "desc";
 
 const DIFFICULTY_ORDER: Record<string, number> = {
@@ -17,7 +17,6 @@ export function useProblemsListClient(problems: Problem[]) {
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState<DifficultyFilter>("");
   const [status, setStatus] = useState<StatusFilter>("");
-  const [platform, setPlatform] = useState<PlatformFilter>("");
   const [sortField, setSortField] = useState<SortField>("updatedAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
@@ -35,10 +34,7 @@ export function useProblemsListClient(problems: Problem[]) {
       const matchesDifficulty =
         difficulty === "" || problem.difficulty === difficulty;
       const matchesStatus = status === "" || problem.status === status;
-      const matchesPlatform = platform === "" || problem.platform === platform;
-      return (
-        matchesSearch && matchesDifficulty && matchesStatus && matchesPlatform
-      );
+      return matchesSearch && matchesDifficulty && matchesStatus;
     });
 
     // Sort
@@ -57,15 +53,12 @@ export function useProblemsListClient(problems: Problem[]) {
           cmp =
             new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
           break;
-        case "platform":
-          cmp = a.platform.localeCompare(b.platform);
-          break;
       }
       return sortDirection === "asc" ? cmp : -cmp;
     });
 
     return result;
-  }, [problems, search, difficulty, status, platform, sortField, sortDirection]);
+  }, [problems, search, difficulty, status, sortField, sortDirection]);
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -83,8 +76,6 @@ export function useProblemsListClient(problems: Problem[]) {
     setDifficulty,
     status,
     setStatus,
-    platform,
-    setPlatform,
     sortField,
     sortDirection,
     toggleSort,

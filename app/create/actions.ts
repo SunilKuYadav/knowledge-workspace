@@ -119,7 +119,6 @@ export async function createProblem(
   formData: FormData,
 ): Promise<CreateProblemState> {
   const title = formData.get("title") as string;
-  const platform = formData.get("platform") as Problem["platform"];
   const difficulty = formData.get("difficulty") as Problem["difficulty"];
   const companiesRaw = formData.get("companies") as string;
   const patternsRaw = formData.get("patterns") as string;
@@ -128,10 +127,6 @@ export async function createProblem(
 
   if (!title || !title.trim()) {
     return { error: "Title is required." };
-  }
-
-  if (!platform) {
-    return { error: "Platform is required." };
   }
 
   if (!difficulty) {
@@ -167,7 +162,6 @@ export async function createProblem(
   try {
     const problem = await problemService.createProblem({
       title: title.trim(),
-      platform,
       difficulty,
       companies,
       patterns,

@@ -46,15 +46,14 @@ describe("FileRevisionRepository", () => {
    * Helper to create a problem folder with problem.json and optional revision.json.
    */
   async function createProblemWithRevision(
-    platform: string,
     slug: string,
     revision?: RevisionData,
   ): Promise<void> {
-    const problemDir = path.join(tempDir, "problems", platform, slug);
+    const problemDir = path.join(tempDir, "problems", slug);
     await mkdir(problemDir, { recursive: true });
     await writeFile(
       path.join(problemDir, "problem.json"),
-      JSON.stringify({ id: slug, title: slug, platform }),
+      JSON.stringify({ id: slug, title: slug }),
       "utf-8",
     );
     if (revision) {
@@ -100,7 +99,7 @@ describe("FileRevisionRepository", () => {
 
     it("returns items that are due today", async () => {
       const revision = makeRevisionData("two-sum", "problem", "2024-01-20");
-      await createProblemWithRevision("leetcode", "two-sum", revision);
+      await createProblemWithRevision("two-sum", revision);
 
       const items = await repo.getDueItems("2024-01-20");
       expect(items).toHaveLength(1);
@@ -115,7 +114,7 @@ describe("FileRevisionRepository", () => {
       expect(items).toHaveLength(0);
     });
 
-    it("scans across multiple categories and platforms", async () => {
+    it("scans across multiple categories and flat problems", async () => {
       await createTopicWithRevision(
         "dsa",
         "arrays",
@@ -127,13 +126,11 @@ describe("FileRevisionRepository", () => {
         makeRevisionData("load-balancing", "topic", "2024-01-19"),
       );
       await createProblemWithRevision(
-        "leetcode",
         "two-sum",
         makeRevisionData("two-sum", "problem", "2024-01-20"),
       );
       // This one is upcoming — should not be included
       await createProblemWithRevision(
-        "codeforces",
         "div2-problem",
         makeRevisionData("div2-problem", "problem", "2024-01-25"),
       );
@@ -194,7 +191,7 @@ describe("FileRevisionRepository", () => {
     });
 
     it("works with problem items", async () => {
-      await createProblemWithRevision("leetcode", "two-sum");
+      await createProblemWithRevision("two-sum");
 
       const entry: RevisionEntry = {
         id: "rev-001",
@@ -268,7 +265,7 @@ describe("FileRevisionRepository", () => {
       const revision = makeRevisionData("two-sum", "problem", "2024-01-25", {
         history: [{ id: "rev-001", date: "2024-01-15", confidence: 3 }],
       });
-      await createProblemWithRevision("leetcode", "two-sum", revision);
+      await createProblemWithRevision("two-sum", revision);
 
       const history = await repo.getHistory("two-sum");
       expect(history).toHaveLength(1);

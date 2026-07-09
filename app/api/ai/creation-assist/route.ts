@@ -33,7 +33,6 @@ interface TopicAssistBody {
 interface ProblemAssistBody {
   type: "problem";
   title: string;
-  platform: string;
   difficulty: string;
   patterns: string[];
   companies: string[];
@@ -97,7 +96,6 @@ export async function POST(request: NextRequest) {
 
       prompt = buildProblemCreationAssistPrompt({
         title: body.title,
-        platform: body.platform,
         difficulty: body.difficulty,
         patterns: body.patterns,
         companies: body.companies,

@@ -7,7 +7,7 @@ The experience level is **user-configurable** (5, 10, or 15 years) — all AI pr
 ## Core Features
 
 - **Topics** — Deep study notes by category (DSA, system design, database, networking, OS, OOP) with overview, notes, patterns, and mistakes tabs. Depth adapts to configured experience level.
-- **Problems** — Coding problems organized by platform (LeetCode, Codeforces, GFG) with notes, solutions, and metadata. Emphasis on pattern recognition and optimization ladders.
+- **Problems** — Coding problems with notes, solutions, and metadata. Emphasis on pattern recognition and optimization ladders.
 - **Spaced Repetition** — Confidence-based review scheduling optimized for long-term retention. Key for building reliable recall under interview pressure.
 - **Full-Text Search** — MiniSearch-powered search across all workspace content.
 - **Markdown Editor** — Split-pane editor with live preview and auto-save to git.

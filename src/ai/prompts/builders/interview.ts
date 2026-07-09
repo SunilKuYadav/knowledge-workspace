@@ -12,7 +12,6 @@ import { SIMILAR_PROBLEMS_SCHEMA } from "../schemas/similar";
 
 export function buildInterviewPrepPrompt(
   title: string,
-  platform: string,
   difficulty: string,
   patterns: string,
 ): string {
@@ -32,7 +31,6 @@ export function buildInterviewPrepPrompt(
 5. Time and space complexity discussion points
 
 Problem: ${title}
-Platform: ${platform}
 Difficulty: ${difficulty}
 Patterns: ${patterns}
 
@@ -42,7 +40,6 @@ Interview Prep:`,
 
 export function buildSimilarProblemsPrompt(
   title: string,
-  platform: string,
   difficulty: string,
   patterns: string,
   companies: string,
@@ -52,7 +49,6 @@ export function buildSimilarProblemsPrompt(
     task: `Given the following coding problem metadata, suggest 5 similar problems that would help practice the same patterns and concepts.
 
 Problem: ${title}
-Platform: ${platform}
 Difficulty: ${difficulty}
 Patterns: ${patterns}
 Companies: ${companies}

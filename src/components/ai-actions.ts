@@ -57,13 +57,11 @@ export async function saveAIContent(
       const problemDir = path.join(
         workspacePath,
         "problems",
-        problem.platform,
         itemId,
       );
       const filePath = path.join(problemDir, filename);
       relativeFilePath = path.join(
         "problems",
-        problem.platform,
         itemId,
         filename,
       );

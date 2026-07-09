@@ -54,7 +54,7 @@ export default async function ProgressPage() {
   const problemsSummary = problems
     .map(
       (p) =>
-        `- ${p.title} [${p.platform}] — ${p.status}, ${p.difficulty}, patterns: ${p.patterns.join(", ") || "none"}`,
+        `- ${p.title} — ${p.status}, ${p.difficulty}, patterns: ${p.patterns.join(", ") || "none"}`,
     )
     .join("\n");
 

@@ -155,7 +155,7 @@ Tests live alongside source code in `__test__/` or `__tests__/` directories (e.g
 ├── .config/                      # User configuration
 │   └── prompt-config.json        # AI prompt settings (experience level, overrides)
 ├── notes/{category}/{slug}/      # Topics (topic.json + .md files)
-├── problems/{platform}/{slug}/   # Problems (problem.json + .md files)
+├── problems/{slug}/              # Problems (problem.json + .md files)
 ├── templates/
 ├── flashcards/
 ├── revision/
@@ -163,4 +163,3 @@ Tests live alongside source code in `__test__/` or `__tests__/` directories (e.g
 ```
 
 Categories: `dsa`, `system-design`, `database`, `networking`, `os`, `oop`
-Platforms: `leetcode`, `codeforces`, `gfg`

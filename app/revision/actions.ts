@@ -50,7 +50,7 @@ export async function rateRevision(
 /**
  * Determines the relative path to the revision.json file for a given item.
  * For topics: notes/{category}/{itemId}/revision.json
- * For problems: problems/{platform}/{itemId}/revision.json
+ * For problems: problems/{itemId}/revision.json
  */
 async function getRevisionRelativePath(
   itemId: string,
@@ -67,7 +67,7 @@ async function getRevisionRelativePath(
     const problemRepo = new FileProblemRepository(workspacePath);
     const problem = await problemRepo.getById(itemId);
     if (problem) {
-      return path.join("problems", problem.platform, itemId, "revision.json");
+      return path.join("problems", itemId, "revision.json");
     }
   }
   return null;

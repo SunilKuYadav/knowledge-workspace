@@ -352,7 +352,7 @@ async function getItemContent(
       problemRepo.getNotes(itemId),
       problemRepo.getSolution(itemId),
     ]);
-    return `Problem: ${problem.title}\nPlatform: ${problem.platform}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(", ")}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
+    return `Problem: ${problem.title}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(", ")}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
   }
 }
 

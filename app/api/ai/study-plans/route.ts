@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .map((t) => `${t.title} (${t.category}, ${t.status}, confidence: ${t.confidence}/5)`)
       .join("\n");
     const problemsSummary = allProblems
-      .map((p) => `${p.title} (${p.platform}, ${p.difficulty}, ${p.status}, patterns: ${p.patterns.join(", ")})`)
+      .map((p) => `${p.title} (${p.difficulty}, ${p.status}, patterns: ${p.patterns.join(", ")})`)
       .join("\n");
 
     const coverageStats = {

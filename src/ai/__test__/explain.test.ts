@@ -23,7 +23,6 @@ function createMockClient(responses: string[], available = true): AIClient {
 const mockProblem: Problem = {
   id: "two-sum",
   title: "Two Sum",
-  platform: "leetcode",
   difficulty: "easy",
   companies: ["Google", "Amazon"],
   patterns: ["hash-map", "two-pointers"],

@@ -11,7 +11,7 @@ import {
 interface LinkProblemButtonProps {
   topicId: string;
   linkedProblemIds: string[];
-  allProblems: Pick<Problem, "id" | "title" | "platform" | "difficulty">[];
+  allProblems: Pick<Problem, "id" | "title" | "difficulty">[];
 }
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -53,8 +53,7 @@ export default function LinkProblemButton({
     (p) =>
       !linkedIds.includes(p.id) &&
       (search === "" ||
-        p.title.toLowerCase().includes(search.toLowerCase()) ||
-        p.platform.toLowerCase().includes(search.toLowerCase())),
+        p.title.toLowerCase().includes(search.toLowerCase())),
   );
 
   async function handleLink(problemId: string) {
@@ -160,9 +159,6 @@ export default function LinkProblemButton({
                       {problem.title}
                     </span>
                     <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      <span className="text-[10px] text-zinc-400 capitalize">
-                        {problem.platform}
-                      </span>
                       <span
                         className={`text-[10px] px-1.5 py-0.5 rounded ${DIFFICULTY_COLORS[problem.difficulty]}`}
                       >

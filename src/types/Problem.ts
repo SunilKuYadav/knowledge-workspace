@@ -34,7 +34,6 @@ export type Complexity = z.infer<typeof ComplexitySchema>;
 export const ProblemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  platform: z.enum(["leetcode", "codeforces", "gfg"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
   companies: z.array(z.string()),
   patterns: z.array(z.string()),
@@ -75,5 +74,5 @@ export const ProblemSchema = z.object({
   updatedAt: z.string(),
 });
 
-/** A coding problem with platform, difficulty, companies, patterns, and solve tracking. */
+/** A coding problem with difficulty, companies, patterns, and solve tracking. */
 export type Problem = z.infer<typeof ProblemSchema>;

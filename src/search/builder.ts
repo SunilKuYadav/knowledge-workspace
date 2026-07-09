@@ -49,7 +49,7 @@ export function buildSearchDocuments(
       title: problem.title,
       content: notes,
       tags: [...problem.patterns, ...problem.companies],
-      path: `problems/${problem.platform}/${problem.id}`,
+      path: `problems/${problem.id}`,
     });
   }
 

@@ -10,7 +10,6 @@ export interface TopicFormData {
 
 export interface ProblemFormData {
   title?: string;
-  platform?: string;
   difficulty?: string;
   companies?: string[];
   patterns?: string[];

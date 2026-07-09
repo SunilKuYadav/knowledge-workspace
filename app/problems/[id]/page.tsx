@@ -49,12 +49,6 @@ export default async function ProblemDetailPage({
     hard: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   }[problem.difficulty];
 
-  const platformLabel = {
-    leetcode: "LeetCode",
-    codeforces: "Codeforces",
-    gfg: "GFG",
-  }[problem.platform];
-
   const statusColor = {
     "not-started":
       "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
@@ -86,9 +80,6 @@ export default async function ProblemDetailPage({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-medium px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                {platformLabel}
-              </span>
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColor}`}>
                 {problem.difficulty}
               </span>

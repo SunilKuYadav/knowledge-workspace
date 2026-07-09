@@ -2,13 +2,12 @@ import path from "path";
 
 /**
  * Workspace directory structure configuration.
- * Defines the subdirectories for notes (by topic category),
- * problems (by platform), and root-level directories.
+ * Defines the subdirectories for notes (by topic category)
+ * and root-level directories.
  */
 export const WORKSPACE_STRUCTURE = {
   notes: ["dsa", "system-design", "database", "networking", "os", "oop"],
-  problems: ["leetcode", "codeforces", "gfg"],
-  root: ["templates", "revision", "flashcards", "assets"],
+  root: ["templates", "revision", "flashcards", "assets", "problems"],
 } as const;
 
 /**
@@ -33,8 +32,3 @@ export function getWorkspacePath(): string {
  * All note category values as a type.
  */
 export type NoteCategory = (typeof WORKSPACE_STRUCTURE.notes)[number];
-
-/**
- * All problem platform values as a type.
- */
-export type ProblemPlatform = (typeof WORKSPACE_STRUCTURE.problems)[number];

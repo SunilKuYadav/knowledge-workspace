@@ -200,7 +200,6 @@ export function useDuplicates() {
     return {
       id: primary.id,
       title: primary.title,
-      platform: primary.platform,
       difficulty: primary.difficulty,
       companies: allCompanies,
       patterns: allPatterns,

@@ -76,7 +76,6 @@ Important:
 
 export interface ProblemCreationAssistParams {
   title: string;
-  platform: string;
   difficulty: string;
   patterns: string[];
   companies: string[];
@@ -108,7 +107,6 @@ export function buildProblemCreationAssistPrompt(
 
 ## New Problem Being Created
 - Title: ${params.title}
-- Platform: ${params.platform}
 - Difficulty: ${params.difficulty}
 - Patterns: ${params.patterns.join(", ") || "not specified"}
 - Companies: ${params.companies.join(", ") || "not specified"}

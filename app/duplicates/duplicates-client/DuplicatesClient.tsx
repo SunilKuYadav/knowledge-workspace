@@ -408,7 +408,7 @@ function ProblemDuplicateGroup({
                   {problem.title}
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  {problem.platform} · {problem.difficulty} · {problem.status} ·{" "}
+                  {problem.difficulty} · {problem.status} ·{" "}
                   {problem.patterns.join(", ") || "no patterns"} ·{" "}
                   {problem.companies.length} companies
                 </p>

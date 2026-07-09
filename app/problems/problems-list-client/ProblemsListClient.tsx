@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import type { ProblemsListClientProps, DifficultyFilter, StatusFilter, PlatformFilter } from "./types";
-import { DIFFICULTY_COLORS, STATUS_COLORS, PLATFORM_LABELS } from "./constants";
+import type { ProblemsListClientProps, DifficultyFilter, StatusFilter } from "./types";
+import { DIFFICULTY_COLORS, STATUS_COLORS } from "./constants";
 import { useProblemsListClient } from "./useProblemsListClient";
 import type { SortField } from "./useProblemsListClient";
 
@@ -16,8 +16,6 @@ export default function ProblemsListClient({
     setDifficulty,
     status,
     setStatus,
-    platform,
-    setPlatform,
     sortField,
     sortDirection,
     toggleSort,
@@ -56,17 +54,6 @@ export default function ProblemsListClient({
           aria-label="Search problems"
         />
         <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
-          className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-          aria-label="Filter by platform"
-        >
-          <option value="">All Platforms</option>
-          <option value="leetcode">LeetCode</option>
-          <option value="codeforces">Codeforces</option>
-          <option value="gfg">GFG</option>
-        </select>
-        <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value as DifficultyFilter)}
           className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -98,7 +85,6 @@ export default function ProblemsListClient({
         <SortButton field="title" label="Title" />
         <SortButton field="difficulty" label="Difficulty" />
         <SortButton field="updatedAt" label="Updated" />
-        <SortButton field="platform" label="Platform" />
       </div>
 
       {/* Results Count */}
@@ -134,9 +120,6 @@ export default function ProblemsListClient({
                       </h2>
                     </div>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                        {PLATFORM_LABELS[problem.platform]}
-                      </span>
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded ${DIFFICULTY_COLORS[problem.difficulty]}`}
                       >

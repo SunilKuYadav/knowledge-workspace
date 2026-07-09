@@ -41,7 +41,6 @@ export default async function TopicDetailPage({
   const problemSummaries = allProblems.map((p) => ({
     id: p.id,
     title: p.title,
-    platform: p.platform,
     difficulty: p.difficulty,
   }));
 

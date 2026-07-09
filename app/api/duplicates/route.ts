@@ -6,7 +6,7 @@
  * - Exact title match (case-insensitive)
  * - Slug collision (same generated slug)
  * - High title similarity (Levenshtein-based)
- * - Overlapping tags/patterns + same category/platform
+ * - Overlapping tags/patterns + same category
  */
 
 import { NextResponse } from "next/server";
@@ -181,7 +181,6 @@ function detectProblemDuplicates(problems: Problem[]): DuplicateGroup<Problem>[]
       const slugA = generateSlug(problems[i].title);
       const slugB = generateSlug(problems[j].title);
       const slugMatch = slugA === slugB;
-      const samePlatform = problems[i].platform === problems[j].platform;
       const patternOverlap = jaccardSimilarity(
         problems[i].patterns,
         problems[j].patterns,
@@ -191,12 +190,12 @@ function detectProblemDuplicates(problems: Problem[]): DuplicateGroup<Problem>[]
       if (titleSim >= 0.95 || slugMatch) {
         group.push(problems[j]);
       }
-      // Medium: very similar title (possibly cross-platform duplicate)
+      // Medium: very similar title
       else if (titleSim >= 0.8) {
         group.push(problems[j]);
       }
-      // Low: same platform, moderate title similarity, high pattern overlap
-      else if (titleSim >= 0.6 && patternOverlap >= 0.6 && samePlatform) {
+      // Low: moderate title similarity + high pattern overlap
+      else if (titleSim >= 0.6 && patternOverlap >= 0.6) {
         group.push(problems[j]);
       }
     }
@@ -219,7 +218,7 @@ function detectProblemDuplicates(problems: Problem[]): DuplicateGroup<Problem>[]
         reason = "Near-identical titles";
         confidence = "high";
       } else if (bestTitleSim >= 0.8) {
-        reason = "Very similar titles (possible cross-platform duplicate)";
+        reason = "Very similar titles";
         confidence = "medium";
       } else {
         reason = "Similar titles with overlapping patterns";
