@@ -47,8 +47,8 @@ export type PromptOverride = z.infer<typeof PromptOverrideSchema>;
 // ─── Full Config Schema ─────────────────────────────────────────────────────
 
 export const PromptConfigSchema = z.object({
-  experienceLevel: ExperienceLevelSchema.default(5),
-  targetRole: z.string().default("Senior Engineer (L4/L5)"),
+  experienceLevel: ExperienceLevelSchema.default(1),
+  targetRole: z.string().default("Junior/Mid Engineer (L3/L4)"),
   targetCompanies: z
     .array(z.string())
     .default(["Google", "Meta", "Microsoft", "Amazon", "Apple"]),
@@ -77,8 +77,8 @@ export type PromptConfig = {
 // ─── Default Config ─────────────────────────────────────────────────────────
 
 export const DEFAULT_PROMPT_CONFIG: PromptConfig = {
-  experienceLevel: 5,
-  targetRole: "Senior Engineer (L4/L5)",
+  experienceLevel: 1,
+  targetRole: "Junior/Mid Engineer (L3/L4)",
   targetCompanies: ["Google", "Meta", "Microsoft", "Amazon", "Apple"],
   overrides: {},
 };
