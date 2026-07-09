@@ -11,8 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createAIClient,
-  getModelForRoute,
+  getReadyClient,
   generateSummary,
   generateQuiz,
   generateFlashcards,
@@ -22,6 +21,7 @@ import {
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,
 } from "@/ai";
+import { createAIClient } from "@/ai";
 import { loadPromptConfig } from "@/ai/prompts/loadConfig";
 import { getPromptForAction } from "@/ai/prompts/config";
 import { composeWithConfig } from "@/ai/prompts/utils/compose";
@@ -29,11 +29,6 @@ import { MARKDOWN_CONTEXT } from "@/ai/prompts/system";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/route");
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,11 +49,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/route");
     const workspacePath = getWorkspacePath();
 
     // Custom prompt action — stream the response

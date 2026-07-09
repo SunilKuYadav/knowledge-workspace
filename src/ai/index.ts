@@ -2,6 +2,8 @@ export { createAIClient } from "./client";
 export type { AIClient, AIClientOptions } from "./client";
 export { getModelForRoute, getModel, getAllModels } from "./model-router";
 export type { ModelTier } from "./model-router";
+export { modelManager, ensureModelLoaded } from "./model-manager";
+export { getReadyClient, getReadyClientForTier } from "./llm";
 
 export { logInput, logOutput, logError, installAIFetchLogger } from "./logger";
 

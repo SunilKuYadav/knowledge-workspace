@@ -7,12 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/merge-suggest");
+import { getReadyClient } from "@/ai";
 
 interface MergeRequestBody {
   type: "topic" | "problem";
@@ -82,11 +77,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/merge-suggest");
 
     const available = await client.isAvailable();
     if (!available) {

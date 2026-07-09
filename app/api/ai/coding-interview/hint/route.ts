@@ -14,14 +14,9 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildCodingInterviewHintPrompt } from "@/ai/prompts";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/coding-interview/hint");
 
 interface HintRequest {
   problemStatement: string;
@@ -56,11 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/coding-interview/hint");
     const prompt = buildCodingInterviewHintPrompt(body);
 
     // Use AbortController for 30s timeout

@@ -11,18 +11,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { v4 as uuid } from "uuid";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { buildStudyPlanPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import type { StudyPlan } from "@/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/study-plans");
 
 function getPlansDir(): string {
   return path.join(getWorkspacePath(), ".config", "study-plans");
@@ -75,11 +70,7 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as GenerateBody;
     const config = await loadPromptConfig();
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/study-plans");
 
     const available = await client.isAvailable();
     if (!available) {

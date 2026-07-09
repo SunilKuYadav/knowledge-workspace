@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { z } from "zod";
 import { validateAIResponse } from "@/app/self-test/lib/validation";
 import {
@@ -17,11 +17,6 @@ import {
   FeedbackReportSchema,
 } from "@/app/self-test/lib/types";
 import type { FeedbackReport, PhaseResult } from "@/app/self-test/lib/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/assessment/feedback");
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),
@@ -92,11 +87,7 @@ export async function POST(request: NextRequest) {
 
     const { topicTitle, category, phaseResults, experienceLevel } = parsed.data;
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/assessment/feedback");
 
     const available = await client.isAvailable();
     if (!available) {

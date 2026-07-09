@@ -8,7 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
+import type { AIClient } from "@/ai";
 import { z } from "zod";
 import { truncateContent, validateAIResponse } from "@/app/self-test/lib/validation";
 import {
@@ -20,11 +21,6 @@ import {
   CodeChallengeQuestionSchema,
 } from "@/app/self-test/lib/types";
 import type { AssessmentPhaseType, DifficultyLevel } from "@/app/self-test/lib/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/assessment/generate");
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),
@@ -147,11 +143,7 @@ export async function POST(request: NextRequest) {
 
     const truncatedContent = content ? truncateContent(content) : undefined;
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/assessment/generate");
 
     const available = await client.isAvailable();
     if (!available) {
@@ -200,7 +192,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateAndValidate<T>(
-  client: ReturnType<typeof createAIClient>,
+  client: AIClient,
   prompt: string,
   schema: z.ZodSchema<T>,
 ): Promise<{ success: true; data: T } | { success: false; error: string }> {

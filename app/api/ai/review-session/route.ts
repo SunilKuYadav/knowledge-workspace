@@ -11,7 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
+import type { AIClient } from "@/ai";
 import {
   buildReviewPrompt,
   buildEvaluationPrompt,
@@ -19,6 +20,7 @@ import {
   buildSessionSummaryPrompt,
   buildGenerateContentPrompt,
 } from "@/ai";
+import { getModelForRoute } from "@/ai";
 import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
@@ -57,11 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/review-session");
     const workspacePath = getWorkspacePath();
     const promptConfig = await loadPromptConfig();
 

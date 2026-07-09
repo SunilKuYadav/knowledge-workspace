@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { z } from "zod";
 import { truncateContent, validateAIResponse } from "@/app/self-test/lib/validation";
 import {
@@ -16,11 +16,6 @@ import {
   QuestionEvaluationSchema,
 } from "@/app/self-test/lib/types";
 import type { QuestionEvaluation } from "@/app/self-test/lib/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("ai/assessment/evaluate");
 
 const EVALUATION_TIMEOUT = 30_000; // 30 seconds
 
@@ -84,11 +79,7 @@ export async function POST(request: NextRequest) {
     const { question, userAnswer, topicTitle, category, phaseType, content } = parsed.data;
     const truncatedContent = content ? truncateContent(content) : undefined;
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/assessment/evaluate");
 
     const available = await client.isAvailable();
     if (!available) {

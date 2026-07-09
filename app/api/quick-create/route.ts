@@ -20,7 +20,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import { createAIClient, getModelForRoute } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import type { Topic, Problem, SemanticDescription } from "@/src/types";
 import type { PromptConfig } from "@/types/PromptConfig";
@@ -52,11 +52,6 @@ const VALID_CATEGORIES: Topic["category"][] = [
   "os",
   "oop",
 ];
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = getModelForRoute("quick-create");
 
 export async function POST(request: NextRequest) {
   try {
@@ -219,11 +214,7 @@ async function generateMetadata(
   config: PromptConfig,
 ): Promise<AIMetadata | null> {
   try {
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("quick-create");
 
     const available = await client.isAvailable();
     if (!available) return null;
