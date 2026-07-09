@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ProblemsListClientProps, DifficultyFilter, StatusFilter, PlatformFilter } from "./types";
 import { DIFFICULTY_COLORS, STATUS_COLORS, PLATFORM_LABELS } from "./constants";
 import { useProblemsListClient } from "./useProblemsListClient";
+import type { SortField } from "./useProblemsListClient";
 
 export default function ProblemsListClient({
   problems,
@@ -17,13 +18,35 @@ export default function ProblemsListClient({
     setStatus,
     platform,
     setPlatform,
+    sortField,
+    sortDirection,
+    toggleSort,
     filtered,
   } = useProblemsListClient(problems);
+
+  function SortButton({ field, label }: { field: SortField; label: string }) {
+    const isActive = sortField === field;
+    return (
+      <button
+        onClick={() => toggleSort(field)}
+        className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
+          isActive
+            ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
+            : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        }`}
+      >
+        {label}
+        {isActive && (
+          <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
+        )}
+      </button>
+    );
+  }
 
   return (
     <div>
       {/* Search and Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           value={search}
@@ -65,6 +88,17 @@ export default function ProblemsListClient({
           <option value="attempted">Attempted</option>
           <option value="solved">Solved</option>
         </select>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Sort by:
+        </span>
+        <SortButton field="title" label="Title" />
+        <SortButton field="difficulty" label="Difficulty" />
+        <SortButton field="updatedAt" label="Updated" />
+        <SortButton field="platform" label="Platform" />
       </div>
 
       {/* Results Count */}

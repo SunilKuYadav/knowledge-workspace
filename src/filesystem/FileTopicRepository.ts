@@ -90,6 +90,7 @@ export class FileTopicRepository implements TopicRepository {
       slug,
       prerequisites: data.prerequisites ?? [],
       relatedTopics: data.relatedTopics ?? [],
+      relatedProblemIds: data.relatedProblemIds ?? [],
       createdAt: now,
       updatedAt: now,
     };

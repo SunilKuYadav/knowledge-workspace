@@ -2,10 +2,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { ProblemService } from "@/src/services/ProblemService";
+import { TopicService } from "@/src/services/TopicService";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import AISidebar from "@/src/components/AISidebar";
+import LinkTopicButton from "@/src/components/LinkTopicButton";
 import ProblemWorkspace from "./problem-workspace";
 
 export default async function ProblemDetailPage({
@@ -19,16 +22,25 @@ export default async function ProblemDetailPage({
   const problemService = new ProblemService(
     new FileProblemRepository(workspacePath),
   );
+  const topicService = new TopicService(new FileTopicRepository(workspacePath));
 
   const problem = await problemService.getProblemById(id);
   if (!problem) notFound();
 
-  const [notes, solution, revision, description] = await Promise.all([
+  const [notes, solution, revision, description, allTopics] = await Promise.all([
     problemService.getNotes(id),
     problemService.getSolution(id),
     problemService.getRevision(id),
     problemService.getDescription(id),
+    topicService.getAllTopics(),
   ]);
+
+  const linkedTopicIds = problem.relatedTopicIds ?? [];
+  const topicSummaries = allTopics.map((t) => ({
+    id: t.id,
+    title: t.title,
+    category: t.category,
+  }));
 
   const difficultyColor = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -131,6 +143,15 @@ export default async function ProblemDetailPage({
               {c}
             </span>
           ))}
+        </div>
+
+        {/* Related Topics */}
+        <div className="mt-3">
+          <LinkTopicButton
+            problemId={id}
+            linkedTopicIds={linkedTopicIds}
+            allTopics={topicSummaries}
+          />
         </div>
       </header>
 

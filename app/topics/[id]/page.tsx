@@ -2,12 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { TopicService } from "@/src/services/TopicService";
+import { ProblemService } from "@/src/services/ProblemService";
 import TopicTabs from "./topic-tabs";
 import AISidebar from "@/src/components/AISidebar";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import SelfTestButton from "@/src/components/SelfTestButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
+import LinkProblemButton from "@/src/components/LinkProblemButton";
 
 export default async function TopicDetailPage({
   params,
@@ -18,17 +21,29 @@ export default async function TopicDetailPage({
 
   const workspacePath = getWorkspacePath();
   const topicService = new TopicService(new FileTopicRepository(workspacePath));
+  const problemService = new ProblemService(
+    new FileProblemRepository(workspacePath),
+  );
 
   const topic = await topicService.getTopicById(id);
   if (!topic) {
     notFound();
   }
 
-  const [artifacts, flashcards, revision] = await Promise.all([
+  const [artifacts, flashcards, revision, allProblems] = await Promise.all([
     topicService.getArtifacts(id),
     topicService.getFlashcards(id),
     topicService.getRevision(id),
+    problemService.getAllProblems(),
   ]);
+
+  const linkedProblemIds = topic.relatedProblemIds ?? [];
+  const problemSummaries = allProblems.map((p) => ({
+    id: p.id,
+    title: p.title,
+    platform: p.platform,
+    difficulty: p.difficulty,
+  }));
 
   const difficultyColor: Record<string, string> = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -93,6 +108,14 @@ export default async function TopicDetailPage({
                   ))}
                 </div>
               )}
+              {/* Related Problems */}
+              <div className="mt-4">
+                <LinkProblemButton
+                  topicId={id}
+                  linkedProblemIds={linkedProblemIds}
+                  allProblems={problemSummaries}
+                />
+              </div>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <CodingInterviewButton

@@ -43,6 +43,11 @@ export const TopicSchema = z.object({
    * Powers the "learn next" graph.
    */
   relatedTopics: z.array(z.string()).optional(),
+  /**
+   * Problem IDs that are linked to this topic.
+   * Cross-linked with Problem.relatedTopicIds for bidirectional navigation.
+   */
+  relatedProblemIds: z.array(z.string()).optional(),
   tags: z.array(z.string()),
   createdAt: z.string(),
   updatedAt: z.string(),
