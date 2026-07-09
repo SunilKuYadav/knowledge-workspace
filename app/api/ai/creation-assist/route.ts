@@ -13,6 +13,7 @@ import {
   buildTopicCreationAssistPrompt,
   buildProblemCreationAssistPrompt,
 } from "@/ai/prompts";
+import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
       category: t.category,
     }));
 
+    const promptConfig = await loadPromptConfig();
     let prompt: string;
 
     if (body.type === "topic") {
@@ -83,6 +85,7 @@ export async function POST(request: NextRequest) {
         difficulty: body.difficulty,
         tags: body.tags,
         existingTopics,
+        config: promptConfig,
       });
     } else {
       const problemRepo = new FileProblemRepository(workspacePath);
@@ -101,6 +104,7 @@ export async function POST(request: NextRequest) {
         companies: body.companies,
         existingTopics,
         existingProblems,
+        config: promptConfig,
       });
     }
 

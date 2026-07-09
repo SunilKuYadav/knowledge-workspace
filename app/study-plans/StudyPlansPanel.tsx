@@ -252,10 +252,31 @@ export default function StudyPlansPanel() {
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {generating ? "Generating (this may take a moment)..." : "Generate Plan"}
+            {generating && (
+              <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            {generating ? "Generating plan…" : "Generate Plan"}
           </button>
+
+          {generating && (
+            <div className="mt-4 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10 p-4">
+              <div className="flex items-center gap-3">
+                <span className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </span>
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Analyzing your knowledge base and generating a personalized study plan. This may take 30–60 seconds…
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -378,11 +399,59 @@ function PlanDetail({
   onToggleActive: (planId: string, active: boolean) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"items" | "full-plan">("items");
+  const [addedItems, setAddedItems] = useState<Record<string, "adding" | "added" | "exists" | "error">>({});
+
+  const handleAddToWorkspace = async (item: StudyPlanItem) => {
+    setAddedItems((prev) => ({ ...prev, [item.id]: "adding" }));
+
+    try {
+      const res = await fetch("/api/quick-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: item.type,
+          title: item.title,
+          category: plan.category || "dsa",
+          planContext: {
+            title: plan.title,
+            description: plan.description,
+            category: plan.category,
+            reason: item.reason,
+            content: plan.content?.slice(0, 2000),
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        setAddedItems((prev) => ({ ...prev, [item.id]: "error" }));
+        return;
+      }
+
+      const data = await res.json();
+      if (data.existing) {
+        setAddedItems((prev) => ({ ...prev, [item.id]: "exists" }));
+      } else {
+        setAddedItems((prev) => ({ ...prev, [item.id]: "added" }));
+      }
+    } catch {
+      setAddedItems((prev) => ({ ...prev, [item.id]: "error" }));
+    }
+  };
+
+  const handleAddAllToWorkspace = async () => {
+    const uncreated = plan.items.filter((i) => !addedItems[i.id]);
+    for (const item of uncreated) {
+      await handleAddToWorkspace(item);
+    }
+  };
 
   const highPriority = plan.items.filter((i) => i.priority === "high");
   const mediumPriority = plan.items.filter((i) => i.priority === "medium");
   const lowPriority = plan.items.filter((i) => i.priority === "low");
   const noPriority = plan.items.filter((i) => !i.priority);
+
+  const addedCount = Object.values(addedItems).filter((s) => s === "added" || s === "exists").length;
+  const hasUnadded = plan.items.some((i) => !addedItems[i.id]);
 
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
@@ -420,7 +489,7 @@ function PlanDetail({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mt-4">
+        <div className="flex items-center gap-1 mt-4">
           <button
             onClick={() => setActiveTab("items")}
             className={`px-3 py-1.5 text-sm rounded-md ${
@@ -441,6 +510,24 @@ function PlanDetail({
           >
             Full Plan
           </button>
+
+          {/* Add all to workspace button */}
+          {activeTab === "items" && hasUnadded && (
+            <button
+              onClick={handleAddAllToWorkspace}
+              className="ml-auto rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add All to Workspace
+            </button>
+          )}
+          {activeTab === "items" && addedCount > 0 && (
+            <span className="ml-auto text-xs text-green-600 dark:text-green-400">
+              {addedCount} added to workspace
+            </span>
+          )}
         </div>
       </div>
 
@@ -453,7 +540,10 @@ function PlanDetail({
                 label="🔴 High Priority"
                 items={highPriority}
                 planId={plan.id}
+                planCategory={plan.category}
                 onToggle={onToggleItem}
+                onAddToWorkspace={handleAddToWorkspace}
+                addedItems={addedItems}
               />
             )}
             {mediumPriority.length > 0 && (
@@ -461,7 +551,10 @@ function PlanDetail({
                 label="🟡 Medium Priority"
                 items={mediumPriority}
                 planId={plan.id}
+                planCategory={plan.category}
                 onToggle={onToggleItem}
+                onAddToWorkspace={handleAddToWorkspace}
+                addedItems={addedItems}
               />
             )}
             {lowPriority.length > 0 && (
@@ -469,7 +562,10 @@ function PlanDetail({
                 label="🟢 Low Priority"
                 items={lowPriority}
                 planId={plan.id}
+                planCategory={plan.category}
                 onToggle={onToggleItem}
+                onAddToWorkspace={handleAddToWorkspace}
+                addedItems={addedItems}
               />
             )}
             {noPriority.length > 0 && (
@@ -477,7 +573,10 @@ function PlanDetail({
                 label="Other"
                 items={noPriority}
                 planId={plan.id}
+                planCategory={plan.category}
                 onToggle={onToggleItem}
+                onAddToWorkspace={handleAddToWorkspace}
+                addedItems={addedItems}
               />
             )}
           </div>
@@ -499,12 +598,18 @@ function PrioritySection({
   label,
   items,
   planId,
+  planCategory,
   onToggle,
+  onAddToWorkspace,
+  addedItems,
 }: {
   label: string;
   items: StudyPlanItem[];
   planId: string;
+  planCategory?: string | null;
   onToggle: (planId: string, itemId: string, completed: boolean) => void;
+  onAddToWorkspace: (item: StudyPlanItem) => void;
+  addedItems: Record<string, "adding" | "added" | "exists" | "error">;
 }) {
   return (
     <div>
@@ -512,56 +617,103 @@ function PrioritySection({
         {label}
       </h4>
       <div className="space-y-1">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={`flex items-start gap-3 rounded-md p-2 ${
-              item.completed
-                ? "bg-zinc-50 dark:bg-zinc-800/50 opacity-60"
-                : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={item.completed}
-              onChange={() => onToggle(planId, item.id, !item.completed)}
-              className="mt-0.5 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500"
-              aria-label={`Mark "${item.title}" as ${item.completed ? "incomplete" : "complete"}`}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-sm ${
-                    item.completed
-                      ? "line-through text-zinc-400 dark:text-zinc-500"
-                      : "text-zinc-900 dark:text-zinc-100"
-                  }`}
-                >
-                  {item.title}
-                </span>
-                <span
-                  className={`rounded px-1.5 py-0.5 text-xs ${
-                    item.type === "topic"
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
-                      : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
-                  }`}
-                >
-                  {item.type}
-                </span>
+        {items.map((item) => {
+          const status = addedItems[item.id];
+          return (
+            <div
+              key={item.id}
+              className={`flex items-start gap-3 rounded-md p-2 ${
+                item.completed
+                  ? "bg-zinc-50 dark:bg-zinc-800/50 opacity-60"
+                  : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={item.completed}
+                onChange={() => onToggle(planId, item.id, !item.completed)}
+                className="mt-0.5 rounded border-zinc-300 dark:border-zinc-600 text-blue-600 focus:ring-blue-500"
+                aria-label={`Mark "${item.title}" as ${item.completed ? "incomplete" : "complete"}`}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-sm ${
+                      item.completed
+                        ? "line-through text-zinc-400 dark:text-zinc-500"
+                        : "text-zinc-900 dark:text-zinc-100"
+                    }`}
+                  >
+                    {item.title}
+                  </span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs ${
+                      item.type === "topic"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                        : "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                    }`}
+                  >
+                    {item.type}
+                  </span>
+                </div>
+                {item.reason && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    {item.reason}
+                  </p>
+                )}
               </div>
-              {item.reason && (
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  {item.reason}
-                </p>
-              )}
+
+              {/* Add to workspace button */}
+              <div className="flex items-center gap-2 shrink-0">
+                {item.estimatedMinutes && (
+                  <span className="text-xs text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+                    {item.estimatedMinutes}m
+                  </span>
+                )}
+                {status === "adding" && (
+                  <svg className="animate-spin h-3.5 w-3.5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {status === "added" && (
+                  <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                    </svg>
+                    Added
+                  </span>
+                )}
+                {status === "exists" && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400">
+                    Exists
+                  </span>
+                )}
+                {status === "error" && (
+                  <button
+                    onClick={() => onAddToWorkspace(item)}
+                    className="text-xs text-red-500 hover:text-red-700 dark:hover:text-red-300"
+                    title="Retry"
+                  >
+                    ⚠ Retry
+                  </button>
+                )}
+                {!status && (
+                  <button
+                    onClick={() => onAddToWorkspace(item)}
+                    className="rounded px-2 py-1 text-xs font-medium text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors flex items-center gap-1"
+                    title={`Add "${item.title}" to your ${item.type === "topic" ? "topics" : "problems"}`}
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Add
+                  </button>
+                )}
+              </div>
             </div>
-            {item.estimatedMinutes && (
-              <span className="text-xs text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
-                {item.estimatedMinutes}m
-              </span>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

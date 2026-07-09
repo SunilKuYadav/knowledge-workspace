@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
       experienceLevel: config.experienceLevel,
       targetRole: config.targetRole,
       targetCompanies: config.targetCompanies,
+      config,
     });
 
     // Stream to collect full response

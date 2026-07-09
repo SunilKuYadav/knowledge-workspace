@@ -54,6 +54,7 @@ export default function ProgressPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [savingPlan, setSavingPlan] = useState(false);
 
   const callAI = useCallback(
     async (action: ActionType, category?: string) => {
@@ -119,6 +120,9 @@ export default function ProgressPanel({
   const handleSavePlan = async () => {
     if (!aiOutput || activeTab !== "plan") return;
 
+    setSavingPlan(true);
+    setError(null);
+
     try {
       const res = await fetch("/api/ai/study-plans", {
         method: "POST",
@@ -131,9 +135,14 @@ export default function ProgressPanel({
 
       if (res.ok) {
         window.location.href = "/study-plans";
+      } else {
+        const data = await res.json().catch(() => ({ error: "Failed to save plan" }));
+        setError(data.error || "Failed to save plan");
       }
     } catch {
-      // Silently fail
+      setError("Failed to connect to AI service");
+    } finally {
+      setSavingPlan(false);
     }
   };
 
@@ -327,14 +336,25 @@ export default function ProgressPanel({
                 {activeTab === "plan" && aiOutput && !loading && (
                   <button
                     onClick={handleSavePlan}
-                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                    disabled={savingPlan}
+                    className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    Save & Track Plan
+                    {savingPlan && (
+                      <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    {savingPlan ? "Saving & Generating…" : "Save & Track Plan"}
                   </button>
                 )}
                 {loading && (
-                  <span className="text-sm text-blue-600 dark:text-blue-400 animate-pulse">
-                    Analyzing...
+                  <span className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+                    <svg className="animate-spin h-3.5 w-3.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Generating…
                   </span>
                 )}
               </div>
@@ -356,9 +376,14 @@ export default function ProgressPanel({
               )}
 
               {loading && !aiOutput && (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-zinc-500 dark:text-zinc-400">
-                    Analyzing your knowledge base...
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <span className="flex gap-1.5">
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </span>
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Analyzing your knowledge base…
                   </div>
                 </div>
               )}

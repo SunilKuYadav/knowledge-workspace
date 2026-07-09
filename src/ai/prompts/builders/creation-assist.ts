@@ -8,10 +8,11 @@
  * - Assess readiness for a problem based on current knowledge
  */
 
-import { composePrompt } from "../utils/compose";
+import { composePrompt, composeWithConfig } from "../utils/compose";
 import { IDENTITY_CONTEXT } from "../system/identity";
 import { TEACHING_CONTEXT } from "../system/teaching";
 import { JSON_CONTEXT } from "../system/json";
+import type { PromptConfig } from "@/types/PromptConfig";
 
 // ─── Topic Creation Assist ──────────────────────────────────────────────────
 
@@ -22,11 +23,16 @@ export interface TopicCreationAssistParams {
   tags: string[];
   /** Existing topic IDs and titles for prerequisite/related suggestions. */
   existingTopics: Array<{ id: string; title: string; category: string }>;
+  /** Full prompt config for experience-calibrated system prompts. */
+  config?: PromptConfig;
 }
 
 /**
  * Builds a prompt that suggests prerequisites, related topics, estimated time,
  * and a skeleton overview for a new topic being created.
+ *
+ * When config is provided, adapts the overview depth and time estimates
+ * to the user's experience level.
  */
 export function buildTopicCreationAssistPrompt(
   params: TopicCreationAssistParams,
@@ -35,9 +41,11 @@ export function buildTopicCreationAssistPrompt(
     .map((t) => `- "${t.title}" (id: ${t.id}, category: ${t.category})`)
     .join("\n");
 
-  return composePrompt({
-    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],
-    task: `The user is creating a new topic in their knowledge workspace. Help them by suggesting prerequisites, related topics, estimated study time, and a skeleton overview.
+  const levelHint = params.config
+    ? `\n\n## User Level Context\nThe user is ${params.config.targetRole} (${params.config.experienceLevel}+ YOE) targeting ${params.config.targetCompanies.join(", ")}. Calibrate the overview depth, section structure, and time estimates for this level.${params.config.experienceLevel <= 1 ? " Include more foundational sections and generous time estimates." : params.config.experienceLevel >= 15 ? " Skip basic sections. Focus on advanced/architectural sections. Time estimates can be shorter (they learn faster)." : ""}`
+    : "";
+
+  const task = `The user is creating a new topic in their knowledge workspace. Help them by suggesting prerequisites, related topics, estimated study time, and a skeleton overview.
 
 ## New Topic Being Created
 - Title: ${params.title}
@@ -46,7 +54,7 @@ export function buildTopicCreationAssistPrompt(
 - Tags: ${params.tags.join(", ") || "none"}
 
 ## Existing Topics in Workspace
-${existingList || "No existing topics yet."}
+${existingList || "No existing topics yet."}${levelHint}
 
 ## Your Task
 Return a JSON object with:
@@ -68,7 +76,20 @@ Return ONLY valid JSON:
 Important:
 - Only reference IDs from the existing topics list for prerequisites/relatedTopics.
 - The overview should be category-appropriate (DSA topics need different sections than System Design topics).
-- Be realistic with time estimates based on difficulty and breadth.`,
+- Be realistic with time estimates based on difficulty and breadth.`;
+
+  if (params.config) {
+    return composeWithConfig({
+      actionKeys: ["identity", "teaching"],
+      extraModules: [JSON_CONTEXT],
+      task,
+      config: params.config,
+    });
+  }
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],
+    task,
   });
 }
 
@@ -83,11 +104,16 @@ export interface ProblemCreationAssistParams {
   existingTopics: Array<{ id: string; title: string; category: string }>;
   /** Existing problems for context. */
   existingProblems: Array<{ id: string; title: string; patterns: string[]; difficulty: string }>;
+  /** Full prompt config for experience-calibrated system prompts. */
+  config?: PromptConfig;
 }
 
 /**
  * Builds a prompt that suggests related topic IDs, similar problems,
  * and a readiness assessment for a new problem being created.
+ *
+ * When config is provided, calibrates the readiness assessment
+ * to the user's target level.
  */
 export function buildProblemCreationAssistPrompt(
   params: ProblemCreationAssistParams,
@@ -101,9 +127,11 @@ export function buildProblemCreationAssistPrompt(
     .map((p) => `- "${p.title}" (id: ${p.id}, patterns: ${p.patterns.join(", ")}, ${p.difficulty})`)
     .join("\n");
 
-  return composePrompt({
-    modules: [IDENTITY_CONTEXT, JSON_CONTEXT],
-    task: `The user is adding a new coding problem to their workspace. Help them by suggesting related topics, similar problems, and assessing if they're ready for this problem.
+  const levelHint = params.config
+    ? `\n\n## User Level Context\nThe user is ${params.config.targetRole} (${params.config.experienceLevel}+ YOE). Calibrate the readiness assessment for this level.${params.config.experienceLevel <= 1 ? " Be honest if this problem may be too hard for their current stage. Suggest easier prerequisites." : params.config.experienceLevel >= 15 ? " Focus readiness on advanced prerequisites (distributed systems concepts, advanced patterns), not basics." : ""}`
+    : "";
+
+  const task = `The user is adding a new coding problem to their workspace. Help them by suggesting related topics, similar problems, and assessing if they're ready for this problem.
 
 ## New Problem Being Created
 - Title: ${params.title}
@@ -115,7 +143,7 @@ export function buildProblemCreationAssistPrompt(
 ${topicsList || "No existing topics yet."}
 
 ## Existing Problems in Workspace
-${problemsList || "No existing problems yet."}
+${problemsList || "No existing problems yet."}${levelHint}
 
 ## Your Task
 Return a JSON object with:
@@ -137,7 +165,20 @@ Return ONLY valid JSON:
 Important:
 - Only reference IDs that actually exist in the lists above.
 - Be honest about readiness — if they lack fundamental topics, say so.
-- suggestedPatterns should only be filled if the user didn't provide patterns.`,
+- suggestedPatterns should only be filled if the user didn't provide patterns.`;
+
+  if (params.config) {
+    return composeWithConfig({
+      actionKeys: ["identity"],
+      extraModules: [JSON_CONTEXT],
+      task,
+      config: params.config,
+    });
+  }
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, JSON_CONTEXT],
+    task,
   });
 }
 
@@ -159,16 +200,21 @@ export interface StudyPlanGenerationParams {
   experienceLevel: number;
   targetRole: string;
   targetCompanies: string[];
+  /** Full prompt config for experience-calibrated system prompts. */
+  config?: PromptConfig;
 }
 
 /**
  * Builds a prompt that generates a structured, persistable study plan
  * with specific items (topics and problems) to complete.
+ *
+ * When config is provided, uses experience-calibrated identity/teaching prompts
+ * so the plan's depth, pacing, and recommendations match the user's level.
  */
 export function buildStudyPlanPrompt(params: StudyPlanGenerationParams): string {
-  return composePrompt({
-    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],
-    task: `Generate a structured study plan for interview preparation.
+  const levelGuidance = getStudyPlanLevelGuidance(params.experienceLevel);
+
+  const task = `Generate a structured study plan for interview preparation.
 
 ## User Context
 - Experience Level: ${params.experienceLevel} YOE
@@ -176,6 +222,9 @@ export function buildStudyPlanPrompt(params: StudyPlanGenerationParams): string 
 - Target Companies: ${params.targetCompanies.join(", ")}
 ${params.category ? `- Focus Category: ${params.category}` : "- Focus: Comprehensive (all categories)"}
 ${params.timelineWeeks ? `- Target Timeline: ${params.timelineWeeks} weeks` : "- Timeline: Suggest an appropriate timeline"}
+
+## Study Plan Calibration
+${levelGuidance}
 
 ## Current State
 - Topics: ${params.coverageStats.totalTopics} total, ${params.coverageStats.completedTopics} completed, avg confidence ${params.coverageStats.avgConfidence.toFixed(1)}/5
@@ -220,6 +269,65 @@ Requirements:
 - For problems: use well-known LeetCode-style problem names.
 - For topics: use specific subtopic names (e.g., "Trie Operations" not just "Trees").
 
-Return ONLY valid JSON.`,
+Return ONLY valid JSON.`;
+
+  if (params.config) {
+    return composeWithConfig({
+      actionKeys: ["identity", "teaching"],
+      extraModules: [JSON_CONTEXT],
+      task,
+      config: params.config,
+    });
+  }
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, JSON_CONTEXT],
+    task,
   });
+}
+
+// ─── Study Plan Level Guidance ──────────────────────────────────────────────
+
+function getStudyPlanLevelGuidance(experienceLevel: number): string {
+  if (experienceLevel <= 1) {
+    return `This user is early in their career (1 YOE, targeting L3/L4). Plan accordingly:
+- Start with absolute fundamentals: arrays, strings, hash maps, basic recursion.
+- Pace: spend more time per topic (longer estimated minutes). Don't rush.
+- Problems should be 70% Easy, 25% Medium, 5% Hard.
+- Include "warm-up" topics that build confidence before harder material.
+- Emphasize breadth of basic patterns over depth of advanced ones.
+- Include clear "milestone" checkpoints (e.g., "By week 2, you should be comfortable with...").
+- Time estimates should be generous — learning takes longer at this stage.`;
+  }
+
+  if (experienceLevel <= 5) {
+    return `This user is mid-level (5 YOE, targeting Senior L4/L5). Plan accordingly:
+- Assume solid CS fundamentals. Focus on pattern mastery and optimization.
+- Problems should be 20% Easy (warm-up), 60% Medium, 20% Hard.
+- Emphasize the optimization path: getting from brute force to optimal quickly.
+- Include system design basics alongside DSA.
+- Focus on speed and consistency — they need to solve problems reliably under time pressure.
+- Include timed practice sessions in the plan.`;
+  }
+
+  if (experienceLevel >= 15) {
+    return `This user is very experienced (15 YOE, targeting Principal L6/L7). Plan accordingly:
+- Skip ALL fundamentals. They know arrays, trees, graphs, DP.
+- Focus on: hard problems, system design depth, behavioral/leadership prep.
+- Problems should be 70% Hard, 30% Medium. Include design-heavy problems.
+- System design should be 40%+ of the plan (heavily weighted at L6/L7).
+- Include cross-cutting topics: distributed systems, organizational design, technical strategy.
+- Emphasis on speed and elegance — they need to solve hard problems in 25 minutes.
+- Include mock interview practice and communication coaching.`;
+  }
+
+  // 10 YOE
+  return `This user is senior (10 YOE, targeting Staff L5/L6). Plan accordingly:
+- Assume strong fundamentals. Focus on depth, edge cases, and system-level thinking.
+- Problems should be 10% Easy (warm-up), 50% Medium, 40% Hard.
+- Include significant system design content (30%+ of plan).
+- Emphasize: formal analysis, production considerations, and trade-off articulation.
+- Include advanced topics: concurrency, distributed algorithms, amortized analysis.
+- Focus on speed under pressure — optimal solutions in under 30 minutes.
+- Include behavioral prep targeting Staff-level expectations.`;
 }
