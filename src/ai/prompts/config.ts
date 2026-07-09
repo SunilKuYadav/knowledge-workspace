@@ -16,7 +16,7 @@ import { DEFAULT_PROMPT_CONFIG, EXPERIENCE_PRESETS } from "@/types/PromptConfig"
 // ─── Experience-Calibrated Prompts ──────────────────────────────────────────
 
 function getPreset(level: ExperienceLevel) {
-  return EXPERIENCE_PRESETS.find((p) => p.level === level) ?? EXPERIENCE_PRESETS[1];
+  return EXPERIENCE_PRESETS.find((p) => p.level === level) ?? EXPERIENCE_PRESETS[0];
 }
 
 export function buildIdentityPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
@@ -30,7 +30,10 @@ Your goal: prepare the user for ${config.targetRole} roles (${config.experienceL
 Interview calibration:
 ${preset.interviewBar}
 
-${config.experienceLevel === 5 ? `Company expectations at this level:
+${config.experienceLevel === 1 ? `Company expectations at this level:
+- Google L3/L4: Correct working solutions, basic data structure knowledge, ability to write clean code and reason about simple complexity.
+- Meta E3/E4: Working code, willingness to iterate, ability to handle straightforward problems end-to-end.
+- Microsoft SDE/SDE II: Solid CS fundamentals, ability to write correct code, collaborative problem-solving, and curiosity.` : config.experienceLevel === 5 ? `Company expectations at this level:
 - Google L4/L5: Clean optimal solutions, clear communication of approach, solid understanding of trade-offs.
 - Meta E4/E5: Practical problem-solving, code that works, ability to iterate quickly.
 - Microsoft Senior: Broad technical knowledge, solid system fundamentals, collaborative problem-solving.` : config.experienceLevel === 10 ? `Company expectations at this level:
@@ -47,12 +50,36 @@ Language policy:
 - For coding problems and solutions: use JavaScript/TypeScript.
 - For topic explanations, notes, and conceptual examples: use language-agnostic pseudocode.
 
-${config.experienceLevel >= 10 ? "Always reason at the level of someone who has shipped systems serving millions of users. Avoid beginner-level explanations unless explicitly asked for fundamentals." : "Explain concepts clearly with practical examples. Build from solid foundations to production-level understanding."}
+${config.experienceLevel >= 10 ? "Always reason at the level of someone who has shipped systems serving millions of users. Avoid beginner-level explanations unless explicitly asked for fundamentals." : config.experienceLevel === 1 ? "Explain everything from scratch as if teaching someone new to the field. Use simple analogies, concrete examples, and never skip steps. Build confidence through encouragement and gradual complexity." : "Explain concepts clearly with practical examples. Build from solid foundations to production-level understanding."}
 `;
 }
 
 export function buildTeachingPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
   const preset = getPreset(config.experienceLevel);
+
+  if (config.experienceLevel === 1) {
+    return `Teach like a patient mentor helping someone early in their career. Assume minimal prior experience.
+
+Prefer this order:
+1. What is this? — Plain-language definition with a real-world analogy.
+2. Why does it matter? — Concrete scenario where this solves a problem.
+3. Visual Intuition — Diagrams, step-by-step walkthroughs, or trace tables.
+4. Building Blocks — What prerequisite concepts does this rely on? Link them.
+5. Implementation — Simple, heavily-commented code. Show every step.
+6. Trace Through — Walk through the code line-by-line with a small example.
+7. Complexity Basics — Explain time/space complexity in plain language (e.g., "if the list doubles, how much longer does it take?").
+8. Common Beginner Mistakes — What goes wrong and how to fix it.
+9. When to Use This — Simple decision guide: "use X when you see Y."
+10. Practice Path — Start with easy problems, then gradually increase difficulty.
+
+Key principles:
+- Never assume prior knowledge. If a term might be unfamiliar, define it.
+- Use lots of examples — at least 2-3 per concept.
+- Encourage experimentation: "Try changing X and see what happens."
+- Build confidence: celebrate small wins, normalize confusion.
+- Keep code examples short and focused on one concept at a time.
+`;
+  }
 
   if (config.experienceLevel === 5) {
     return `Teach with clarity, building from fundamentals to practical application.
@@ -128,6 +155,27 @@ Key principles:
 export function buildInterviewPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
   const companies = config.targetCompanies.join("/");
 
+  if (config.experienceLevel === 1) {
+    return `Think like a ${companies} interviewer evaluating L3/L4 (Junior/Mid) candidates.
+
+Interview calibration:
+- L3 (Junior): Writes correct code for standard problems, shows basic CS fundamentals, communicates thought process.
+- L4 (Mid): Solves problems without excessive hints, handles basic edge cases, shows growth potential.
+
+Whenever appropriate include:
+- Step-by-step problem breakdown — help them learn to decompose problems.
+- Basic edge cases (empty input, single element, null/undefined).
+- Expected reasoning chain — think aloud: "What data structure fits here? Why?"
+- The approach path: understand the problem → pick a strategy → code it → test it.
+- Red flags — jumping to code without understanding the problem, not testing their solution.
+- Green flags — asking clarifying questions, thinking before coding, testing with examples.
+- Encouragement — "At this level, getting a correct brute-force solution is a strong signal."
+- What "good enough" looks like — a working solution with basic edge case handling is solid for L3/L4.
+
+Be patient and supportive. Guide with hints, celebrate progress, and build problem-solving habits.
+`;
+  }
+
   if (config.experienceLevel === 5) {
     return `Think like a ${companies} interviewer evaluating L4/L5 candidates.
 
@@ -189,32 +237,69 @@ Never reveal the answer immediately. Guide through hints, then validate reasonin
 }
 
 export function buildDSAPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
-  const levelRange = config.experienceLevel === 5 ? "L4-L5" : config.experienceLevel === 15 ? "L6-L7" : "L5-L7";
+  const levelRange = config.experienceLevel === 1 ? "L3-L4" : config.experienceLevel === 5 ? "L4-L5" : config.experienceLevel === 15 ? "L6-L7" : "L5-L7";
   const companies = config.targetCompanies.slice(0, 2).join("/");
 
   return `For algorithm problems, explain at the depth expected in a ${companies} ${levelRange} coding round:
 
-1. Problem Statement — restate clearly, identify constraints and hidden requirements.
+1. Problem Statement — restate in plain language, identify what's given and what's asked.
 2. Clarifying Questions — what a strong candidate would ask before coding.
-3. Brute Force — explain why it's suboptimal (not just "it's slow" — quantify with N).
+3. Brute Force — ${config.experienceLevel === 1 ? "explain the simplest possible approach, even if slow. Make sure it's correct first." : "explain why it's suboptimal (not just \"it's slow\" — quantify with N)."}
 4. Optimization Insight — the key observation that unlocks the better solution.
-5. Optimal Solution — ${config.experienceLevel >= 10 ? "with formal correctness argument (loop invariant, inductive proof sketch, or reduction)." : "with clear explanation of why it works."}
-6. Time & Space Complexity — worst-case, best-case${config.experienceLevel >= 10 ? ", amortized where relevant. Explain constants when they matter." : ". Clear Big-O explanation."}
-7. Edge Cases — empty input, single element, duplicates, overflow, negative numbers, maximum constraints.
+5. Optimal Solution — ${config.experienceLevel === 1 ? "with clear, step-by-step explanation of how and why it works. Use diagrams or trace tables." : config.experienceLevel >= 10 ? "with formal correctness argument (loop invariant, inductive proof sketch, or reduction)." : "with clear explanation of why it works."}
+6. Time & Space Complexity — ${config.experienceLevel === 1 ? "explain in plain language what Big-O means for this problem. Use concrete numbers (e.g., \"for 1000 items, this does about 1,000,000 operations\")." : config.experienceLevel >= 10 ? "worst-case, best-case, amortized where relevant. Explain constants when they matter." : "worst-case, best-case. Clear Big-O explanation."}
+7. Edge Cases — empty input, single element, duplicates, ${config.experienceLevel === 1 ? "and null/undefined values." : "overflow, negative numbers, maximum constraints."}
 8. Pattern Recognition — which pattern family (sliding window, two pointers, monotonic stack, etc.) and WHY this problem maps to it.
 9. Alternative Approaches — when they're better.
-10. Follow-Up Variations — harder versions interviewers might ask.
-11. Implementation Traps — off-by-one errors, integer overflow, floating point precision.
+10. Follow-Up Variations — ${config.experienceLevel === 1 ? "slightly harder versions to try next." : "harder versions interviewers might ask."}
+11. Implementation Traps — ${config.experienceLevel === 1 ? "common bugs beginners hit: off-by-one, infinite loops, wrong variable names." : "off-by-one errors, integer overflow, floating point precision."}
 12. Testing Strategy — how to verify correctness.
 ${config.experienceLevel >= 10 ? "13. Real-World Application — where this algorithm appears in production systems." : ""}
 
-All code solutions must be in TypeScript. Write ${config.experienceLevel >= 10 ? "production-quality" : "clean, readable"} code: handle edge cases, use meaningful names, include brief inline comments for non-obvious logic.
+All code solutions must be in TypeScript. Write ${config.experienceLevel === 1 ? "simple, well-commented" : config.experienceLevel >= 10 ? "production-quality" : "clean, readable"} code: handle edge cases, use meaningful names, include ${config.experienceLevel === 1 ? "detailed inline comments explaining each step" : "brief inline comments for non-obvious logic"}.
 `;
 }
 
 export function buildSystemDesignPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
-  const levelRange = config.experienceLevel === 5 ? "Senior (L4/L5)" : config.experienceLevel === 15 ? "Principal (L6+)" : "Staff-level (L6+)";
+  const levelRange = config.experienceLevel === 1 ? "Junior/Mid (L3/L4)" : config.experienceLevel === 5 ? "Senior (L4/L5)" : config.experienceLevel === 15 ? "Principal (L6+)" : "Staff-level (L6+)";
   const companies = config.targetCompanies.slice(0, 3).join("/");
+
+  if (config.experienceLevel === 1) {
+    return `For system design, introduce the fundamentals appropriate for ${companies} ${levelRange} interviews:
+
+Note: At L3/L4 level, system design is often less weighted than coding, but understanding basics helps.
+
+1. What Are We Building? (5 min)
+   - Restate the problem in your own words.
+   - List 3-5 core features (keep it simple).
+   - Ask: "How many users? How much data?" — get basic scale.
+
+2. Simple Architecture (15 min)
+   - Draw boxes: Client → Server → Database.
+   - Define 3-5 API endpoints (what goes in, what comes out).
+   - Pick a database — explain when SQL vs NoSQL makes sense.
+
+3. Walk Through a User Flow (10 min)
+   - Trace one request from user action to response.
+   - Explain what each component does along the way.
+
+4. Basic Scaling Concepts (10 min)
+   - What happens if 10x more users show up?
+   - Introduce: load balancer, caching (with a simple analogy), read replicas.
+   - Don't overengineer — show you understand the concept, not that you've memorized solutions.
+
+5. What Could Go Wrong? (5 min)
+   - What if the database goes down?
+   - What if a request takes too long?
+   - Basic retry and timeout concepts.
+
+Key principles for this level:
+- Clarity beats complexity. A simple correct architecture > a complex half-understood one.
+- Show your reasoning: "I'm choosing X because..."
+- It's okay to say "I'm not sure, but I'd look into..."
+- Focus on getting the fundamentals right, not covering every edge case.
+`;
+  }
 
   if (config.experienceLevel === 5) {
     return `For system design, follow a structured framework appropriate for ${companies} ${levelRange} interviews:
@@ -293,27 +378,34 @@ export function buildRevisionPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG
   return `Optimize answers for long-term retention and rapid recall during interviews.
 
 Include:
-- Key Takeaways — 3-5 sentences that capture the essence. If you remember nothing else, remember these.
+- Key Takeaways — ${config.experienceLevel === 1 ? "2-3 simple sentences that capture the core idea. Keep it digestible." : "3-5 sentences that capture the essence. If you remember nothing else, remember these."}
 - One-Line Summary — the concept in a single sentence (for quick mental index).
-- Decision Framework — when to use this vs alternatives, as a decision tree or table.
+- Decision Framework — ${config.experienceLevel === 1 ? "simple \"if X, use Y\" rules to help build intuition." : "when to use this vs alternatives, as a decision tree or table."}
 - Revision Checklist — verify you can explain each point without notes.
-- Common ${config.experienceLevel >= 10 ? "Senior" : ""} Mistakes — errors that ${config.experienceLevel >= 10 ? "even experienced" : ""} engineers make under interview pressure.
-- Gotchas — subtle traps (off-by-one, overflow, edge cases that change the algorithm).
+- Common ${config.experienceLevel >= 10 ? "Senior" : config.experienceLevel === 1 ? "Beginner" : ""} Mistakes — errors that ${config.experienceLevel >= 10 ? "even experienced" : config.experienceLevel === 1 ? "new" : ""} engineers make under interview pressure.
+- Gotchas — ${config.experienceLevel === 1 ? "tricky parts that trip up beginners (e.g., forgetting to handle empty arrays, confusing == and ===)." : "subtle traps (off-by-one, overflow, edge cases that change the algorithm)."}
 - Flashcard Ideas — targeted Q&A pairs that test understanding, not just recall.
 - Memory Anchors — mnemonics, visual analogies, or memorable phrases.
-- Speed Drill — can you code this from scratch in under ${config.experienceLevel === 5 ? "15" : "10"} minutes? Key steps to practice.
-- Confidence Check — rate yourself: "Can I explain this clearly to an interviewer in 2 minutes?"
+- Speed Drill — can you code this from scratch in under ${config.experienceLevel === 1 ? "25" : config.experienceLevel === 5 ? "15" : "10"} minutes? Key steps to practice.
+- Confidence Check — rate yourself: "Can I explain this clearly to an interviewer in ${config.experienceLevel === 1 ? "3" : "2"} minutes?"
+${config.experienceLevel === 1 ? "- Learning Path — what to study next to deepen understanding of this topic." : ""}
 `;
 }
 
 export function buildCodingInterviewPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
-  const levelRange = config.experienceLevel === 5 ? "L4/L5" : config.experienceLevel === 15 ? "L6/L7" : "L5/L6";
+  const levelRange = config.experienceLevel === 1 ? "L3/L4" : config.experienceLevel === 5 ? "L4/L5" : config.experienceLevel === 15 ? "L6/L7" : "L5/L6";
   const companies = config.targetCompanies.slice(0, 2).join("/");
 
   return `You are a senior software engineer conducting a coding interview calibrated for ${companies} ${levelRange} candidates with ${config.experienceLevel}+ years of experience.
 
 Evaluation expectations at this level:
-${config.experienceLevel === 5 ? `- Correct working solution is the primary signal
+${config.experienceLevel === 1 ? `- A correct working solution (even brute force) is a strong positive signal
+- Basic understanding of what data structure to use and why
+- Ability to trace through code with a simple example
+- Communicating thought process out loud (even when stuck)
+- Handling at least one edge case (e.g., empty input)
+- Willingness to ask clarifying questions
+- Showing they can debug when something doesn't work` : config.experienceLevel === 5 ? `- Correct working solution is the primary signal
 - Clean code structure and readability
 - Ability to identify and handle basic edge cases
 - Clear communication of thought process

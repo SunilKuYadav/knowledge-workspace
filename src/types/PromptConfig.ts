@@ -9,10 +9,11 @@ import { z } from "zod";
 
 // ─── Experience Levels ──────────────────────────────────────────────────────
 
-export const EXPERIENCE_LEVELS = [5, 10, 15] as const;
+export const EXPERIENCE_LEVELS = [1, 5, 10, 15] as const;
 export type ExperienceLevel = (typeof EXPERIENCE_LEVELS)[number];
 
 export const ExperienceLevelSchema = z.union([
+  z.literal(1),
   z.literal(5),
   z.literal(10),
   z.literal(15),
@@ -94,6 +95,16 @@ export interface ExperiencePreset {
 }
 
 export const EXPERIENCE_PRESETS: ExperiencePreset[] = [
+  {
+    level: 1,
+    label: "1 Year Experience",
+    description: "Beginner engineer targeting Junior/Mid (L3/L4) roles",
+    targetRole: "Junior/Mid Engineer (L3/L4)",
+    interviewBar:
+      "L3/L4 at top-tier companies. Focus on demonstrating fundamentals, writing correct working code, and showing eagerness to learn and grow.",
+    teachingDepth:
+      "Start from the very basics with step-by-step explanations. Use visual analogies, concrete examples, and build intuition before formalism. Emphasize understanding WHY, not just HOW. Never assume prior knowledge of advanced patterns.",
+  },
   {
     level: 5,
     label: "5 Years Experience",

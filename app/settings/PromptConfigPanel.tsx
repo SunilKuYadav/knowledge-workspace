@@ -187,7 +187,7 @@ export default function PromptConfigPanel() {
           Select your experience level. This calibrates all AI prompts — teaching
           depth, interview bar, and evaluation criteria.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {EXPERIENCE_PRESETS.map((preset) => (
             <button
               key={preset.level}
