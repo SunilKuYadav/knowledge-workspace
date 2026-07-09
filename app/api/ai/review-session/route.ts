@@ -19,6 +19,7 @@ import {
   buildSessionSummaryPrompt,
   buildGenerateContentPrompt,
 } from "@/ai";
+import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
@@ -62,6 +63,7 @@ export async function POST(request: NextRequest) {
       defaultModel: MODEL,
     });
     const workspacePath = getWorkspacePath();
+    const promptConfig = await loadPromptConfig();
 
     if (action === "generate") {
       const content = await getItemContent(itemId, itemType, workspacePath);
@@ -72,7 +74,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const prompt = buildReviewPrompt(content, itemType, confidence || 3);
+      const prompt = buildReviewPrompt(content, itemType, confidence || 3, promptConfig);
 
       // Try streaming generation first
       let fullResponse = "";
@@ -144,6 +146,7 @@ export async function POST(request: NextRequest) {
         questionType || "conceptual",
         content || "",
         itemType,
+        promptConfig,
       );
 
       let fullResponse = "";
@@ -173,6 +176,7 @@ export async function POST(request: NextRequest) {
         question,
         questionType || "conceptual",
         content || "",
+        promptConfig,
       );
 
       const stream = new ReadableStream({
@@ -217,6 +221,7 @@ export async function POST(request: NextRequest) {
         answers,
         content || "",
         itemType,
+        promptConfig,
       );
 
       let fullResponse = "";
@@ -260,6 +265,7 @@ export async function POST(request: NextRequest) {
         content || "",
         itemType,
         contentType,
+        promptConfig,
       );
 
       const stream = new ReadableStream({

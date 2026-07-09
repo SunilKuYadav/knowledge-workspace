@@ -1,14 +1,16 @@
 /**
  * Content generation and text generation prompt builders.
  */
-import { composePrompt } from "../utils/compose";
+import { composePrompt, composeWithConfig } from "../utils/compose";
 import { formatSemanticContext } from "../utils/format";
 import { IDENTITY_CONTEXT } from "../system/identity";
 import { TEACHING_CONTEXT } from "../system/teaching";
 import { MARKDOWN_CONTEXT } from "../system/markdown";
 import { ARTIFACT_PROMPTS } from "../artifacts";
+import { getArtifactLevelGuidance } from "../artifacts/level-guidance";
 import type { ArtifactType } from "@/types";
 import type { SemanticDescription } from "@/types";
+import type { PromptConfig } from "@/types/PromptConfig";
 
 // ─── Generic text generation ───────────────────────────────────────────────
 
@@ -53,19 +55,22 @@ export function buildCustomItemPrompt(
 /**
  * Builds a prompt that generates a complete artifact from scratch for a topic.
  *
- * Composes: IDENTITY + TEACHING + MARKDOWN + artifact-specific instructions.
- * Substitutes {{TOPIC}}, {{CATEGORY}}, and {{ARTIFACT}} in the instructions.
+ * When a PromptConfig is provided, uses experience-calibrated system prompts
+ * and injects level-appropriate guidance into the artifact instructions.
+ * Falls back to static modules when no config is available.
  *
  * @param topic    The topic title (e.g. "Binary Search Tree")
  * @param category The topic category (e.g. "dsa")
  * @param artifact The artifact type to generate (e.g. "notes")
  * @param semanticDesc Optional per-item semantic context to tailor generation
+ * @param config   Optional user prompt config for experience-level calibration
  */
 export function buildArtifactPrompt(
   topic: string,
   category: string,
   artifact: ArtifactType,
   semanticDesc?: SemanticDescription,
+  config?: PromptConfig,
 ): string {
   const artifactInstructions = ARTIFACT_PROMPTS[artifact]
     .replace(/\{\{TOPIC\}\}/g, topic)
@@ -74,9 +79,12 @@ export function buildArtifactPrompt(
 
   const semanticContext = formatSemanticContext(semanticDesc);
 
-  return composePrompt({
-    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
-    task: `## Topic
+  // Inject experience-level guidance when config is available
+  const levelGuidance = config
+    ? getArtifactLevelGuidance(artifact, config)
+    : "";
+
+  const task = `## Topic
 ${topic}
 
 ## Category
@@ -85,10 +93,24 @@ ${category}
 ## Artifact to generate
 ${artifact}
 
-${semanticContext ? semanticContext + "\n\n" : ""}${artifactInstructions}
+${levelGuidance ? `## Experience Level Calibration\n${levelGuidance}\n\n` : ""}${semanticContext ? semanticContext + "\n\n" : ""}${artifactInstructions}
 
 Generate ONLY the requested artifact. Do NOT generate content for any other artifact.
-Start directly with the content. Do not include introductory or closing remarks.${semanticContext ? "\n\nIMPORTANT: Tailor the generated content to the item-specific context above. Respect the stated learning intent, focus areas, target depth, and skip any concepts listed as already known." : ""}`,
+Start directly with the content. Do not include introductory or closing remarks.${semanticContext ? "\n\nIMPORTANT: Tailor the generated content to the item-specific context above. Respect the stated learning intent, focus areas, target depth, and skip any concepts listed as already known." : ""}`;
+
+  // Use config-aware composition when config is available
+  if (config) {
+    return composeWithConfig({
+      actionKeys: ["identity", "teaching"],
+      extraModules: [MARKDOWN_CONTEXT],
+      task,
+      config,
+    });
+  }
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
+    task,
   });
 }
 
@@ -98,6 +120,9 @@ Start directly with the content. Do not include introductory or closing remarks.
  * Builds a prompt that generates or updates a content artifact based on
  * a completed review session. Each artifact type has specific instructions
  * for how to incorporate session insights.
+ *
+ * When config is provided, uses experience-calibrated system prompts
+ * so generated study materials match the user's level.
  */
 export function buildGenerateContentPrompt(
   answers: Array<{
@@ -113,6 +138,7 @@ export function buildGenerateContentPrompt(
   existingContent: string,
   itemType: string,
   contentType: string,
+  config?: PromptConfig,
 ): string {
   const sessionData = answers
     .map(
@@ -133,11 +159,14 @@ export function buildGenerateContentPrompt(
   const instruction =
     contentTypeInstructions[contentType] ?? contentTypeInstructions.notes;
 
-  return composePrompt({
-    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
-    task: `Generate study material based on a review session.
+  // Add level-aware guidance for content generation depth
+  const levelHint = config
+    ? `\nCalibrate the depth and complexity of generated content for a ${config.targetRole} (${config.experienceLevel}+ YOE). ${config.experienceLevel <= 1 ? "Use simple, clear language. Explain concepts step-by-step. Focus on building foundational understanding." : config.experienceLevel <= 5 ? "Balance clarity with depth. Include practical examples and optimization insights." : config.experienceLevel >= 15 ? "Assume deep expertise. Focus on subtle nuances, production edge cases, and architectural implications. Skip basics." : "Include production considerations, formal reasoning, and senior-level depth."}`
+    : "";
 
-Item type: ${itemType}
+  const task = `Generate study material based on a review session.
+
+Item type: ${itemType}${levelHint}
 
 Existing content for this item:
 ${existingContent || "(No existing content)"}
@@ -147,6 +176,19 @@ ${sessionData}
 
 Instructions: ${instruction}
 
-Generate the content in clean Markdown format. Be thorough, accurate, and practical.`,
+Generate the content in clean Markdown format. Be thorough, accurate, and practical.`;
+
+  if (config) {
+    return composeWithConfig({
+      actionKeys: ["identity", "teaching"],
+      extraModules: [MARKDOWN_CONTEXT],
+      task,
+      config,
+    });
+  }
+
+  return composePrompt({
+    modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
+    task,
   });
 }

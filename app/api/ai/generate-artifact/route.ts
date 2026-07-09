@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAIClient } from "@/ai";
 import { buildArtifactPrompt } from "@/src/ai/prompts";
+import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { ArtifactSchema } from "@/types";
 import type { SemanticDescription } from "@/types";
 import { getWorkspacePath } from "@/src/lib/constants";
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildArtifactPrompt(topic, category, parsed.data, semanticDescription);
+    const prompt = buildArtifactPrompt(topic, category, parsed.data, semanticDescription, await loadPromptConfig());
     const workspacePath = getWorkspacePath();
     const repo = new FileTopicRepository(workspacePath);
 
