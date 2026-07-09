@@ -12,7 +12,7 @@ import { getReadyClient } from "@/ai";
 import { buildGenerateDescriptionPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import type { ProblemDescription } from "@/types";
+import type { ProblemDescription, SemanticDescription } from "@/types";
 
 interface RequestBody {
   problemId: string;
@@ -21,6 +21,7 @@ interface RequestBody {
   patterns: string[];
   companies: string[];
   url?: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export async function POST(request: NextRequest) {

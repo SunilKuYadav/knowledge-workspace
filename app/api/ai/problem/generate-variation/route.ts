@@ -13,7 +13,7 @@ import { getReadyClient } from "@/ai";
 import { buildGenerateVariationPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import type { ProblemDescription, ProblemVariation } from "@/types";
+import type { ProblemDescription, ProblemVariation, SemanticDescription } from "@/types";
 import { v4 as uuid } from "uuid";
 
 interface RequestBody {
@@ -22,6 +22,7 @@ interface RequestBody {
   description: string;
   difficulty: string;
   patterns: string[];
+  semanticDescription?: SemanticDescription;
 }
 
 export async function POST(request: NextRequest) {

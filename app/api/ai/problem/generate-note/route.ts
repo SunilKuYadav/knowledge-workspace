@@ -11,12 +11,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReadyClient } from "@/ai";
 import { buildGenerateNotePrompt } from "@/ai/prompts";
+import type { SemanticDescription } from "@/types";
 
 interface RequestBody {
   solution: string;
   title: string;
   patterns: string[];
   difficulty: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export async function POST(request: NextRequest) {

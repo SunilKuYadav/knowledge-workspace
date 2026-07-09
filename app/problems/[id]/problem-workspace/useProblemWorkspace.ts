@@ -95,6 +95,7 @@ export function useProblemWorkspace({
           patterns: problem.patterns,
           companies: problem.companies,
           url: problem.url,
+          semanticDescription: problem.semanticDescription,
         }),
         signal: controller.signal,
       });
@@ -196,6 +197,7 @@ export function useProblemWorkspace({
           title: problem.title,
           patterns: problem.patterns,
           difficulty: problem.difficulty,
+          semanticDescription: problem.semanticDescription,
         }),
         signal: controller.signal,
       });
@@ -247,6 +249,7 @@ export function useProblemWorkspace({
           description: desc.description,
           difficulty: problem.difficulty,
           patterns: problem.patterns,
+          semanticDescription: problem.semanticDescription,
         }),
         signal: controller.signal,
       });

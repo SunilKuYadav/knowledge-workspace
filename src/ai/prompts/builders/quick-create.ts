@@ -101,7 +101,8 @@ Return ONLY valid JSON:
     "intent": "what the user should get from studying this (1-2 sentences calibrated for ${config.experienceLevel} YOE)",
     "targetLevel": "${targetLevel}",
     "context": "why this topic matters for ${config.targetRole} interviews (1 sentence)",
-    "focus": ["2-4 focus areas relevant for this level, e.g. 'implementation', 'interview', 'production'"]
+    "focus": ["2-4 focus areas relevant for this level, e.g. 'implementation', 'interview', 'production'"],
+    "knownConcepts": ["1-3 prerequisite concepts the user likely already knows at ${config.experienceLevel} YOE"]
   }
 }
 
@@ -110,6 +111,7 @@ Rules:
 - Tags should be specific and useful for filtering (e.g., "binary-search", "divide-and-conquer", not "algorithms")
 - Estimated minutes should reflect realistic study time for ${config.experienceLevel} YOE (beginners need more time)
 - Semantic description should be calibrated for the user's experience level
+- knownConcepts should list concepts that can be skipped in explanations for this experience level
 - Return ONLY the JSON object, nothing else`;
 }
 
@@ -147,7 +149,8 @@ Return ONLY valid JSON:
     "intent": "what practicing this problem teaches (1-2 sentences calibrated for ${config.experienceLevel} YOE)",
     "targetLevel": "${targetLevel}",
     "context": "why this problem matters for ${config.targetRole} interviews (1 sentence)",
-    "focus": ["2-4 focus areas, e.g. 'edge-cases', 'optimization', 'clean-code', 'follow-up-variations'"]
+    "focus": ["2-4 focus areas, e.g. 'edge-cases', 'optimization', 'clean-code', 'follow-up-variations'"],
+    "knownConcepts": ["1-3 prerequisite concepts the user likely already knows at ${config.experienceLevel} YOE"]
   }
 }
 
@@ -157,5 +160,6 @@ Rules:
 - Frequency should reflect how often this appears in real interviews at ${config.targetCompanies.join("/")}
 - Time/space complexity should reflect the OPTIMAL solution
 - Semantic description should be calibrated for the user's experience level
+- knownConcepts should list concepts that can be skipped in explanations for this experience level
 - Return ONLY the JSON object, nothing else`;
 }
