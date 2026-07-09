@@ -1,12 +1,9 @@
 "use server";
 
-import path from "path";
 import { v4 } from "uuid";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileAssessmentRepository } from "@/src/filesystem/FileAssessmentRepository";
 import { FileRevisionRepository } from "@/src/filesystem/FileRevisionRepository";
-import { GitService } from "@/src/git/service";
-import { generateCommitMessage } from "@/src/git/commit";
 import type {
   AssessmentRecord,
   AssessmentHistory,
@@ -77,7 +74,7 @@ export async function checkpointPhaseAction(
 }
 
 /**
- * Marks an assessment as completed, creates a RevisionEntry, and git commits.
+ * Marks an assessment as completed and creates a RevisionEntry.
  * Called when the final evaluation phase is reached and feedback is generated.
  */
 export async function completeAssessmentAction(
@@ -90,7 +87,6 @@ export async function completeAssessmentAction(
     const workspacePath = getWorkspacePath();
     const assessmentRepo = new FileAssessmentRepository(workspacePath);
     const revisionRepo = new FileRevisionRepository(workspacePath);
-    const gitService = new GitService(workspacePath);
 
     // Update record status to completed
     const completedRecord: AssessmentRecord = {
@@ -129,16 +125,6 @@ export async function completeAssessmentAction(
       await revisionRepo.updateRevision(topicId, "topic", entry);
     }
 
-    // Git commit
-    const relativeFilePath = path.join(
-      "notes",
-      category,
-      slug,
-      "assessment-history.json",
-    );
-    const commitMessage = generateCommitMessage("update", relativeFilePath);
-    await gitService.commitFile(relativeFilePath, commitMessage);
-
     return { success: true };
   } catch (err) {
     return {
@@ -150,7 +136,7 @@ export async function completeAssessmentAction(
 }
 
 /**
- * Deletes a specific assessment record and git commits.
+ * Deletes a specific assessment record.
  */
 export async function deleteRecordAction(
   topicId: string,
@@ -161,19 +147,8 @@ export async function deleteRecordAction(
   try {
     const workspacePath = getWorkspacePath();
     const repository = new FileAssessmentRepository(workspacePath);
-    const gitService = new GitService(workspacePath);
 
     await repository.deleteRecord(topicId, category, slug, recordId);
-
-    // Git commit
-    const relativeFilePath = path.join(
-      "notes",
-      category,
-      slug,
-      "assessment-history.json",
-    );
-    const commitMessage = generateCommitMessage("update", relativeFilePath);
-    await gitService.commitFile(relativeFilePath, commitMessage);
 
     return { success: true };
   } catch (err) {

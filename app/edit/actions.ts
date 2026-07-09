@@ -3,15 +3,12 @@
 import path from "path";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { writeMarkdownFile } from "@/src/filesystem/workspace";
-import { GitService } from "@/src/git/service";
-import { generateCommitMessage } from "@/src/git/commit";
 import { updateSearchForFile } from "@/src/search/init";
 
 /**
- * Server action to save file content and trigger a git commit.
+ * Server action to save file content.
  * - Writes raw Markdown content to the file path within the workspace
  * - Updates the search index incrementally for the changed file
- * - Triggers a git commit via GitService (non-blocking on failure)
  */
 export async function saveFile(
   filePath: string,
@@ -28,11 +25,6 @@ export async function saveFile(
   const type = deriveTypeFromPath(filePath);
   const title = deriveTitleFromPath(filePath);
   updateSearchForFile(id, type, title, content, [], filePath);
-
-  // Trigger git commit (never throws — failures are logged)
-  const gitService = new GitService(workspacePath);
-  const commitMessage = generateCommitMessage("update", filePath);
-  await gitService.commitFile(filePath, commitMessage);
 }
 
 /**

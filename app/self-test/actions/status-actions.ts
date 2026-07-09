@@ -1,13 +1,10 @@
 "use server";
 
-import path from "path";
 import { v4 } from "uuid";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileRevisionRepository } from "@/src/filesystem/FileRevisionRepository";
 import { TopicService } from "@/src/services/TopicService";
-import { GitService } from "@/src/git/service";
-import { generateCommitMessage } from "@/src/git/commit";
 import type { RevisionEntry } from "@/src/types/Revision";
 
 /**
@@ -38,7 +35,7 @@ export async function markTopicInProgressAction(
 }
 
 /**
- * Marks a topic as "completed", creates a RevisionEntry, and git commits.
+ * Marks a topic as "completed", creates a RevisionEntry.
  * Called when a user completes an assessment with confidence >= 4.5.
  */
 export async function markTopicCompletedAction(
@@ -51,7 +48,6 @@ export async function markTopicCompletedAction(
       new FileTopicRepository(workspacePath),
     );
     const revisionRepo = new FileRevisionRepository(workspacePath);
-    const gitService = new GitService(workspacePath);
 
     // Update topic status to completed
     await topicService.updateTopic(topicId, { status: "completed" });
@@ -73,24 +69,6 @@ export async function markTopicCompletedAction(
     };
 
     await revisionRepo.updateRevision(topicId, "topic", entry);
-
-    // Git commit the topic.json file
-    const topic = await topicService.getTopicById(topicId);
-    if (topic) {
-      const slug = topic.slug || topicId;
-      const relativeFilePath = path.join(
-        "notes",
-        topic.category,
-        slug,
-        "topic.json",
-      );
-      const commitMessage = generateCommitMessage(
-        "update",
-        relativeFilePath,
-        topic.title,
-      );
-      await gitService.commitFile(relativeFilePath, commitMessage);
-    }
 
     return { success: true };
   } catch (err) {
