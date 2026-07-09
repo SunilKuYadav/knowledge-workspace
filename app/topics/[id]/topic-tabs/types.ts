@@ -4,4 +4,5 @@ export interface TopicTabsProps {
   topicId: string;
   topicTitle: string;
   topicCategory: string;
+  semanticDescription?: import("@/types").SemanticDescription;
 }

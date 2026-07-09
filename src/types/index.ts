@@ -4,6 +4,9 @@ export type { Topic } from "./Topic";
 export { ProblemSchema, ProblemFrequencySchema, ComplexitySchema } from "./Problem";
 export type { Problem, ProblemFrequency, Complexity } from "./Problem";
 
+export { SemanticDescriptionSchema, TargetLevelSchema } from "./SemanticDescription";
+export type { SemanticDescription, TargetLevel } from "./SemanticDescription";
+
 export {
   ProblemDescriptionSchema,
   ProblemVariationSchema,

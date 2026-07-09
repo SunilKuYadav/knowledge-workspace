@@ -6,7 +6,7 @@ import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { TopicService } from "@/src/services/TopicService";
 import { ProblemService } from "@/src/services/ProblemService";
-import type { Topic, Problem } from "@/src/types";
+import type { Topic, Problem, SemanticDescription } from "@/src/types";
 
 export type CreateTopicState = {
   error?: string;
@@ -34,6 +34,7 @@ export async function createTopic(
   const relatedTopicsRaw = formData.get("relatedTopics") as string;
   const estimatedMinutesRaw = formData.get("estimatedMinutes") as string;
   const overview = formData.get("overview") as string;
+  const semanticDescriptionRaw = formData.get("semanticDescription") as string;
 
   if (!title || !title.trim()) {
     return { error: "Title is required." };
@@ -72,6 +73,15 @@ export async function createTopic(
     ? parseInt(estimatedMinutesRaw, 10)
     : undefined;
 
+  let semanticDescription: SemanticDescription | undefined;
+  if (semanticDescriptionRaw) {
+    try {
+      semanticDescription = JSON.parse(semanticDescriptionRaw);
+    } catch {
+      // Ignore invalid JSON — treat as no semantic description
+    }
+  }
+
   const workspacePath = getWorkspacePath();
   const topicService = new TopicService(new FileTopicRepository(workspacePath));
 
@@ -86,6 +96,7 @@ export async function createTopic(
       prerequisites: prerequisites.length > 0 ? prerequisites : undefined,
       relatedTopics: relatedTopics.length > 0 ? relatedTopics : undefined,
       estimatedMinutes: estimatedMinutes || undefined,
+      semanticDescription,
     });
 
     // If AI generated an overview, save it
@@ -124,6 +135,7 @@ export async function createProblem(
   const patternsRaw = formData.get("patterns") as string;
   const url = formData.get("url") as string;
   const relatedTopicIdsRaw = formData.get("relatedTopicIds") as string;
+  const semanticDescriptionRaw = formData.get("semanticDescription") as string;
 
   if (!title || !title.trim()) {
     return { error: "Title is required." };
@@ -154,6 +166,15 @@ export async function createProblem(
         .filter(Boolean)
     : [];
 
+  let semanticDescription: SemanticDescription | undefined;
+  if (semanticDescriptionRaw) {
+    try {
+      semanticDescription = JSON.parse(semanticDescriptionRaw);
+    } catch {
+      // Ignore invalid JSON
+    }
+  }
+
   const workspacePath = getWorkspacePath();
   const problemService = new ProblemService(
     new FileProblemRepository(workspacePath),
@@ -169,6 +190,7 @@ export async function createProblem(
       favorite: false,
       url: url?.trim() || undefined,
       relatedTopicIds: relatedTopicIds.length > 0 ? relatedTopicIds : undefined,
+      semanticDescription,
     });
 
     redirect(`/problems/${problem.id}`);

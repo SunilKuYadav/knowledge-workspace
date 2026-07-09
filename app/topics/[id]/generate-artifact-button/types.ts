@@ -1,4 +1,5 @@
 import type { ArtifactType } from "@/types";
+import type { SemanticDescription } from "@/types";
 
 export type GenerationState =
   | { status: "idle" }
@@ -11,6 +12,7 @@ export interface GenerateArtifactButtonProps {
   topicId: string;
   topicTitle: string;
   topicCategory: string;
+  semanticDescription?: SemanticDescription;
   onGenerated: (artifact: string, content: string) => void;
 }
 

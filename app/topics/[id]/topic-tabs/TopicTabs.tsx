@@ -13,6 +13,7 @@ export default function TopicTabs({
   topicId,
   topicTitle,
   topicCategory,
+  semanticDescription,
 }: TopicTabsProps) {
   const {
     artifacts,
@@ -53,6 +54,7 @@ export default function TopicTabs({
             topicId={topicId}
             topicTitle={topicTitle}
             topicCategory={topicCategory}
+            semanticDescription={semanticDescription}
             onGenerated={handleGenerated}
           />
         </div>
@@ -65,6 +67,7 @@ export default function TopicTabs({
               topicTitle={topicTitle}
               topicCategory={topicCategory}
               activeTab={activeTab}
+              semanticDescription={semanticDescription}
               onRegenerated={handleGenerated}
             />
             <Link

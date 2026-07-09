@@ -2,11 +2,13 @@
  * Content generation and text generation prompt builders.
  */
 import { composePrompt } from "../utils/compose";
+import { formatSemanticContext } from "../utils/format";
 import { IDENTITY_CONTEXT } from "../system/identity";
 import { TEACHING_CONTEXT } from "../system/teaching";
 import { MARKDOWN_CONTEXT } from "../system/markdown";
 import { ARTIFACT_PROMPTS } from "../artifacts";
 import type { ArtifactType } from "@/types";
+import type { SemanticDescription } from "@/types";
 
 // ─── Generic text generation ───────────────────────────────────────────────
 
@@ -57,16 +59,20 @@ export function buildCustomItemPrompt(
  * @param topic    The topic title (e.g. "Binary Search Tree")
  * @param category The topic category (e.g. "dsa")
  * @param artifact The artifact type to generate (e.g. "notes")
+ * @param semanticDesc Optional per-item semantic context to tailor generation
  */
 export function buildArtifactPrompt(
   topic: string,
   category: string,
   artifact: ArtifactType,
+  semanticDesc?: SemanticDescription,
 ): string {
   const artifactInstructions = ARTIFACT_PROMPTS[artifact]
     .replace(/\{\{TOPIC\}\}/g, topic)
     .replace(/\{\{CATEGORY\}\}/g, category)
     .replace(/\{\{ARTIFACT\}\}/g, artifact);
+
+  const semanticContext = formatSemanticContext(semanticDesc);
 
   return composePrompt({
     modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
@@ -79,10 +85,10 @@ ${category}
 ## Artifact to generate
 ${artifact}
 
-${artifactInstructions}
+${semanticContext ? semanticContext + "\n\n" : ""}${artifactInstructions}
 
 Generate ONLY the requested artifact. Do NOT generate content for any other artifact.
-Start directly with the content. Do not include introductory or closing remarks.`,
+Start directly with the content. Do not include introductory or closing remarks.${semanticContext ? "\n\nIMPORTANT: Tailor the generated content to the item-specific context above. Respect the stated learning intent, focus areas, target depth, and skip any concepts listed as already known." : ""}`,
   });
 }
 

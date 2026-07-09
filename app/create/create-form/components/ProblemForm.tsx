@@ -6,6 +6,8 @@ import type { CreateProblemState } from "../../actions";
 import type { TopicFormData, ProblemFormData, ProblemCreationAssistResult } from "../../lib";
 import { getProblemCreationAssist } from "../../lib";
 import { AIAssist } from "./AIAssist";
+import { SemanticDescriptionEditor } from "@/src/components/SemanticDescriptionEditor";
+import type { SemanticDescription } from "@/types";
 
 export function ProblemForm() {
   const [state, formAction, isPending] = useActionState<
@@ -18,6 +20,11 @@ export function ProblemForm() {
   const [patterns, setPatterns] = useState("");
   const [url, setUrl] = useState("");
   const [relatedTopicIds, setRelatedTopicIds] = useState("");
+
+  // Semantic description state
+  const [semanticDescription, setSemanticDescription] = useState<
+    SemanticDescription | undefined
+  >(undefined);
 
   // AI assist state
   const [assistLoading, setAssistLoading] = useState(false);
@@ -223,6 +230,17 @@ export function ProblemForm() {
             className="w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
+
+        {/* Semantic Description / AI Context */}
+        <SemanticDescriptionEditor
+          value={semanticDescription}
+          onChange={setSemanticDescription}
+        />
+        <input
+          type="hidden"
+          name="semanticDescription"
+          value={semanticDescription ? JSON.stringify(semanticDescription) : ""}
+        />
 
         {/* AI Suggest Button */}
         <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4">

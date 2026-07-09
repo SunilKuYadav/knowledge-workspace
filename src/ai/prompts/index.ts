@@ -101,7 +101,7 @@ export {
 // ─── Utils ───
 export { composePrompt, composeWithConfig } from "./utils/compose";
 export type { ComposeOptions, ComposeWithConfigOptions } from "./utils/compose";
-export { section, field, metadata, joinBlocks } from "./utils/format";
+export { section, field, metadata, joinBlocks, formatSemanticContext } from "./utils/format";
 
 // ─── Config-Aware Prompts ───
 export { getPromptForAction } from "./config";

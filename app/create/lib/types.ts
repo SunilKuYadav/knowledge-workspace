@@ -1,3 +1,5 @@
+import type { SemanticDescription } from "@/types";
+
 export interface TopicFormData {
   title?: string;
   category?: string;
@@ -6,6 +8,7 @@ export interface TopicFormData {
   prerequisites?: string[];
   relatedTopics?: string[];
   estimatedMinutes?: number;
+  semanticDescription?: SemanticDescription;
 }
 
 export interface ProblemFormData {
@@ -15,6 +18,7 @@ export interface ProblemFormData {
   patterns?: string[];
   url?: string;
   relatedTopicIds?: string[];
+  semanticDescription?: SemanticDescription;
 }
 
 export type FormType = "topic" | "problem";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import type { ArtifactType } from "@/types";
+import type { ArtifactType, SemanticDescription } from "@/types";
 import { ArtifactSchema } from "@/types";
 
 interface RegenerateArtifactButtonProps {
@@ -9,6 +9,7 @@ interface RegenerateArtifactButtonProps {
   topicTitle: string;
   topicCategory: string;
   activeTab: string;
+  semanticDescription?: SemanticDescription;
   onRegenerated: (artifact: string, content: string) => void;
 }
 
@@ -19,6 +20,7 @@ export default function RegenerateArtifactButton({
   topicTitle,
   topicCategory,
   activeTab,
+  semanticDescription,
   onRegenerated,
 }: RegenerateArtifactButtonProps) {
   const [state, setState] = useState<RegenerateState>("idle");
@@ -61,6 +63,7 @@ export default function RegenerateArtifactButton({
           artifact: activeTab,
           topic: topicTitle,
           category: topicCategory,
+          semanticDescription,
         }),
         signal: controller.signal,
       });
@@ -100,7 +103,7 @@ export default function RegenerateArtifactButton({
     } finally {
       streamRef.current = null;
     }
-  }, [topicId, topicTitle, topicCategory, activeTab, onRegenerated]);
+  }, [topicId, topicTitle, topicCategory, activeTab, semanticDescription, onRegenerated]);
 
   if (state === "confirming") {
     return (

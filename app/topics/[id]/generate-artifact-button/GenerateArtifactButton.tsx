@@ -11,6 +11,7 @@ export default function GenerateArtifactButton({
   topicId,
   topicTitle,
   topicCategory,
+  semanticDescription,
   onGenerated,
 }: GenerateArtifactButtonProps) {
   const {
@@ -29,6 +30,7 @@ export default function GenerateArtifactButton({
     topicTitle,
     topicCategory,
     onGenerated,
+    semanticDescription,
   );
 
   if (missing.length === 0) return null;

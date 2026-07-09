@@ -40,6 +40,7 @@ Produce a single merged topic JSON object that:
 8. Uses the most appropriate difficulty (prefer the harder one if studying at that level)
 9. Uses the most appropriate category
 10. Sets estimatedMinutes to the maximum from all entries
+11. Merges semanticDescription fields — combine intents, merge focus arrays and knownConcepts arrays (deduplicated), keep the more specific context, and use the higher targetLevel
 
 Respond with ONLY valid JSON — no explanation, no markdown fences. The JSON should have the same schema as the input items (minus the "id" field — use the id from the first item).`;
   }
@@ -65,6 +66,7 @@ Produce a single merged problem JSON object that:
 12. Merges relatedTopicIds (deduplicated)
 13. Keeps the earliest createdAt and latest updatedAt
 14. Uses the most appropriate difficulty
+15. Merges semanticDescription fields — combine intents, merge focus arrays and knownConcepts arrays (deduplicated), keep the more specific context, and use the higher targetLevel
 
 Respond with ONLY valid JSON — no explanation, no markdown fences. The JSON should have the same schema as the input items (minus the "id" field — use the id from the first item).`;
 }

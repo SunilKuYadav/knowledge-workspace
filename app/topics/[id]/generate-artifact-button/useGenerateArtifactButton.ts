@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ARTIFACT_ORDER } from "@/types";
-import type { ArtifactType } from "@/types";
+import type { ArtifactType, SemanticDescription } from "@/types";
 import type { GenerationState } from "./types";
 
 export function useGenerateArtifactButton(
@@ -11,6 +11,7 @@ export function useGenerateArtifactButton(
   topicTitle: string,
   topicCategory: string,
   onGenerated: (artifact: string, content: string) => void,
+  semanticDescription?: SemanticDescription,
 ) {
   const [open, setOpen] = useState(false);
   const [generation, setGeneration] = useState<GenerationState>({
@@ -54,6 +55,7 @@ export function useGenerateArtifactButton(
             artifact,
             topic: topicTitle,
             category: topicCategory,
+            semanticDescription,
           }),
           signal: controller.signal,
         });
@@ -108,7 +110,7 @@ export function useGenerateArtifactButton(
         streamRef.current = null;
       }
     },
-    [topicId, topicTitle, topicCategory, onGenerated],
+    [topicId, topicTitle, topicCategory, semanticDescription, onGenerated],
   );
 
   const cancel = useCallback(() => {

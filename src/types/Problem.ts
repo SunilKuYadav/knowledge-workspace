@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SemanticDescriptionSchema } from "./SemanticDescription";
 
 /**
  * How frequently a problem appears in real interviews.
@@ -70,6 +71,12 @@ export const ProblemSchema = z.object({
    * "you've mastered these topics, try these problems" flows.
    */
   relatedTopicIds: z.array(z.string()).optional(),
+  /**
+   * Per-item semantic context for AI generation.
+   * Captures learning intent, target depth, focus areas, and known concepts
+   * so AI-generated content (notes, solutions, patterns) is tailored to this problem.
+   */
+  semanticDescription: SemanticDescriptionSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });

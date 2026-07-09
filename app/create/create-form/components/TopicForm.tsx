@@ -6,6 +6,8 @@ import type { CreateTopicState } from "../../actions";
 import type { TopicFormData, ProblemFormData, TopicCreationAssistResult } from "../../lib";
 import { getTopicCreationAssist } from "../../lib";
 import { AIAssist } from "./AIAssist";
+import { SemanticDescriptionEditor } from "@/src/components/SemanticDescriptionEditor";
+import type { SemanticDescription } from "@/types";
 
 export function TopicForm() {
   const [state, formAction, isPending] = useActionState<
@@ -20,6 +22,11 @@ export function TopicForm() {
   const [relatedTopics, setRelatedTopics] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
   const [overview, setOverview] = useState("");
+
+  // Semantic description state
+  const [semanticDescription, setSemanticDescription] = useState<
+    SemanticDescription | undefined
+  >(undefined);
 
   // AI assist state
   const [assistLoading, setAssistLoading] = useState(false);
@@ -216,6 +223,17 @@ export function TopicForm() {
             Separate multiple tags with commas
           </p>
         </div>
+
+        {/* Semantic Description / AI Context */}
+        <SemanticDescriptionEditor
+          value={semanticDescription}
+          onChange={setSemanticDescription}
+        />
+        <input
+          type="hidden"
+          name="semanticDescription"
+          value={semanticDescription ? JSON.stringify(semanticDescription) : ""}
+        />
 
         {/* AI Suggest Button */}
         <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4">

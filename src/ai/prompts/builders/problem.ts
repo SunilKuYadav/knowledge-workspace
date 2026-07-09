@@ -7,6 +7,9 @@
  * - app/api/ai/problem/generate-variation/route.ts
  */
 
+import { formatSemanticContext } from "../utils/format";
+import type { SemanticDescription } from "@/types";
+
 // ─── Generate Description ───────────────────────────────────────────────────
 
 export interface GenerateDescriptionParams {
@@ -16,11 +19,14 @@ export interface GenerateDescriptionParams {
   patterns: string[];
   companies: string[];
   url?: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export function buildGenerateDescriptionPrompt(
   params: GenerateDescriptionParams,
 ): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
   return `You are a senior software engineer and coding interview expert.
 
 Generate a complete problem description for the following LeetCode-style coding problem.
@@ -31,6 +37,7 @@ Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
 Companies: ${params.companies.join(", ") || "Not specified"}
 ${params.url ? `Original URL: ${params.url}` : ""}
+${semanticContext ? `\n${semanticContext}\n` : ""}
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no commentary):
 {
@@ -97,9 +104,12 @@ export interface GenerateNoteParams {
   title: string;
   patterns: string[];
   difficulty: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export function buildGenerateNotePrompt(params: GenerateNoteParams): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
   return `You are a Staff Software Engineer helping a developer build their personal knowledge base.
 
 The developer has just solved a coding problem. Based on their solution, generate a concise "Key Things to Remember" note they can save.
@@ -107,7 +117,7 @@ The developer has just solved a coding problem. Based on their solution, generat
 Problem: ${params.title}
 Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
-
+${semanticContext ? `\n${semanticContext}\n` : ""}
 Solution:
 \`\`\`typescript
 ${params.solution}
@@ -142,11 +152,14 @@ export interface GenerateVariationParams {
   description: string;
   difficulty: string;
   patterns: string[];
+  semanticDescription?: SemanticDescription;
 }
 
 export function buildGenerateVariationPrompt(
   params: GenerateVariationParams,
 ): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
   return `You are a senior software engineer creating coding problem variations for interview prep.
 The output must be compatible with a timed coding interview module.
 
@@ -155,7 +168,7 @@ Based on this original problem, generate a VARIATION — a different problem tha
 Original Problem: ${params.title}
 Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
-
+${semanticContext ? `\n${semanticContext}\n` : ""}
 Original Description:
 ${params.description.slice(0, 1500)}
 
