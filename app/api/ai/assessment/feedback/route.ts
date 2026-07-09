@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { createAIClient, getModelForRoute } from "@/ai";
 import { z } from "zod";
 import { validateAIResponse } from "@/app/self-test/lib/validation";
 import {
@@ -21,7 +21,7 @@ import type { FeedbackReport, PhaseResult } from "@/app/self-test/lib/types";
 const DEFAULT_BASE_URL =
   process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
 const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+const MODEL = getModelForRoute("ai/assessment/feedback");
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),

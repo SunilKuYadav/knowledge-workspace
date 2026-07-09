@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createAIClient,
+  getModelForRoute,
   generateSummary,
   generateQuiz,
   generateFlashcards,
@@ -32,7 +33,7 @@ import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 const DEFAULT_BASE_URL =
   process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
 const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+const MODEL = getModelForRoute("ai/route");
 
 export async function POST(request: NextRequest) {
   try {
