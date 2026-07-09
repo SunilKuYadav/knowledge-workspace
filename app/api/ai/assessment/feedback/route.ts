@@ -16,7 +16,8 @@ import {
   PhaseResultSchema,
   FeedbackReportSchema,
 } from "@/app/self-test/lib/types";
-import type { FeedbackReport, PhaseResult } from "@/app/self-test/lib/types";
+import type { FeedbackReport } from "@/app/self-test/lib/types";
+import { buildFeedbackReportPrompt } from "@/src/ai/prompts/builders";
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),
@@ -24,54 +25,6 @@ const RequestBodySchema = z.object({
   phaseResults: z.array(PhaseResultSchema),
   experienceLevel: z.union([z.literal(5), z.literal(10), z.literal(15)]),
 });
-
-function buildFeedbackPrompt(
-  topicTitle: string,
-  category: string,
-  phaseResults: PhaseResult[],
-  experienceLevel: number,
-): string {
-  const phasesSummary = phaseResults
-    .map(
-      (pr) =>
-        `- ${pr.phaseType}: score ${pr.phaseScore}/10, difficulty: ${pr.difficulty}, ${pr.questions.length} questions`,
-    )
-    .join("\n");
-
-  const questionsDetail = phaseResults
-    .map((pr) => {
-      const qDetails = pr.questions
-        .map((q, i) => {
-          const eval_ = pr.evaluations[i];
-          return `  Q: ${q.question}\n  User Answer: ${pr.userAnswers[i] || "(no answer)"}\n  Score: ${eval_?.score ?? "N/A"}/10`;
-        })
-        .join("\n");
-      return `Phase: ${pr.phaseType}\n${qDetails}`;
-    })
-    .join("\n\n");
-
-  return `You are an expert technical assessment evaluator generating a comprehensive feedback report.
-
-Topic: ${topicTitle}
-Category: ${category}
-Experience Level: ${experienceLevel} years
-
-Phase Results Summary:
-${phasesSummary}
-
-Detailed Questions & Answers:
-${questionsDetail}
-
-Generate a comprehensive feedback report. Return ONLY a valid JSON object with:
-- "overallConfidence": a number from 1.0 to 5.0 representing overall mastery
-- "phaseScores": an object with "conceptual", "mcq", "applied", "code-challenge" keys, each a number 0-10
-- "strengths": an array of 1-5 strings describing specific strengths demonstrated
-- "weaknesses": an array of 1-5 strings describing specific areas needing improvement
-- "studyRecommendations": an array of 2-5 objects, each with "recommendation" (string) and "targetSection" (string, one of: overview, notes, patterns, mistakes)
-- "suggestedContentUpdates": an array of objects, each with "artifact" (string, the file to update), "gap" (string, what's missing), and "suggestion" (string, what to add)
-
-Return ONLY valid JSON. Do not include any other text, markdown formatting, or code blocks.`;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,12 +50,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildFeedbackPrompt(
+    const prompt = buildFeedbackReportPrompt({
       topicTitle,
       category,
       phaseResults,
       experienceLevel,
-    );
+    });
 
     let fullResponse = "";
     for await (const chunk of client.generate(prompt)) {

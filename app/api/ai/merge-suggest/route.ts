@@ -8,62 +8,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getReadyClient } from "@/ai";
+import { buildMergePrompt } from "@/src/ai/prompts/builders";
 
 interface MergeRequestBody {
   type: "topic" | "problem";
   items: Record<string, unknown>[];
-}
-
-function buildMergePrompt(type: string, items: Record<string, unknown>[]): string {
-  const itemsJson = JSON.stringify(items, null, 2);
-
-  if (type === "topic") {
-    return `You are a knowledge management assistant. The user has duplicate topics in their workspace that need to be merged into a single definitive entry.
-
-Given the following duplicate topic entries:
-
-${itemsJson}
-
-Produce a single merged topic JSON object that:
-1. Uses the best/most descriptive title from the duplicates
-2. Keeps the most advanced status (completed > in-progress > not-started)
-3. Keeps the highest confidence level
-4. Merges all tags (deduplicated)
-5. Merges prerequisites and relatedTopics arrays (deduplicated)
-6. Merges relatedProblemIds arrays (deduplicated)
-7. Keeps the earliest createdAt and latest updatedAt
-8. Uses the most appropriate difficulty (prefer the harder one if studying at that level)
-9. Uses the most appropriate category
-10. Sets estimatedMinutes to the maximum from all entries
-11. Merges semanticDescription fields — combine intents, merge focus arrays and knownConcepts arrays (deduplicated), keep the more specific context, and use the higher targetLevel
-
-Respond with ONLY valid JSON — no explanation, no markdown fences. The JSON should have the same schema as the input items (minus the "id" field — use the id from the first item).`;
-  }
-
-  return `You are a knowledge management assistant. The user has duplicate coding problems in their workspace that need to be merged into a single definitive entry.
-
-Given the following duplicate problem entries:
-
-${itemsJson}
-
-Produce a single merged problem JSON object that:
-1. Uses the best/most descriptive title from the duplicates
-2. Keeps the most advanced status (solved > attempted > not-started)
-3. Merges all companies arrays (deduplicated)
-4. Merges all patterns arrays (deduplicated)
-5. Keeps the highest attempt count
-6. Keeps favorite=true if any entry has it
-7. Keeps the URL if any entry has one
-8. Keeps the best (most specific) frequency rating
-9. Keeps the most recent lastSolved date
-10. Keeps the highest revisionCount
-11. Keeps the best complexity values (lowest Big-O)
-12. Merges relatedTopicIds (deduplicated)
-13. Keeps the earliest createdAt and latest updatedAt
-14. Uses the most appropriate difficulty
-15. Merges semanticDescription fields — combine intents, merge focus arrays and knownConcepts arrays (deduplicated), keep the more specific context, and use the higher targetLevel
-
-Respond with ONLY valid JSON — no explanation, no markdown fences. The JSON should have the same schema as the input items (minus the "id" field — use the id from the first item).`;
 }
 
 export async function POST(request: NextRequest) {
@@ -87,7 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildMergePrompt(body.type, body.items);
+    const prompt = buildMergePrompt({ type: body.type, items: body.items });
 
     let raw = "";
     for await (const chunk of client.generate(prompt)) {

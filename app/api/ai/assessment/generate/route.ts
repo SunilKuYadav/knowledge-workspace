@@ -20,7 +20,8 @@ import {
   AppliedQuestionSchema,
   CodeChallengeQuestionSchema,
 } from "@/app/self-test/lib/types";
-import type { AssessmentPhaseType, DifficultyLevel } from "@/app/self-test/lib/types";
+import type { AssessmentPhaseType } from "@/app/self-test/lib/types";
+import { buildQuestionGenerationPrompt } from "@/src/ai/prompts/builders";
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),
@@ -45,76 +46,6 @@ function getSchemaForPhase(phaseType: AssessmentPhaseType) {
     case "code-challenge":
       return z.array(CodeChallengeQuestionSchema).min(2).max(3);
   }
-}
-
-function buildGeneratePrompt(
-  topicTitle: string,
-  category: string,
-  tags: string[],
-  phaseType: AssessmentPhaseType,
-  difficulty: DifficultyLevel,
-  experienceLevel: number,
-  content?: string,
-  previousPhaseScores?: Record<string, number>,
-  incorrectQuestions?: string[],
-): string {
-  const phaseInstructions: Record<AssessmentPhaseType, string> = {
-    conceptual: `Generate 2-3 conceptual questions that test understanding of core concepts.
-Each question must be a JSON object with:
-- "type": "conceptual"
-- "question": a clear open-ended question string
-- "expectedAnswer": a comprehensive expected answer string`,
-    mcq: `Generate 2-3 multiple choice questions.
-Each question must be a JSON object with:
-- "type": "mcq"
-- "question": a clear question string
-- "options": an array of exactly 4 string options
-- "correctIndex": an integer 0-3 indicating the correct option
-- "explanation": a string explaining why the correct answer is right
-- "distractorExplanations": an array of exactly 3 strings explaining why each wrong option is incorrect`,
-    applied: `Generate 2-3 applied scenario-based questions.
-Each question must be a JSON object with:
-- "type": "applied"
-- "question": a clear question string
-- "scenario": a real-world scenario description string
-- "expectedAnswer": a comprehensive expected answer string`,
-    "code-challenge": `Generate 2-3 coding challenge questions.
-Each question must be a JSON object with:
-- "type": "code-challenge"
-- "question": a brief description string
-- "problemStatement": a detailed problem statement string
-- "inputFormat": a string describing expected input format
-- "outputFormat": a string describing expected output format
-- "examples": an array of 1-3 objects, each with "input", "expectedOutput", and "explanation" strings`,
-  };
-
-  let prompt = `You are an expert technical interviewer generating ${phaseType} assessment questions.
-
-Topic: ${topicTitle}
-Category: ${category}
-Tags: ${tags.join(", ")}
-Difficulty: ${difficulty}
-Experience Level: ${experienceLevel} years
-
-${phaseInstructions[phaseType]}
-
-`;
-
-  if (content) {
-    prompt += `\nTopic Content (use this to make questions contextually relevant):\n${content}\n`;
-  }
-
-  if (previousPhaseScores && Object.keys(previousPhaseScores).length > 0) {
-    prompt += `\nPrevious phase scores: ${JSON.stringify(previousPhaseScores)}\n`;
-  }
-
-  if (incorrectQuestions && incorrectQuestions.length > 0) {
-    prompt += `\nPreviously incorrect questions (focus on these areas):\n${incorrectQuestions.join("\n")}\n`;
-  }
-
-  prompt += `\nReturn ONLY a valid JSON array of questions. Do not include any other text, markdown formatting, or code blocks.`;
-
-  return prompt;
 }
 
 export async function POST(request: NextRequest) {
@@ -153,17 +84,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildGeneratePrompt(
+    const prompt = buildQuestionGenerationPrompt({
       topicTitle,
       category,
       tags,
       phaseType,
       difficulty,
       experienceLevel,
-      truncatedContent,
+      content: truncatedContent,
       previousPhaseScores,
       incorrectQuestions,
-    );
+    });
 
     const schema = getSchemaForPhase(phaseType);
 

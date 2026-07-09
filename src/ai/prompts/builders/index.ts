@@ -70,3 +70,30 @@ export type {
   ProblemCreationAssistParams,
   StudyPlanGenerationParams,
 } from "./creation-assist";
+
+// ─── Assessment Module ──────────────────────────────────────────────────────
+export {
+  buildQuestionGenerationPrompt,
+  buildEvaluationPrompt as buildAssessmentEvaluationPrompt,
+  buildFeedbackReportPrompt,
+  buildContentUpdatePrompt as buildAssessmentContentUpdatePrompt,
+} from "./assessment";
+
+// ─── Merge Module ───────────────────────────────────────────────────────────
+export { buildMergePrompt } from "./merge";
+export type { MergePromptParams } from "./merge";
+
+// ─── Quick Create Module ────────────────────────────────────────────────────
+export { buildQuickCreateMetadataPrompt } from "./quick-create";
+export type {
+  QuickCreateMetadataParams,
+  PlanContext,
+} from "./quick-create";
+
+// ─── Learning Progress Module ───────────────────────────────────────────────
+export { buildLearningProgressPrompt } from "./learning-progress";
+export type {
+  LearningProgressParams,
+  ProgressAction,
+  CoverageStats,
+} from "./learning-progress";

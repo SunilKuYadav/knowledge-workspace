@@ -22,6 +22,7 @@ import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { getReadyClient } from "@/ai";
 import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
+import { buildQuickCreateMetadataPrompt } from "@/src/ai/prompts/builders";
 import type { Topic, Problem, SemanticDescription } from "@/src/types";
 import type { PromptConfig } from "@/types/PromptConfig";
 
@@ -219,7 +220,12 @@ async function generateMetadata(
     const available = await client.isAvailable();
     if (!available) return null;
 
-    const prompt = buildMetadataPrompt(body, config);
+    const prompt = buildQuickCreateMetadataPrompt({
+      type: body.type,
+      title: body.title,
+      planContext: body.planContext,
+      config,
+    });
 
     let raw = "";
     for await (const chunk of client.generate(prompt)) {
@@ -231,95 +237,6 @@ async function generateMetadata(
     // AI unavailable — create with minimal metadata
     return null;
   }
-}
-
-function buildMetadataPrompt(body: QuickCreateBody, config: PromptConfig): string {
-  const planCtx = body.planContext;
-  const planSection = planCtx
-    ? `
-## Study Plan Context
-- Plan Title: ${planCtx.title || "N/A"}
-- Plan Description: ${planCtx.description || "N/A"}
-- Plan Category: ${planCtx.category || "General"}
-- Item Reason: ${planCtx.reason || "N/A"}
-${planCtx.content ? `- Plan Content (excerpt): ${planCtx.content.slice(0, 1500)}` : ""}`
-    : "";
-
-  if (body.type === "topic") {
-    return `You are a senior engineering interview coach. Generate metadata for a study topic.
-
-## User Context
-- Experience Level: ${config.experienceLevel} YOE
-- Target Role: ${config.targetRole}
-- Target Companies: ${config.targetCompanies.join(", ")}
-
-## Topic to Create
-Title: "${body.title}"
-${planSection}
-
-## Your Task
-Generate metadata JSON for this topic. Infer the best values based on the title and plan context.
-
-Return ONLY valid JSON:
-{
-  "category": "dsa" | "system-design" | "database" | "networking" | "os" | "oop",
-  "difficulty": "easy" | "medium" | "hard",
-  "tags": ["array of 3-6 relevant tags like algorithm names, concepts, techniques"],
-  "estimatedMinutes": number (realistic study time for this topic at the user's level),
-  "semanticDescription": {
-    "intent": "what the user should get from studying this (1-2 sentences calibrated for ${config.experienceLevel} YOE)",
-    "targetLevel": "${config.experienceLevel <= 1 ? "beginner" : config.experienceLevel <= 5 ? "intermediate" : config.experienceLevel <= 10 ? "senior" : "staff"}",
-    "context": "why this topic matters for ${config.targetRole} interviews (1 sentence)",
-    "focus": ["2-4 focus areas relevant for this level, e.g. 'implementation', 'interview', 'production'"]
-  }
-}
-
-Rules:
-- Category must be one of: dsa, system-design, database, networking, os, oop
-- Tags should be specific and useful for filtering (e.g., "binary-search", "divide-and-conquer", not "algorithms")
-- Estimated minutes should reflect realistic study time for ${config.experienceLevel} YOE (beginners need more time)
-- Semantic description should be calibrated for the user's experience level
-- Return ONLY the JSON object, nothing else`;
-  }
-
-  // Problem type
-  return `You are a senior engineering interview coach. Generate metadata for a coding problem.
-
-## User Context
-- Experience Level: ${config.experienceLevel} YOE
-- Target Role: ${config.targetRole}
-- Target Companies: ${config.targetCompanies.join(", ")}
-
-## Problem to Create
-Title: "${body.title}"
-${planSection}
-
-## Your Task
-Generate metadata JSON for this problem. Infer the best values based on the title and plan context.
-
-Return ONLY valid JSON:
-{
-  "difficulty": "easy" | "medium" | "hard",
-  "patterns": ["array of 2-4 algorithmic patterns like 'two-pointers', 'dynamic-programming', 'sliding-window'"],
-  "companies": ["array of 2-5 companies known to ask this or similar problems"],
-  "frequency": "very-high" | "high" | "medium" | "low",
-  "timeComplexity": "O(1)" | "O(log n)" | "O(n)" | "O(n log n)" | "O(n²)" | "O(2ⁿ)" | "O(n!)",
-  "spaceComplexity": "O(1)" | "O(log n)" | "O(n)" | "O(n log n)" | "O(n²)" | "O(2ⁿ)" | "O(n!)",
-  "semanticDescription": {
-    "intent": "what practicing this problem teaches (1-2 sentences calibrated for ${config.experienceLevel} YOE)",
-    "targetLevel": "${config.experienceLevel <= 1 ? "beginner" : config.experienceLevel <= 5 ? "intermediate" : config.experienceLevel <= 10 ? "senior" : "staff"}",
-    "context": "why this problem matters for ${config.targetRole} interviews (1 sentence)",
-    "focus": ["2-4 focus areas, e.g. 'edge-cases', 'optimization', 'clean-code', 'follow-up-variations'"]
-  }
-}
-
-Rules:
-- Patterns should be specific algorithm/data-structure patterns (not generic like "arrays")
-- Companies should be realistic FAANG/MAANG companies known for this type of problem
-- Frequency should reflect how often this appears in real interviews at ${config.targetCompanies.join("/")}
-- Time/space complexity should reflect the OPTIMAL solution
-- Semantic description should be calibrated for the user's experience level
-- Return ONLY the JSON object, nothing else`;
 }
 
 function parseMetadataResponse(raw: string): AIMetadata | null {

@@ -16,6 +16,7 @@ import {
   QuestionEvaluationSchema,
 } from "@/app/self-test/lib/types";
 import type { QuestionEvaluation } from "@/app/self-test/lib/types";
+import { buildAssessmentEvaluationPrompt } from "@/src/ai/prompts/builders";
 
 const EVALUATION_TIMEOUT = 30_000; // 30 seconds
 
@@ -27,42 +28,6 @@ const RequestBodySchema = z.object({
   phaseType: AssessmentPhaseTypeSchema,
   content: z.string().optional(),
 });
-
-function buildEvaluationPrompt(
-  question: string,
-  userAnswer: string,
-  topicTitle: string,
-  category: string,
-  phaseType: string,
-  content?: string,
-): string {
-  let prompt = `You are an expert technical evaluator assessing a student's answer.
-
-Topic: ${topicTitle}
-Category: ${category}
-Phase Type: ${phaseType}
-
-Question: ${question}
-
-User's Answer: ${userAnswer}
-
-`;
-
-  if (content) {
-    prompt += `Reference Content:\n${content}\n\n`;
-  }
-
-  prompt += `Evaluate the answer and return ONLY a valid JSON object with:
-- "score": an integer from 0 to 10 (0 = completely wrong, 10 = perfect)
-- "feedback": a string with constructive feedback (max 500 characters)
-- "mistakes": an array of up to 5 strings describing specific mistakes (empty array if none)
-- "keyInsights": an array of up to 3 strings with important insights the answer should contain
-- "expectedAnswer": (optional) a string with the ideal answer if the user's answer was significantly wrong
-
-Return ONLY valid JSON. Do not include any other text, markdown formatting, or code blocks.`;
-
-  return prompt;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,14 +54,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildEvaluationPrompt(
+    const prompt = buildAssessmentEvaluationPrompt({
       question,
       userAnswer,
       topicTitle,
       category,
       phaseType,
-      truncatedContent,
-    );
+      content: truncatedContent,
+    });
 
     // 30-second timeout via AbortController
     const controller = new AbortController();

@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getReadyClient } from "@/ai";
 import { z } from "zod";
 import { truncateContent } from "@/app/self-test/lib/validation";
+import { buildAssessmentContentUpdatePrompt } from "@/src/ai/prompts/builders";
 
 const RequestBodySchema = z.object({
   topicTitle: z.string(),
@@ -19,33 +20,6 @@ const RequestBodySchema = z.object({
   weaknesses: z.array(z.string()),
   gap: z.string(),
 });
-
-function buildContentUpdatePrompt(
-  topicTitle: string,
-  currentContent: string,
-  artifact: string,
-  weaknesses: string[],
-  gap: string,
-): string {
-  return `You are an expert technical content writer improving study material based on assessment feedback.
-
-Topic: ${topicTitle}
-Artifact: ${artifact}
-Identified Gap: ${gap}
-
-Weaknesses to Address:
-${weaknesses.map((w) => `- ${w}`).join("\n")}
-
-Current Content:
-${currentContent}
-
-Your task: Improve the content above to address the identified gap and weaknesses. Keep the existing structure and format but add, expand, or clarify sections that address the gaps. Maintain the same markdown formatting style.
-
-Return ONLY a valid JSON object with:
-- "updatedContent": the complete updated content as a string (in markdown format)
-
-Return ONLY valid JSON. Do not include any other text, markdown formatting outside the JSON, or code blocks.`;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,13 +46,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildContentUpdatePrompt(
+    const prompt = buildAssessmentContentUpdatePrompt({
       topicTitle,
-      truncatedContent,
+      currentContent: truncatedContent,
       artifact,
       weaknesses,
       gap,
-    );
+    });
 
     let fullResponse = "";
     for await (const chunk of client.generate(prompt)) {
