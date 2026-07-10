@@ -10,6 +10,13 @@ export class RevisionService {
   constructor(private readonly repository: RevisionRepository) {}
 
   /**
+   * Returns all revision items across the workspace.
+   */
+  async getAllItems(): Promise<RevisionData[]> {
+    return this.repository.getAllItems();
+  }
+
+  /**
    * Returns items due for review. Defaults currentDate to today's ISO date string.
    */
   async getDueItems(currentDate?: string): Promise<RevisionData[]> {

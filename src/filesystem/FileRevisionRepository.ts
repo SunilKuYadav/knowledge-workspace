@@ -21,6 +21,13 @@ export class FileRevisionRepository implements RevisionRepository {
   }
 
   /**
+   * Returns all revision items across the workspace.
+   */
+  async getAllItems(): Promise<RevisionData[]> {
+    return this.collectAllRevisionData();
+  }
+
+  /**
    * Scans all revision.json files across notes and problems directories,
    * then filters to items that are overdue or due today.
    *

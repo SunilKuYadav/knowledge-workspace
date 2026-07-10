@@ -7,6 +7,7 @@ import type { RevisionData, RevisionEntry } from "@/types";
  */
 export interface RevisionRepository {
   getDueItems(currentDate: string): Promise<RevisionData[]>;
+  getAllItems(): Promise<RevisionData[]>;
   updateRevision(
     itemId: string,
     itemType: "topic" | "problem",
