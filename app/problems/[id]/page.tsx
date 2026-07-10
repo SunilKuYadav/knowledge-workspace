@@ -9,6 +9,7 @@ import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import AISidebar from "@/src/components/AISidebar";
 import LinkTopicButton from "@/src/components/LinkTopicButton";
+import { ProblemEvaluationProvider } from "@/src/providers/ProblemEvaluationProvider";
 import ProblemWorkspace from "./problem-workspace";
 
 export default async function ProblemDetailPage({
@@ -27,9 +28,10 @@ export default async function ProblemDetailPage({
   const problem = await problemService.getProblemById(id);
   if (!problem) notFound();
 
-  const [notes, solution, revision, description, allTopics] = await Promise.all([
+  const [notes, solution, draft, revision, description, allTopics] = await Promise.all([
     problemService.getNotes(id),
     problemService.getSolution(id),
+    problemService.getDraft(id),
     problemService.getRevision(id),
     problemService.getDescription(id),
     topicService.getAllTopics(),
@@ -179,18 +181,21 @@ export default async function ProblemDetailPage({
 
       {/* Workspace + AI Sidebar (fills remaining space) */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        <div className="flex-1 min-w-0">
-          <ProblemWorkspace
-            problem={problem}
-            description={description}
-            initialNotes={notes}
-            initialSolution={solution}
-            revision={revision}
-          />
-        </div>
+        <ProblemEvaluationProvider>
+          <div className="flex-1 min-w-0">
+            <ProblemWorkspace
+              problem={problem}
+              description={description}
+              initialNotes={notes}
+              initialSolution={solution}
+              initialDraft={draft}
+              revision={revision}
+            />
+          </div>
 
-        {/* AI Sidebar — right panel */}
-        <AISidebar context="problem" itemId={id} itemTitle={problem.title} />
+          {/* AI Sidebar — right panel */}
+          <AISidebar context="problem" itemId={id} itemTitle={problem.title} />
+        </ProblemEvaluationProvider>
       </div>
     </div>
   );

@@ -34,8 +34,25 @@ export const EdgeCaseSchema = z.object({
 export type EdgeCase = z.infer<typeof EdgeCaseSchema>;
 
 /**
+ * A single practice attempt on a variation.
+ */
+export const VariationPracticeEntrySchema = z.object({
+  id: z.string(),
+  /** ISO date string of when this attempt was made */
+  attemptedAt: z.string(),
+  /** User's code for this attempt */
+  code: z.string().optional(),
+  /** Score from evaluation (0-100) */
+  score: z.number().optional(),
+  /** Short note from the user or AI feedback */
+  note: z.string().optional(),
+});
+
+export type VariationPracticeEntry = z.infer<typeof VariationPracticeEntrySchema>;
+
+/**
  * A problem variation — a twist on the original problem saved for later practice.
- * Includes full interview-compatible metadata.
+ * Includes full interview-compatible metadata and practice tracking.
  */
 export const ProblemVariationSchema = z.object({
   id: z.string(),
@@ -57,6 +74,12 @@ export const ProblemVariationSchema = z.object({
   createdAt: z.string(),
   /** ID of the problem this was created from, for linking. */
   sourceId: z.string(),
+  /** Completion status of this variation */
+  status: z.enum(["not-started", "attempted", "solved"]).optional(),
+  /** History of practice attempts */
+  practiceHistory: z.array(VariationPracticeEntrySchema).optional(),
+  /** ISO date string of last time this variation was practiced */
+  lastPracticedAt: z.string().optional(),
 });
 
 export type ProblemVariation = z.infer<typeof ProblemVariationSchema>;

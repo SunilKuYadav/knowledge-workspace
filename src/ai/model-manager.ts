@@ -31,13 +31,13 @@ const DEFAULT_TIMEOUT_MS = 10_000;
  * Recommended context lengths per model.
  * Balances output quality, memory usage, and time-to-first-token.
  *
- * - teaching (30B MoE, max 40K): 32K — long prompts with system modules + content
+ * - teaching (30B MoE, max 40K): 16K — long prompts with system modules + content + reasoning
  * - coding (30B MoE, max 262K): 16K — problem + code + evaluation fits easily
  * - fast (14B dense, max 131K): 8K — short utility tasks, keep lean for speed
  */
 const MODEL_CONTEXT_LENGTH: Record<string, number> = {
-  "qwen3-30b-a3b-mlx": 8_192,
-  "qwen3-coder-30b-a3b-instruct-mlx": 8_192,
+  "qwen3-30b-a3b-mlx": 16_384,
+  "qwen3-coder-30b-a3b-instruct-mlx": 16_384,
   "qwen2.5-coder-14b-instruct": 8_192,
 };
 

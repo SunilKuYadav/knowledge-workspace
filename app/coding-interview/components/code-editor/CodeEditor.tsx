@@ -28,9 +28,8 @@ export function CodeEditor(props: CodeEditorProps) {
   return (
     <div
       className={`flex flex-col border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden ${
-        isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-zinc-900" : ""
+        isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-zinc-900" : "h-full"
       }`}
-      style={!isFullscreen ? { minHeight: "300px" } : undefined}
     >
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
@@ -118,8 +117,7 @@ export function CodeEditor(props: CodeEditorProps) {
       {/* Editor container */}
       <div
         ref={editorRef}
-        className="flex-1 overflow-auto"
-        style={!isFullscreen ? { minHeight: "260px" } : undefined}
+        className="flex-1 overflow-auto min-h-0"
       />
 
       {/* Fullscreen exit control */}

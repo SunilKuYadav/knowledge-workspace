@@ -10,11 +10,13 @@ export type { SemanticDescription, TargetLevel } from "./SemanticDescription";
 export {
   ProblemDescriptionSchema,
   ProblemVariationSchema,
+  VariationPracticeEntrySchema,
   TestCaseSchema,
 } from "./ProblemDescription";
 export type {
   ProblemDescription,
   ProblemVariation,
+  VariationPracticeEntry,
   TestCase as ProblemTestCase,
 } from "./ProblemDescription";
 

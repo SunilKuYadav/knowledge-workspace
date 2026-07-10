@@ -41,6 +41,10 @@ export class ProblemService {
     return this.repository.getSolution(id);
   }
 
+  async getDraft(id: string): Promise<string> {
+    return this.repository.getDraft(id);
+  }
+
   async saveSolution(id: string, content: string): Promise<void> {
     return this.repository.saveSolution(id, content);
   }

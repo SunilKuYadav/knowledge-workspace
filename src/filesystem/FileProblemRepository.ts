@@ -145,7 +145,7 @@ export class FileProblemRepository implements ProblemRepository {
   }
 
   /**
-   * Reads solution.md from the problem folder.
+   * Reads solution code from the problem folder (solution.md with code blocks).
    */
   async getSolution(id: string): Promise<string> {
     const folderPath = path.join(this.basePath, id);
@@ -153,7 +153,9 @@ export class FileProblemRepository implements ProblemRepository {
   }
 
   /**
-   * Writes content to solution.md in the problem folder.
+   * Saves solution code to solution.md in the problem folder.
+   * Wraps code in a markdown code block with timestamp header.
+   * Appends to existing solutions so the user can keep multiple.
    */
   async saveSolution(id: string, content: string): Promise<void> {
     const folderPath = path.join(this.basePath, id);
@@ -161,7 +163,43 @@ export class FileProblemRepository implements ProblemRepository {
     if (!problem) {
       throw new Error(`Problem not found: ${id}`);
     }
+    const existing = await readMarkdownFile(path.join(folderPath, "solution.md"));
+    const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+    const entry = `## Solution — ${timestamp}\n\n\`\`\`typescript\n${content}\n\`\`\`\n`;
+    const newContent = existing ? `${existing}\n---\n\n${entry}` : entry;
+    await writeMarkdownFile(path.join(folderPath, "solution.md"), newContent);
+  }
+
+  /**
+   * Overwrites solution.md with the provided content directly.
+   * Used when the user edits the full solution file.
+   */
+  async overwriteSolution(id: string, content: string): Promise<void> {
+    const folderPath = path.join(this.basePath, id);
+    const problem = await this.getById(id);
+    if (!problem) {
+      throw new Error(`Problem not found: ${id}`);
+    }
     await writeMarkdownFile(path.join(folderPath, "solution.md"), content);
+  }
+
+  /**
+   * Writes the current code draft to draft.txt in the problem folder.
+   * Used for periodic auto-save while the user is coding.
+   */
+  async saveDraft(id: string, content: string): Promise<void> {
+    const folderPath = path.join(this.basePath, id);
+    await ensureDirectoryExists(folderPath);
+    await writeMarkdownFile(path.join(folderPath, "draft.txt"), content);
+  }
+
+  /**
+   * Reads the draft.txt file from the problem folder.
+   * Returns empty string if no draft exists.
+   */
+  async getDraft(id: string): Promise<string> {
+    const folderPath = path.join(this.basePath, id);
+    return readMarkdownFile(path.join(folderPath, "draft.txt"));
   }
 
   /**
@@ -210,4 +248,86 @@ export class FileProblemRepository implements ProblemRepository {
       history: [],
     };
   }
+
+  // ─── Structured Solutions (solutions.json) ───────────────────────────────
+
+  /**
+   * Reads the structured solutions array from solutions.json.
+   * Falls back to parsing solution.md if solutions.json doesn't exist (migration).
+   */
+  async getStructuredSolutions(id: string): Promise<SolutionEntry[]> {
+    const folderPath = path.join(this.basePath, id);
+    const solutions = await readJsonFile<SolutionEntry[]>(
+      path.join(folderPath, "solutions.json"),
+    );
+    if (solutions) return solutions;
+
+    // Migrate from solution.md if it exists
+    const md = await readMarkdownFile(path.join(folderPath, "solution.md"));
+    if (!md.trim()) return [];
+    return parseSolutionMd(md);
+  }
+
+  /**
+   * Writes the structured solutions array to solutions.json.
+   */
+  async saveStructuredSolutions(id: string, solutions: SolutionEntry[]): Promise<void> {
+    const folderPath = path.join(this.basePath, id);
+    await ensureDirectoryExists(folderPath);
+    await writeJsonFile(path.join(folderPath, "solutions.json"), solutions);
+  }
+
+  /**
+   * Adds a new structured solution entry.
+   */
+  async addStructuredSolution(id: string, entry: SolutionEntry): Promise<SolutionEntry[]> {
+    const existing = await this.getStructuredSolutions(id);
+    const updated = [...existing, entry];
+    await this.saveStructuredSolutions(id, updated);
+    return updated;
+  }
+}
+
+/** A single saved solution with metadata */
+export interface SolutionEntry {
+  id: string;
+  code: string;
+  savedAt: string;
+  score?: number;
+  feedback?: string;
+  complexity?: { time: string; space: string };
+  strengths?: string[];
+  improvements?: string[];
+  edgeCases?: string[];
+  alternativeApproaches?: string[];
+  /** Note attached to this specific solution */
+  note?: string;
+  /** If this solution is for a variation, stores the variation ID */
+  variationId?: string;
+  /** Title of the variation (for display in solution tab) */
+  variationTitle?: string;
+}
+
+/**
+ * Parse legacy solution.md into structured entries.
+ * Format: sections separated by "---", each starting with "## Solution — YYYY-MM-DD HH:mm:ss"
+ */
+function parseSolutionMd(md: string): SolutionEntry[] {
+  const sections = md.split(/\n---\n/).map((s) => s.trim()).filter(Boolean);
+  const entries: SolutionEntry[] = [];
+
+  for (const section of sections) {
+    const headerMatch = section.match(/^## Solution\s*—\s*(.+)$/m);
+    const codeMatch = section.match(/```(?:typescript|ts|javascript|js)?\n([\s\S]*?)```/);
+    const savedAt = headerMatch?.[1]?.trim() || new Date().toISOString();
+    const code = codeMatch?.[1]?.trim() || section;
+
+    entries.push({
+      id: `legacy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      code,
+      savedAt,
+    });
+  }
+
+  return entries;
 }

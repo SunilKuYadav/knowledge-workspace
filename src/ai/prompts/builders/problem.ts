@@ -79,6 +79,19 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no comme
   "boilerplate": "function twoSum(nums: number[], target: number): number[] {\\n  // Your code here\\n}"
 }
 
+CRITICAL: Test case format rules (examples, edgeCases, testCases):
+- "input" must match the boilerplate function signature using named parameters.
+  For a function like \`isValid(s: string)\`, use: "input": "s = \\"()\\""
+  For a function like \`twoSum(nums: number[], target: number)\`, use: "input": "nums = [2,7,11,15], target = 9"
+- "expectedOutput" must be a valid JSON literal representing the return value:
+  - Booleans: "true" or "false" (not "True", "False")
+  - Numbers: "42", "3.14"
+  - Arrays: "[0,1]", "[[1,2],[3,4]]"
+  - Strings: "\\"hello\\""  (JSON-escaped string)
+  - null: "null"
+- Do NOT wrap string inputs in extra quotes. For a string parameter, use: s = \\"()\\" not s = "()"
+- Do NOT include variable assignment syntax in expectedOutput. Just the value.
+
 Requirements:
 - description: comprehensive, interview-quality problem statement in Markdown
 - category: a single primary category (e.g., Arrays, Trees, Dynamic Programming)
@@ -153,12 +166,24 @@ export interface GenerateVariationParams {
   difficulty: string;
   patterns: string[];
   semanticDescription?: SemanticDescription;
+  /** Existing variations to avoid generating duplicates */
+  existingVariations?: { title: string; description: string; difficulty: string }[];
+  /** When upgrading, the specific variation to replace */
+  upgradeTarget?: { title: string; description: string; difficulty: string };
 }
 
 export function buildGenerateVariationPrompt(
   params: GenerateVariationParams,
 ): string {
   const semanticContext = formatSemanticContext(params.semanticDescription);
+
+  const existingSection = params.existingVariations?.length
+    ? `\nAlready Generated Variations (DO NOT repeat these — create something distinctly different):\n${params.existingVariations.map((v, i) => `${i + 1}. "${v.title}" (${v.difficulty}) — ${v.description.slice(0, 200)}`).join("\n")}\n`
+    : "";
+
+  const upgradeSection = params.upgradeTarget
+    ? `\nYou are UPGRADING this existing variation to be better and more challenging:\nTitle: ${params.upgradeTarget.title}\nDifficulty: ${params.upgradeTarget.difficulty}\nDescription: ${params.upgradeTarget.description.slice(0, 500)}\n\nMake it harder, more nuanced, or test a deeper aspect of the same pattern. Keep the core idea but significantly improve the quality.\n`
+    : "";
 
   return `You are a senior software engineer creating coding problem variations for interview prep.
 The output must be compatible with a timed coding interview module.
@@ -171,13 +196,13 @@ Patterns: ${params.patterns.join(", ")}
 ${semanticContext ? `\n${semanticContext}\n` : ""}
 Original Description:
 ${params.description.slice(0, 1500)}
-
+${existingSection}${upgradeSection}
 Generate a variation. The variation should:
 - Test the same pattern(s) but with a different scenario or constraint
 - Be a standalone problem (someone could solve it without seeing the original)
 - Have a different difficulty level if appropriate (can be easier or harder)
 - Include enough detail to be used directly in a coding interview session
-
+${params.existingVariations?.length ? "- Be COMPLETELY DIFFERENT from the existing variations listed above\n" : ""}
 Return ONLY a valid JSON object:
 {
   "title": "Variation title",

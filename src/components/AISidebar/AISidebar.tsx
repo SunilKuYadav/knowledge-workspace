@@ -32,6 +32,8 @@ export default function AISidebar({
     showHelpers,
     width,
     actions,
+    evaluationActions,
+    hasEvaluation,
     promptHelpers,
     messages,
     setCollapsed,
@@ -149,6 +151,27 @@ export default function AISidebar({
                     </button>
                   ))}
                 </div>
+
+                {/* Evaluation-aware actions */}
+                {hasEvaluation && evaluationActions.length > 0 && (
+                  <>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-3">
+                      📊 Based on your evaluation:
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evaluationActions.map((actionConfig) => (
+                        <button
+                          key={actionConfig.id}
+                          onClick={() => handleAction(actionConfig)}
+                          disabled={!available || loading}
+                          className="px-2.5 py-1.5 text-xs rounded-full border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {actionConfig.label}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
@@ -210,7 +233,12 @@ export default function AISidebar({
                   disabled={saveStatus === "saving" || saveStatus === "saved"}
                   className="flex-1 px-2 py-1.5 text-xs font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {saveStatus === "idle" && "Save"}
+                  {saveStatus === "idle" &&
+                    (activeAction.saveTarget === "notes"
+                      ? "💾 Save to Notes"
+                      : activeAction.saveTarget === "solution"
+                        ? "💾 Apply to Editor"
+                        : "Save")}
                   {saveStatus === "saving" && "Saving..."}
                   {saveStatus === "saved" && "✓ Saved"}
                   {saveStatus === "error" && "Retry"}
@@ -242,21 +270,42 @@ export default function AISidebar({
 
             {/* Helper prompt suggestions */}
             {showHelpers && (
-              <div className="flex flex-wrap gap-1.5">
-                {promptHelpers.map((helper) => (
-                  <button
-                    key={helper.label}
-                    type="button"
-                    onClick={() => {
-                      setCustomPrompt(helper.prompt);
-                      setShowHelpers(false);
-                    }}
-                    disabled={!available || loading}
-                    className="px-2 py-1 text-xs rounded-full border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {helper.label}
-                  </button>
-                ))}
+              <div className="space-y-2">
+                {/* Evaluation actions when chat is ongoing */}
+                {hasEvaluation && evaluationActions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {evaluationActions.map((actionConfig) => (
+                      <button
+                        key={actionConfig.id}
+                        type="button"
+                        onClick={() => {
+                          handleAction(actionConfig);
+                          setShowHelpers(false);
+                        }}
+                        disabled={!available || loading}
+                        className="px-2 py-1 text-xs rounded-full border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {actionConfig.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  {promptHelpers.map((helper) => (
+                    <button
+                      key={helper.label}
+                      type="button"
+                      onClick={() => {
+                        setCustomPrompt(helper.prompt);
+                        setShowHelpers(false);
+                      }}
+                      disabled={!available || loading}
+                      className="px-2 py-1 text-xs rounded-full border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 hover:bg-indigo-100 dark:hover:bg-indigo-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {helper.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

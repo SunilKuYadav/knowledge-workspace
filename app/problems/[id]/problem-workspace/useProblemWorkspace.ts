@@ -1,26 +1,118 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProblemDescription } from "@/types";
 import { executeCode } from "@/app/coding-interview/services/executionService";
 import { EXECUTION_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import type { ExecutionResult } from "@/app/coding-interview/lib/types";
-import { saveProblemSolution, saveProblemNotes, updateProblemStatus } from "../actions";
+import { saveProblemDraft, saveProblemNotes, updateProblemStatus, overwriteProblemSolution, saveProblemEvaluation, addStructuredSolution, updateStructuredSolution, getStructuredSolutions, updateVariationStatus, addVariationPracticeEntry } from "../actions";
+import type { SolutionEntry } from "@/src/filesystem/FileProblemRepository";
 import { rateRevision } from "@/app/revision/actions";
-import type { Tab, ProblemWorkspaceProps } from "./types";
+import type { Tab, ProblemWorkspaceProps, SolutionEvaluation, PracticeTarget } from "./types";
+import { v4 as uuid } from "uuid";
+
+/**
+ * Parse a test case value string into its JavaScript equivalent.
+ * Handles: "true" → true, "[0,1]" → [0,1], "123" → 123, "\"hello\"" → "hello"
+ * Falls back to the raw string if JSON.parse fails.
+ */
+function parseTestCaseValue(value: string | unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  // Try JSON parse — handles booleans, numbers, arrays, objects, quoted strings
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Return as-is (a plain string like "hello")
+    return trimmed;
+  }
+}
+
+/**
+ * Parse a test case input string into arguments for the solution function.
+ * Handles multiple formats:
+ * - Named params: "s = \"()\", k = 3" → ["()", 3]
+ * - Single JSON value: "\"()\"" → ["()"]
+ * - JSON array (already multiple args): "[1,2,3]" → [[1,2,3]]
+ */
+function parseTestCaseInput(value: string | unknown): unknown {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+
+  // Check for named parameter format: "varName = value, varName2 = value2"
+  // Pattern: identifier = value (possibly comma-separated)
+  const namedParamPattern = /^[a-zA-Z_]\w*\s*=/;
+  if (namedParamPattern.test(trimmed)) {
+    // Split by top-level commas that separate params (not inside brackets/quotes)
+    const args = splitNamedParams(trimmed);
+    if (args.length > 0) return args;
+  }
+
+  // Try parsing as a single JSON value
+  try {
+    const parsed = JSON.parse(trimmed);
+    // If it's an array, wrap it so it's passed as a single argument
+    // (the worker will spread the outer array as args)
+    return [parsed];
+  } catch {
+    // Return as a single string argument wrapped in array
+    return [trimmed];
+  }
+}
+
+/**
+ * Split "varName = value, varName2 = value2" into parsed values array.
+ */
+function splitNamedParams(input: string): unknown[] {
+  const results: unknown[] = [];
+  // Match each "name = value" segment
+  const regex = /[a-zA-Z_]\w*\s*=\s*/g;
+  const matches: number[] = [];
+  let match;
+  while ((match = regex.exec(input)) !== null) {
+    matches.push(match.index + match[0].length);
+  }
+
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i];
+    const end = i + 1 < matches.length
+      ? findParamEnd(input, matches[i], matches[i + 1])
+      : input.length;
+    const rawValue = input.slice(start, end).trim().replace(/,\s*$/, "");
+    results.push(parseTestCaseValue(rawValue));
+  }
+
+  return results;
+}
+
+/**
+ * Find where a parameter value ends (before the next "name =" segment).
+ * Handles nested brackets and quoted strings.
+ */
+function findParamEnd(input: string, start: number, nextParamStart: number): number {
+  // Work backwards from the next param start to find the separating comma
+  let pos = nextParamStart - 1;
+  // Skip back past the "varName = " prefix of the next param
+  while (pos > start && input[pos] !== ",") {
+    pos--;
+  }
+  return pos > start ? pos : nextParamStart;
+}
 
 export function useProblemWorkspace({
   problem,
   description: initialDescription,
   initialNotes,
   initialSolution,
+  initialDraft,
 }: ProblemWorkspaceProps) {
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [desc, setDesc] = useState<ProblemDescription | null>(
     initialDescription,
   );
+  // Prefer draft over solution for the editor — draft is the "work in progress"
   const [code, setCode] = useState(
-    initialSolution || initialDescription?.boilerplate || "",
+    initialDraft || initialSolution || initialDescription?.boilerplate || "",
   );
   const [notes, setNotes] = useState(initialNotes);
   const [solution, setSolution] = useState(initialSolution);
@@ -36,12 +128,82 @@ export function useProblemWorkspace({
     useState<ExecutionResult | null>(null);
   const [isExecuting, setIsExecuting] = useState(false);
 
+  // ─── Practice target: which problem/variation is being practiced ───────────
+  const [practiceTarget, setPracticeTarget] = useState<PracticeTarget>({
+    type: "main",
+    title: problem.title,
+    difficulty: problem.difficulty,
+  });
+
+  // Hint state
+  const [hint, setHint] = useState<string | null>(null);
+  const [isGettingHint, setIsGettingHint] = useState(false);
+  const [hintStreamContent, setHintStreamContent] = useState("");
+  const hintAbortRef = useRef<AbortController | null>(null);
+
+  // Evaluation state
+  const [evaluation, setEvaluation] = useState<SolutionEvaluation | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  // Pending solution — waiting for user to confirm save (score < 90)
+  const [pendingSolution, setPendingSolution] = useState<SolutionEntry | null>(null);
+
   // Streaming state
   const [descStreamContent, setDescStreamContent] = useState("");
   const [variationStreamContent, setVariationStreamContent] = useState("");
   const descAbortRef = useRef<AbortController | null>(null);
   const noteAbortRef = useRef<AbortController | null>(null);
   const variationAbortRef = useRef<AbortController | null>(null);
+
+  // ─── Auto-save draft on code change (debounced 3s) ────────────────────────
+  const draftTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSavedDraftRef = useRef(initialDraft || initialSolution || "");
+
+  useEffect(() => {
+    // Skip if code hasn't changed from what was last saved
+    if (code === lastSavedDraftRef.current) return;
+    // Skip empty/boilerplate-only code
+    if (!code.trim()) return;
+
+    // Clear previous timer
+    if (draftTimerRef.current) {
+      clearTimeout(draftTimerRef.current);
+    }
+
+    // Save after 3 seconds of inactivity
+    draftTimerRef.current = setTimeout(async () => {
+      const result = await saveProblemDraft(problem.id, code);
+      if (result.success) {
+        lastSavedDraftRef.current = code;
+      }
+    }, 3000);
+
+    return () => {
+      if (draftTimerRef.current) {
+        clearTimeout(draftTimerRef.current);
+      }
+    };
+  }, [code, problem.id]);
+
+  // ─── Switch practice target (main problem or a variation) ─────────────────
+  const handleSwitchPracticeTarget = useCallback(
+    (target: PracticeTarget) => {
+      setPracticeTarget(target);
+      // Reset execution state when switching
+      setExecutionResult(null);
+      setEvaluation(null);
+      setHint(null);
+      setHintStreamContent("");
+
+      // Load boilerplate for the selected target
+      if (target.type === "main") {
+        setCode(initialDraft || initialSolution || desc?.boilerplate || "");
+      } else if (target.variationId && desc?.variations) {
+        const variation = desc.variations.find((v) => v.id === target.variationId);
+        setCode(variation?.boilerplate || "// Write your solution\n");
+      }
+    },
+    [desc, initialDraft, initialSolution],
+  );
 
   // Cancel description generation
   const handleCancelDescription = useCallback(() => {
@@ -155,19 +317,6 @@ export function useProblemWorkspace({
     }
   }, [problem, code]);
 
-  // Save solution
-  const handleSaveSolution = useCallback(async () => {
-    setSaveStatus("saving");
-    const result = await saveProblemSolution(problem.id, code);
-    if (result.success) {
-      setSolution(code);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
-    } else {
-      setSaveStatus("error");
-    }
-  }, [problem.id, code]);
-
   // Save notes
   const handleSaveNotes = useCallback(async () => {
     setSaveStatus("saving");
@@ -212,12 +361,24 @@ export function useProblemWorkspace({
         accumulated += decoder.decode(value, { stream: true });
         setNoteGenContent(accumulated);
       }
-      // Append to notes
+      // Append to general notes
       const newNotes = notes
         ? `${notes}\n\n---\n\n${accumulated}`
         : accumulated;
       setNotes(newNotes);
       await saveProblemNotes(problem.id, newNotes);
+
+      // Also attach note to the most recent solution that matches the current code
+      const solutions = await getStructuredSolutions(problem.id);
+      const matchingSolution = solutions
+        .slice()
+        .reverse()
+        .find((s) => s.code === code);
+      if (matchingSolution) {
+        await updateStructuredSolution(problem.id, matchingSolution.id, {
+          note: accumulated,
+        });
+      }
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         // Silent fail — user can see the partial content
@@ -228,8 +389,76 @@ export function useProblemWorkspace({
     }
   }, [code, problem, notes]);
 
+  // Regenerate general notes by combining all solution notes into a comprehensive note
+  const [isRegeneratingNotes, setIsRegeneratingNotes] = useState(false);
+
+  const handleRegenerateNotes = useCallback(async () => {
+    setIsRegeneratingNotes(true);
+
+    try {
+      const solutions = await getStructuredSolutions(problem.id);
+      const solutionNotesText = solutions
+        .filter((s) => s.note)
+        .map((s, idx) => `### Solution #${idx + 1} (Score: ${s.score ?? "N/A"}/100)\n${s.note}`)
+        .join("\n\n---\n\n");
+
+      if (!solutionNotesText.trim()) {
+        setIsRegeneratingNotes(false);
+        return;
+      }
+
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "custom",
+          itemId: problem.id,
+          context: "problem",
+          prompt: `You are helping an engineer consolidate their study notes for a coding problem.
+
+Problem: ${problem.title}
+Difficulty: ${problem.difficulty}
+Patterns: ${problem.patterns.join(", ")}
+
+Here are the individual notes from each solution attempt:
+
+${solutionNotesText}
+
+${notes.trim() ? `Current general notes:\n${notes}\n\n` : ""}Create a single comprehensive, well-organized study note that:
+1. Consolidates all key learnings from each attempt
+2. Highlights the progression and improvement across attempts
+3. Captures the most important patterns, techniques, and edge cases
+4. Removes redundancy while keeping all unique insights
+5. Organizes into clear sections (Approach, Key Insights, Patterns, Edge Cases, Complexity, Mistakes to Avoid)
+
+Write in clean Markdown. Be concise but thorough.`,
+          isGeneral: false,
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error("Regeneration failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setNotes(accumulated);
+      }
+
+      await saveProblemNotes(problem.id, accumulated);
+    } catch {
+      // Silent fail — user can see partial content
+    } finally {
+      setIsRegeneratingNotes(false);
+    }
+  }, [problem, notes, setNotes]);
+
   // Generate variation (streaming)
-  const handleGenerateVariation = useCallback(async () => {
+  const handleGenerateVariation = useCallback(async (upgradeVariationId?: string) => {
     if (!desc) return;
     setVariationLoading(true);
     setVariationStreamContent("");
@@ -251,6 +480,7 @@ export function useProblemWorkspace({
           difficulty: problem.difficulty,
           patterns: problem.patterns,
           semanticDescription: problem.semanticDescription,
+          upgradeVariationId: upgradeVariationId || undefined,
         }),
         signal: controller.signal,
       });
@@ -277,15 +507,23 @@ export function useProblemWorkspace({
             if (event.type === "token") {
               setVariationStreamContent((prev) => prev + event.content);
             } else if (event.type === "done") {
-              setDesc((prev) =>
-                prev
-                  ? {
-                      ...prev,
-                      variations: [...(prev.variations || []), event.variation],
-                      updatedAt: new Date().toISOString(),
-                    }
-                  : prev,
-              );
+              setDesc((prev) => {
+                if (!prev) return prev;
+                let updatedVariations;
+                if (event.upgradedId) {
+                  // Replace the upgraded variation
+                  updatedVariations = (prev.variations || []).map((v) =>
+                    v.id === event.upgradedId ? event.variation : v,
+                  );
+                } else {
+                  updatedVariations = [...(prev.variations || []), event.variation];
+                }
+                return {
+                  ...prev,
+                  variations: updatedVariations,
+                  updatedAt: new Date().toISOString(),
+                };
+              });
               setVariationStreamContent("");
             } else if (event.type === "error") {
               // User can retry
@@ -305,20 +543,34 @@ export function useProblemWorkspace({
     }
   }, [desc, problem]);
 
-  // Run code against test cases from description
+  // Run code against test cases from description (or variation)
   const handleRunCode = useCallback(async () => {
     if (!desc || isExecuting) return;
     setIsExecuting(true);
     try {
-      // Combine examples + hidden test cases
+      // Get test cases based on practice target
+      let examples: { input: string; expectedOutput: string }[] = [];
+      let hiddenTestCases: { input: string; expectedOutput: string }[] = [];
+
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        if (variation) {
+          examples = variation.samples?.map((s) => ({ input: s.input, expectedOutput: s.output })) || [];
+          hiddenTestCases = variation.testCases;
+        }
+      } else {
+        examples = desc.examples;
+        hiddenTestCases = desc.testCases;
+      }
+
       const testCases = [
-        ...desc.examples.map((ex) => ({
-          input: ex.input,
-          expectedOutput: ex.expectedOutput,
+        ...examples.map((ex) => ({
+          input: parseTestCaseInput(ex.input),
+          expectedOutput: parseTestCaseValue(ex.expectedOutput),
         })),
-        ...desc.testCases.map((tc) => ({
-          input: tc.input,
-          expectedOutput: tc.expectedOutput,
+        ...hiddenTestCases.map((tc) => ({
+          input: parseTestCaseInput(tc.input),
+          expectedOutput: parseTestCaseValue(tc.expectedOutput),
         })),
       ];
       const result = await executeCode({
@@ -329,32 +581,15 @@ export function useProblemWorkspace({
       });
       setExecutionResult(result);
 
-      // Auto-evaluate confidence based on test results
-      if (result.testResults.length > 0 && !result.error) {
-        const passed = result.testResults.filter((t) => t.passed).length;
-        const total = result.testResults.length;
-        const passRate = passed / total;
-
-        // Map pass rate to confidence: 1-5
-        // 0-20% → 1, 21-50% → 2, 51-75% → 3, 76-95% → 4, 96-100% → 5
-        let confidence: 1 | 2 | 3 | 4 | 5;
-        if (passRate <= 0.2) confidence = 1;
-        else if (passRate <= 0.5) confidence = 2;
-        else if (passRate <= 0.75) confidence = 3;
-        else if (passRate < 1) confidence = 4;
-        else confidence = 5;
-
-        // Update confidence via spaced repetition system
-        await rateRevision(problem.id, "problem", confidence);
-
-        // Auto-update problem status based on results
-        if (passRate === 1) {
-          await updateProblemStatus(problem.id, "solved");
-        } else if (passRate > 0) {
-          await updateProblemStatus(problem.id, "attempted");
-        }
-      } else if (result.error) {
-        // Code had errors — mark as attempted
+      // Mark as attempted
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        await updateVariationStatus(problem.id, practiceTarget.variationId, "attempted");
+        await addVariationPracticeEntry(problem.id, practiceTarget.variationId, {
+          id: uuid(),
+          attemptedAt: new Date().toISOString(),
+          note: "Ran code against test cases",
+        });
+      } else if (problem.status === "not-started") {
         await updateProblemStatus(problem.id, "attempted");
       }
     } catch (err) {
@@ -372,7 +607,281 @@ export function useProblemWorkspace({
     } finally {
       setIsExecuting(false);
     }
-  }, [desc, code, isExecuting, problem.id]);
+  }, [desc, code, isExecuting, problem.id, problem.status, practiceTarget]);
+
+  // Get hint/suggestion when stuck — acts like an interviewer giving hints
+
+  const handleGetHint = useCallback(async () => {
+    if (!desc || isGettingHint) return;
+    setIsGettingHint(true);
+    setHintStreamContent("");
+    setHint(null);
+
+    const controller = new AbortController();
+    hintAbortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "custom",
+          itemId: problem.id,
+          context: "problem",
+          prompt: `You are acting as a friendly technical interviewer. The candidate is working on this problem and seems stuck. Give them a helpful hint without giving away the full solution.
+
+Problem: ${problem.title}
+Difficulty: ${problem.difficulty}
+Patterns: ${problem.patterns.join(", ")}
+
+Problem Description:
+${desc.description.slice(0, 1500)}
+
+Their current code:
+\`\`\`typescript
+${code}
+\`\`\`
+
+${executionResult?.testResults?.length
+  ? `Test results: ${executionResult.testResults.filter((t) => t.passed).length}/${executionResult.testResults.length} passing`
+  : "They haven't run tests yet."}
+
+Give a progressive hint:
+1. Start with a gentle nudge about the right direction/approach
+2. Mention a key insight or data structure that would help
+3. If their code has a specific bug, hint at where it might be without fixing it directly
+
+Keep it conversational and encouraging like a real interviewer would. Use 2-4 short paragraphs max.`,
+          isGeneral: false,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) throw new Error("Failed to get hint");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setHintStreamContent(accumulated);
+      }
+      setHint(accumulated);
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        setHint("Unable to generate hint. Please try again.");
+      }
+    } finally {
+      setIsGettingHint(false);
+      hintAbortRef.current = null;
+    }
+  }, [desc, code, problem, isGettingHint, executionResult]);
+
+  const handleCancelHint = useCallback(() => {
+    if (hintAbortRef.current) {
+      hintAbortRef.current.abort();
+      hintAbortRef.current = null;
+    }
+    setIsGettingHint(false);
+    setHintStreamContent("");
+  }, []);
+
+  const handleDismissHint = useCallback(() => {
+    setHint(null);
+    setHintStreamContent("");
+  }, []);
+
+  // Evaluate solution via AI — provides feedback, improvements, and updates confidence
+
+  const handleEvaluateSolution = useCallback(async () => {
+    if (!desc || !code.trim() || isEvaluating) return;
+    setIsEvaluating(true);
+    setEvaluation(null);
+
+    try {
+      // Get test cases based on practice target
+      let examples: { input: string; expectedOutput: string }[] = [];
+      let hiddenTestCases: { input: string; expectedOutput: string }[] = [];
+      let evalDescription = desc.description;
+      let evalConstraints = desc.constraints;
+      let evalTitle = problem.title;
+      let evalDifficulty = problem.difficulty;
+
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        if (variation) {
+          examples = variation.samples?.map((s) => ({ input: s.input, expectedOutput: s.output })) || [];
+          hiddenTestCases = variation.testCases;
+          evalDescription = variation.description;
+          evalConstraints = variation.constraints || [];
+          evalTitle = variation.title;
+          evalDifficulty = variation.difficulty;
+        }
+      } else {
+        examples = desc.examples;
+        hiddenTestCases = desc.testCases;
+      }
+
+      // First run the code to get test results if we haven't already
+      let testResults = executionResult?.testResults ?? [];
+      if (testResults.length === 0) {
+        const testCases = [
+          ...examples.map((ex) => ({
+            input: parseTestCaseInput(ex.input),
+            expectedOutput: parseTestCaseValue(ex.expectedOutput),
+          })),
+          ...hiddenTestCases.map((tc) => ({
+            input: parseTestCaseInput(tc.input),
+            expectedOutput: parseTestCaseValue(tc.expectedOutput),
+          })),
+        ];
+        const execResult = await executeCode({
+          code,
+          language: "typescript",
+          testCases,
+          timeout: EXECUTION_TIMEOUT,
+        });
+        setExecutionResult(execResult);
+        testResults = execResult.testResults;
+      }
+
+      // Call AI evaluation endpoint
+      const res = await fetch("/api/ai/problem/evaluate-solution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          problemId: problem.id,
+          title: evalTitle,
+          description: evalDescription,
+          difficulty: evalDifficulty,
+          patterns: problem.patterns,
+          constraints: evalConstraints,
+          testResults: testResults.map((r) => ({
+            input: r.input,
+            expectedOutput: r.expectedOutput,
+            actualOutput: r.actualOutput,
+            passed: r.passed,
+          })),
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Evaluation failed");
+      }
+
+      const data = (await res.json()) as { evaluation: SolutionEvaluation };
+      setEvaluation(data.evaluation);
+
+      // Update confidence and status based on practice target
+      if (data.evaluation.overallScore !== undefined) {
+        const score = data.evaluation.overallScore;
+
+        if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+          // Update variation status
+          const newStatus = score >= 90 ? "solved" : "attempted";
+          await updateVariationStatus(problem.id, practiceTarget.variationId, newStatus);
+          await addVariationPracticeEntry(problem.id, practiceTarget.variationId, {
+            id: uuid(),
+            attemptedAt: new Date().toISOString(),
+            score,
+            note: `Evaluated: ${data.evaluation.feedback?.slice(0, 100) || ""}`,
+          });
+          // Update local desc state to reflect variation status change
+          setDesc((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              variations: (prev.variations || []).map((v) =>
+                v.id === practiceTarget.variationId
+                  ? { ...v, status: newStatus, lastPracticedAt: new Date().toISOString() }
+                  : v,
+              ),
+            };
+          });
+        } else {
+          // Main problem — update confidence and status
+          let confidence: 1 | 2 | 3 | 4 | 5;
+          if (score <= 20) confidence = 1;
+          else if (score <= 40) confidence = 2;
+          else if (score <= 60) confidence = 3;
+          else if (score <= 80) confidence = 4;
+          else confidence = 5;
+          await rateRevision(problem.id, "problem", confidence);
+
+          if (score >= 90) {
+            await updateProblemStatus(problem.id, "solved");
+          }
+        }
+      }
+
+      // Save evaluation alongside code
+      await saveProblemEvaluation(problem.id, data.evaluation, code);
+
+      // Auto-save solution only if score >= 90, otherwise ask user
+      const entry: SolutionEntry = {
+        id: `sol-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        code,
+        savedAt: new Date().toISOString(),
+        score: data.evaluation.overallScore,
+        feedback: data.evaluation.feedback,
+        complexity: data.evaluation.complexity,
+        strengths: data.evaluation.strengths,
+        improvements: data.evaluation.improvements,
+        edgeCases: data.evaluation.edgeCases,
+        alternativeApproaches: data.evaluation.alternativeApproaches,
+        variationId: practiceTarget.type === "variation" ? practiceTarget.variationId : undefined,
+        variationTitle: practiceTarget.type === "variation" ? practiceTarget.title : undefined,
+      };
+
+      if (data.evaluation.overallScore >= 90) {
+        await addStructuredSolution(problem.id, entry);
+        setSolution(code);
+      } else {
+        // Hold for user confirmation
+        setPendingSolution(entry);
+      }
+    } catch {
+      setEvaluation({
+        overallScore: 0,
+        feedback: "Evaluation failed. Please try again.",
+        strengths: [],
+        improvements: ["Unable to evaluate at this time."],
+        complexity: { time: "Unknown", space: "Unknown" },
+      });
+    } finally {
+      setIsEvaluating(false);
+    }
+  }, [desc, code, isEvaluating, executionResult, problem, practiceTarget]);
+
+  // Confirm saving a pending solution (user chose to save despite score < 90)
+  const handleConfirmSaveSolution = useCallback(async () => {
+    if (!pendingSolution) return;
+    await addStructuredSolution(problem.id, pendingSolution);
+    setSolution(pendingSolution.code);
+    setPendingSolution(null);
+  }, [pendingSolution, problem.id]);
+
+  // Dismiss pending solution (user chose not to save)
+  const handleDismissPendingSolution = useCallback(() => {
+    setPendingSolution(null);
+  }, []);
+
+  // Overwrite the full solution.md (for editing)
+  const handleOverwriteSolution = useCallback(async (content: string) => {
+    setSaveStatus("saving");
+    const result = await overwriteProblemSolution(problem.id, content);
+    if (result.success) {
+      setSolution(content);
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
+    } else {
+      setSaveStatus("error");
+    }
+  }, [problem.id]);
 
   return {
     activeTab,
@@ -398,10 +907,26 @@ export function useProblemWorkspace({
     handleCancelNote,
     handleCancelVariation,
     handleGenerateDescription,
-    handleSaveSolution,
     handleSaveNotes,
     handleGenerateNote,
+    handleRegenerateNotes,
+    isRegeneratingNotes,
     handleGenerateVariation,
     handleRunCode,
+    evaluation,
+    isEvaluating,
+    handleEvaluateSolution,
+    handleOverwriteSolution,
+    hint,
+    isGettingHint,
+    hintStreamContent,
+    handleGetHint,
+    handleCancelHint,
+    handleDismissHint,
+    practiceTarget,
+    handleSwitchPracticeTarget,
+    pendingSolution,
+    handleConfirmSaveSolution,
+    handleDismissPendingSolution,
   };
 }
