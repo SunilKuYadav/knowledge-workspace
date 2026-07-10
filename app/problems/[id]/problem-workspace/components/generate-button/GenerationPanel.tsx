@@ -1,23 +1,29 @@
 "use client";
 
-import { ARTIFACT_LABELS } from "@/types";
-import type { ArtifactType } from "@/types";
 import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
-import type { GenerationPanelProps } from "../types";
+import type { GenerationState, BatchProgress, ProblemSection } from "./types";
+import { PROBLEM_SECTION_LABELS } from "./types";
 
-export function GenerationPanel({
+interface ProblemGenerationPanelProps {
+  generation: GenerationState;
+  batchProgress: BatchProgress | null;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  onCancel: () => void;
+  onDismiss: () => void;
+}
+
+export function ProblemGenerationPanel({
   generation,
   batchProgress,
   panelRef,
   onCancel,
   onDismiss,
-}: GenerationPanelProps) {
+}: ProblemGenerationPanelProps) {
   if (generation.status === "idle") return null;
 
-  const artifactLabel =
-    generation.artifact in ARTIFACT_LABELS
-      ? ARTIFACT_LABELS[generation.artifact as ArtifactType]
-      : generation.artifact;
+  const sectionLabel =
+    PROBLEM_SECTION_LABELS[generation.section as ProblemSection] ??
+    generation.section;
 
   const isBatch = batchProgress !== null;
   const batchDone =
@@ -110,16 +116,18 @@ export function GenerationPanel({
             )}
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {generation.status === "generating" &&
-                `Generating ${artifactLabel}…`}
-              {generation.status === "done" && !isBatch &&
-                `${artifactLabel} ready`}
-              {generation.status === "done" && isBatch && !batchDone &&
-                `${artifactLabel} ready — next up…`}
+                `Generating ${sectionLabel}…`}
+              {generation.status === "done" &&
+                !isBatch &&
+                `${sectionLabel} ready`}
+              {generation.status === "done" &&
+                isBatch &&
+                !batchDone &&
+                `${sectionLabel} ready — next up…`}
               {batchDone && `All sections generated`}
               {generation.status === "error" && `Generation failed`}
             </span>
 
-            {/* Batch progress indicator */}
             {isBatch && (
               <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
                 {batchProgress.completed.length}/{batchProgress.total}
@@ -181,9 +189,9 @@ export function GenerationPanel({
             </div>
             {batchProgress.completed.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {batchProgress.completed.map((a) => (
+                {batchProgress.completed.map((s) => (
                   <span
-                    key={a}
+                    key={s}
                     className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                   >
                     <svg
@@ -199,7 +207,7 @@ export function GenerationPanel({
                         d="m4.5 12.75 6 6 9-13.5"
                       />
                     </svg>
-                    {ARTIFACT_LABELS[a as ArtifactType] ?? a}
+                    {PROBLEM_SECTION_LABELS[s as ProblemSection] ?? s}
                   </span>
                 ))}
               </div>
@@ -208,10 +216,7 @@ export function GenerationPanel({
         )}
 
         {/* Panel body */}
-        <div
-          ref={panelRef}
-          className="flex-1 overflow-y-auto p-5"
-        >
+        <div ref={panelRef} className="flex-1 overflow-y-auto p-5">
           {generation.status === "error" ? (
             <div className="rounded-md bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4">
               <p className="text-sm text-red-700 dark:text-red-400">
@@ -221,7 +226,13 @@ export function GenerationPanel({
           ) : (
             <div className="prose prose-zinc dark:prose-invert max-w-none text-sm">
               {generation.content ? (
-                <MarkdownRenderer>{generation.content}</MarkdownRenderer>
+                generation.section === "description" ? (
+                  <pre className="text-xs text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap font-mono">
+                    {generation.content}
+                  </pre>
+                ) : (
+                  <MarkdownRenderer>{generation.content}</MarkdownRenderer>
+                )
               ) : (
                 <p className="text-zinc-400 italic">Starting generation…</p>
               )}
@@ -233,23 +244,17 @@ export function GenerationPanel({
         {generation.status === "done" && !isBatch && (
           <div className="shrink-0 px-5 py-3 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-b-xl">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Saved to{" "}
-              <code className="text-xs bg-zinc-200 dark:bg-zinc-700 px-1 py-0.5 rounded">
-                {generation.artifact}.md
-              </code>
-              . The{" "}
               <strong className="text-zinc-700 dark:text-zinc-300">
-                {artifactLabel}
+                {sectionLabel}
               </strong>{" "}
-              tab is now available.
+              generated and saved.
             </p>
           </div>
         )}
         {batchDone && (
           <div className="shrink-0 px-5 py-3 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-b-xl">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              All {batchProgress.total} sections generated and saved. All tabs
-              are now available.
+              All {batchProgress.total} sections generated and saved.
             </p>
           </div>
         )}

@@ -42,6 +42,41 @@ export async function saveProblemNotes(
 }
 
 /**
+ * Updates the problem status (not-started, attempted, solved).
+ * Optionally increments attempt count and sets lastSolved date.
+ */
+export async function updateProblemStatus(
+  problemId: string,
+  status: "not-started" | "attempted" | "solved",
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const repo = new FileProblemRepository(getWorkspacePath());
+    const problem = await repo.getById(problemId);
+    if (!problem) return { success: false, error: "Problem not found" };
+
+    const updates: Record<string, unknown> = { status };
+
+    if (status === "attempted" && problem.status === "not-started") {
+      updates.attempts = (problem.attempts ?? 0) + 1;
+    }
+    if (status === "solved") {
+      updates.lastSolved = new Date().toISOString();
+      if (problem.status !== "solved") {
+        updates.attempts = (problem.attempts ?? 0) + 1;
+      }
+    }
+
+    await repo.update(problemId, updates);
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to update status",
+    };
+  }
+}
+
+/**
  * Links a similar problem ID to the current problem's description.json.
  */
 export async function linkSimilarProblem(

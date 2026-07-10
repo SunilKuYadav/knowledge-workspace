@@ -36,8 +36,8 @@ const DEFAULT_TIMEOUT_MS = 10_000;
  * - fast (14B dense, max 131K): 8K — short utility tasks, keep lean for speed
  */
 const MODEL_CONTEXT_LENGTH: Record<string, number> = {
-  "qwen3-30b-a3b-mlx": 32_768,
-  "qwen3-coder-30b-a3b-instruct-mlx": 16_384,
+  "qwen3-30b-a3b-mlx": 8_192,
+  "qwen3-coder-30b-a3b-instruct-mlx": 8_192,
   "qwen2.5-coder-14b-instruct": 8_192,
 };
 

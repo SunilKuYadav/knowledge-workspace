@@ -8,8 +8,13 @@ import {
 } from "@/app/coding-interview/components";
 import { useProblemWorkspace } from "./useProblemWorkspace";
 import { OverviewTab } from "./components/OverviewTab";
+import ProblemGenerateButton from "./components/generate-button";
+import ProblemRegenerateButton from "./components/regenerate-button";
+import ProblemStatusButton from "./components/status-button";
 import { TABS } from "./constants";
 import type { ProblemWorkspaceProps } from "./types";
+import type { ProblemDescription } from "@/types";
+import { useCallback } from "react";
 
 export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
   const { problem, revision } = props;
@@ -18,6 +23,7 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
     activeTab,
     setActiveTab,
     desc,
+    setDesc,
     code,
     setCode,
     notes,
@@ -44,6 +50,27 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
     handleRunCode,
   } = useProblemWorkspace(props);
 
+  /** Called when description is generated via the unified Generate button. */
+  const handleDescGenerated = useCallback(
+    (description: ProblemDescription) => {
+      setDesc(description);
+      if (description.boilerplate && !code.trim()) {
+        setCode(description.boilerplate);
+      }
+      setActiveTab("description");
+    },
+    [setDesc, setCode, setActiveTab, code],
+  );
+
+  /** Called when notes are generated via the unified Generate button. */
+  const handleNotesGenerated = useCallback(
+    (generatedNotes: string) => {
+      setNotes(generatedNotes);
+      setActiveTab("notes");
+    },
+    [setNotes, setActiveTab],
+  );
+
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
@@ -51,28 +78,62 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
         className="flex items-center border-b border-zinc-200 dark:border-zinc-700 px-4 shrink-0"
         role="tablist"
       >
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            role="tab"
-            aria-selected={activeTab === tab.key}
-            onClick={() => setActiveTab(tab.key as typeof activeTab)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.key
-                ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
-            }`}
-          >
-            {tab.label}
-            {tab.key === "variations" &&
-              desc?.variations &&
-              desc.variations.length > 0 && (
-                <span className="ml-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">
-                  {desc.variations.length}
-                </span>
-              )}
-          </button>
-        ))}
+        <div className="flex flex-1 flex-wrap items-end gap-0">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+              }`}
+            >
+              {tab.label}
+              {tab.key === "variations" &&
+                desc?.variations &&
+                desc.variations.length > 0 && (
+                  <span className="ml-1.5 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-1.5 py-0.5 rounded-full">
+                    {desc.variations.length}
+                  </span>
+                )}
+            </button>
+          ))}
+
+          {/* AI Generate button */}
+          <ProblemGenerateButton
+            problem={problem}
+            hasDescription={!!desc}
+            hasNotes={!!notes}
+            hasSolution={!!solution}
+            solutionCode={solution}
+            onDescriptionGenerated={handleDescGenerated}
+            onNotesGenerated={handleNotesGenerated}
+          />
+        </div>
+
+        {/* Status + Regenerate buttons for active tab */}
+        <div className="flex items-center gap-2 shrink-0">
+          <ProblemStatusButton
+            problemId={problem.id}
+            currentStatus={problem.status}
+            onStatusChanged={() => {
+              // Status is persisted server-side; local UI reflects via the button's own state
+            }}
+          />
+          <ProblemRegenerateButton
+            problem={problem}
+            activeTab={activeTab}
+            hasDescription={!!desc}
+            hasNotes={!!notes}
+            hasSolution={!!solution}
+            solutionCode={solution}
+            onDescriptionRegenerated={handleDescGenerated}
+            onNotesRegenerated={handleNotesGenerated}
+          />
+        </div>
       </div>
 
       {/* Tab content */}
@@ -419,6 +480,12 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
 
               {/* Console + Test Results */}
               <div className="shrink-0 max-h-[35%] overflow-y-auto border-t border-zinc-200 dark:border-zinc-700">
+                {/* Confidence indicator after execution */}
+                {executionResult && !executionResult.error && executionResult.testResults.length > 0 && (
+                  <div className="px-4 pt-3">
+                    <ConfidenceIndicator testResults={executionResult.testResults} />
+                  </div>
+                )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4">
                   <ConsolePanel
                     result={executionResult}
@@ -649,6 +716,95 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
               )
             )}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Confidence Indicator ─────────────────────────────────── */
+
+function ConfidenceIndicator({
+  testResults,
+}: {
+  testResults: { passed: boolean }[];
+}) {
+  const passed = testResults.filter((t) => t.passed).length;
+  const total = testResults.length;
+  const passRate = passed / total;
+
+  let confidence: number;
+  let label: string;
+  let color: string;
+  let bgColor: string;
+
+  if (passRate <= 0.2) {
+    confidence = 1;
+    label = "Needs Work";
+    color = "text-red-600 dark:text-red-400";
+    bgColor = "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+  } else if (passRate <= 0.5) {
+    confidence = 2;
+    label = "Getting There";
+    color = "text-orange-600 dark:text-orange-400";
+    bgColor = "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800";
+  } else if (passRate <= 0.75) {
+    confidence = 3;
+    label = "Good Progress";
+    color = "text-yellow-600 dark:text-yellow-400";
+    bgColor = "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
+  } else if (passRate < 1) {
+    confidence = 4;
+    label = "Almost There";
+    color = "text-lime-600 dark:text-lime-400";
+    bgColor = "bg-lime-50 dark:bg-lime-900/20 border-lime-200 dark:border-lime-800";
+  } else {
+    confidence = 5;
+    label = "Solved!";
+    color = "text-green-600 dark:text-green-400";
+    bgColor = "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+  }
+
+  return (
+    <div
+      className={`flex items-center justify-between rounded-lg border px-4 py-2 ${bgColor}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="flex gap-0.5">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <div
+              key={level}
+              className={`w-2 h-5 rounded-sm transition-colors ${
+                level <= confidence
+                  ? passRate === 1
+                    ? "bg-green-500"
+                    : passRate > 0.75
+                      ? "bg-lime-500"
+                      : passRate > 0.5
+                        ? "bg-yellow-500"
+                        : passRate > 0.2
+                          ? "bg-orange-500"
+                          : "bg-red-500"
+                  : "bg-zinc-200 dark:bg-zinc-700"
+              }`}
+            />
+          ))}
+        </div>
+        <span className={`text-sm font-medium ${color}`}>{label}</span>
+      </div>
+      <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <span>
+          {passed}/{total} tests passed
+        </span>
+        <span className="text-zinc-300 dark:text-zinc-600">•</span>
+        <span>Confidence: {confidence}/5</span>
+        {passRate === 1 && (
+          <>
+            <span className="text-zinc-300 dark:text-zinc-600">•</span>
+            <span className="text-green-600 dark:text-green-400 font-medium">
+              Status → Solved ✓
+            </span>
+          </>
         )}
       </div>
     </div>

@@ -5,7 +5,8 @@ import type { ProblemDescription } from "@/types";
 import { executeCode } from "@/app/coding-interview/services/executionService";
 import { EXECUTION_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import type { ExecutionResult } from "@/app/coding-interview/lib/types";
-import { saveProblemSolution, saveProblemNotes } from "../actions";
+import { saveProblemSolution, saveProblemNotes, updateProblemStatus } from "../actions";
+import { rateRevision } from "@/app/revision/actions";
 import type { Tab, ProblemWorkspaceProps } from "./types";
 
 export function useProblemWorkspace({
@@ -327,6 +328,35 @@ export function useProblemWorkspace({
         timeout: EXECUTION_TIMEOUT,
       });
       setExecutionResult(result);
+
+      // Auto-evaluate confidence based on test results
+      if (result.testResults.length > 0 && !result.error) {
+        const passed = result.testResults.filter((t) => t.passed).length;
+        const total = result.testResults.length;
+        const passRate = passed / total;
+
+        // Map pass rate to confidence: 1-5
+        // 0-20% → 1, 21-50% → 2, 51-75% → 3, 76-95% → 4, 96-100% → 5
+        let confidence: 1 | 2 | 3 | 4 | 5;
+        if (passRate <= 0.2) confidence = 1;
+        else if (passRate <= 0.5) confidence = 2;
+        else if (passRate <= 0.75) confidence = 3;
+        else if (passRate < 1) confidence = 4;
+        else confidence = 5;
+
+        // Update confidence via spaced repetition system
+        await rateRevision(problem.id, "problem", confidence);
+
+        // Auto-update problem status based on results
+        if (passRate === 1) {
+          await updateProblemStatus(problem.id, "solved");
+        } else if (passRate > 0) {
+          await updateProblemStatus(problem.id, "attempted");
+        }
+      } else if (result.error) {
+        // Code had errors — mark as attempted
+        await updateProblemStatus(problem.id, "attempted");
+      }
     } catch (err) {
       setExecutionResult({
         consoleOutput: "",
@@ -342,12 +372,13 @@ export function useProblemWorkspace({
     } finally {
       setIsExecuting(false);
     }
-  }, [desc, code, isExecuting]);
+  }, [desc, code, isExecuting, problem.id]);
 
   return {
     activeTab,
     setActiveTab,
     desc,
+    setDesc,
     code,
     setCode,
     notes,
