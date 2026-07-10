@@ -69,6 +69,7 @@ export {
   buildGenerateDescriptionPrompt,
   buildGenerateNotePrompt,
   buildGenerateVariationPrompt,
+  buildGenerateTestCasesPrompt,
   // Creation Assist Module
   buildTopicCreationAssistPrompt,
   buildProblemCreationAssistPrompt,
@@ -81,6 +82,7 @@ export type {
   GenerateDescriptionParams,
   GenerateNoteParams,
   GenerateVariationParams,
+  GenerateTestCasesParams,
   TopicCreationAssistParams,
   ProblemCreationAssistParams,
   StudyPlanGenerationParams,

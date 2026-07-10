@@ -1,6 +1,6 @@
 import type { Problem, ProblemDescription, RevisionData } from "@/types";
 
-export type Tab = "overview" | "description" | "practice" | "solution" | "notes" | "variations";
+export type Tab = "overview" | "description" | "practice" | "test-suite" | "solution" | "notes" | "variations";
 
 /** Identifies what problem context is being practiced — either the main problem or a variation */
 export interface PracticeTarget {

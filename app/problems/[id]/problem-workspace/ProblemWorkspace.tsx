@@ -7,6 +7,7 @@ import { PracticePanel } from "./components/practice-panel";
 import { NotesTab } from "./components/notes-tab";
 import { VariationsTab } from "./components/variations-tab";
 import { SolutionTab } from "./components/solution-tab";
+import { TestSuitePanel } from "./components/test-suite-panel";
 import ProblemGenerateButton from "./components/generate-button";
 import ProblemRegenerateButton from "./components/regenerate-button";
 import { TABS } from "./constants";
@@ -63,6 +64,16 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
     pendingSolution,
     handleConfirmSaveSolution,
     handleDismissPendingSolution,
+    // Test Suite
+    testSuite,
+    testSuiteGenerating,
+    testSuiteStreamContent,
+    testSuiteRunResults,
+    testSuiteRunning,
+    handleGenerateTestSuite,
+    handleCancelTestSuite,
+    handleDeleteTestSuite,
+    handleRunTestSuite,
   } = useProblemWorkspace(props);
 
   // Bridge evaluation data to the shared context for AISidebar
@@ -136,6 +147,12 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
               }`}
             >
               {tab.label}
+              {tab.key === "test-suite" &&
+                testSuite && (
+                  <span className="ml-1.5 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded-full">
+                    {testSuite.totalCount}
+                  </span>
+                )}
               {tab.key === "variations" &&
                 desc?.variations &&
                 desc.variations.length > 0 && (
@@ -230,6 +247,63 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
             onConfirmSaveSolution={handleConfirmSaveSolution}
             onDismissPendingSolution={handleDismissPendingSolution}
           />
+        )}
+
+        {activeTab === "test-suite" && (
+          <div className="p-4 space-y-4">
+            {/* Practice target selector for test suite */}
+            {desc?.variations && desc.variations.length > 0 && (
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                  Target
+                </label>
+                <select
+                  value={practiceTarget.type === "main" ? "main" : practiceTarget.variationId || "main"}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "main") {
+                      handleSwitchPracticeTarget({
+                        type: "main",
+                        title: problem.title,
+                        difficulty: problem.difficulty,
+                      });
+                    } else {
+                      const variation = desc.variations?.find((v) => v.id === val);
+                      if (variation) {
+                        handleSwitchPracticeTarget({
+                          type: "variation",
+                          variationId: variation.id,
+                          title: variation.title,
+                          difficulty: variation.difficulty,
+                        });
+                      }
+                    }
+                  }}
+                  className="text-sm rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <option value="main">📝 {problem.title} (Main)</option>
+                  {desc.variations.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      🔀 {v.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <TestSuitePanel
+              testSuite={testSuite}
+              isGenerating={testSuiteGenerating}
+              streamContent={testSuiteStreamContent}
+              runResults={testSuiteRunResults}
+              isRunning={testSuiteRunning}
+              onGenerate={handleGenerateTestSuite}
+              onRegenerate={handleGenerateTestSuite}
+              onDelete={handleDeleteTestSuite}
+              onRunAll={handleRunTestSuite}
+              onCancel={handleCancelTestSuite}
+            />
+          </div>
         )}
 
         {activeTab === "solution" && (

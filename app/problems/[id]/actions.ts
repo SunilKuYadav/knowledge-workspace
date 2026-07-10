@@ -197,7 +197,7 @@ export async function saveProblemEvaluation(
 }
 
 import type { SolutionEntry } from "@/src/filesystem/FileProblemRepository";
-import type { VariationPracticeEntry } from "@/types";
+import type { VariationPracticeEntry, GeneratedTestSuite } from "@/types";
 
 /**
  * Retrieves all structured solutions for a problem.
@@ -351,6 +351,56 @@ export async function addVariationPracticeEntry(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to add practice entry",
+    };
+  }
+}
+
+
+// ─── Generated Test Suite Actions ───────────────────────────────────────────
+
+/**
+ * Gets the generated test suite for a specific target (main problem or variation).
+ */
+export async function getGeneratedTestSuite(
+  problemId: string,
+  targetId: string,
+): Promise<GeneratedTestSuite | null> {
+  try {
+    const repo = new FileProblemRepository(getWorkspacePath());
+    const desc = await repo.getDescription(problemId);
+    if (!desc) return null;
+    return desc.generatedTestSuites?.find((s) => s.targetId === targetId) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Deletes the generated test suite for a specific target.
+ */
+export async function deleteGeneratedTestSuite(
+  problemId: string,
+  targetId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const repo = new FileProblemRepository(getWorkspacePath());
+    const desc = await repo.getDescription(problemId);
+    if (!desc) return { success: false, error: "Description not found" };
+
+    const suites = desc.generatedTestSuites || [];
+    const filtered = suites.filter((s) => s.targetId !== targetId);
+
+    await repo.saveDescription(problemId, {
+      ...desc,
+      generatedTestSuites: filtered,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to delete test suite",
     };
   }
 }

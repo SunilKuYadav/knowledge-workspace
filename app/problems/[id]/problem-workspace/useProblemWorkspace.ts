@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import type { ProblemDescription } from "@/types";
+import type { GeneratedTestSuite } from "@/types";
 import { executeCode } from "@/app/coding-interview/services/executionService";
 import { EXECUTION_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import type { ExecutionResult } from "@/app/coding-interview/lib/types";
-import { saveProblemDraft, saveProblemNotes, updateProblemStatus, overwriteProblemSolution, saveProblemEvaluation, addStructuredSolution, updateStructuredSolution, getStructuredSolutions, updateVariationStatus, addVariationPracticeEntry } from "../actions";
+import { saveProblemDraft, saveProblemNotes, updateProblemStatus, overwriteProblemSolution, saveProblemEvaluation, addStructuredSolution, updateStructuredSolution, getStructuredSolutions, updateVariationStatus, addVariationPracticeEntry, deleteGeneratedTestSuite } from "../actions";
 import type { SolutionEntry } from "@/src/filesystem/FileProblemRepository";
 import { rateRevision } from "@/app/revision/actions";
 import type { Tab, ProblemWorkspaceProps, SolutionEvaluation, PracticeTarget } from "./types";
@@ -883,6 +884,193 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     }
   }, [problem.id]);
 
+  // ─── Test Suite: Generate, Run, Delete ────────────────────────────────────
+  const [testSuite, setTestSuite] = useState<GeneratedTestSuite | null>(() => {
+    const targetId = "main";
+    return initialDescription?.generatedTestSuites?.find((s) => s.targetId === targetId) ?? null;
+  });
+  const [testSuiteGenerating, setTestSuiteGenerating] = useState(false);
+  const [testSuiteStreamContent, setTestSuiteStreamContent] = useState("");
+  const [testSuiteRunResults, setTestSuiteRunResults] = useState<import("@/app/coding-interview/lib/types").TestCaseResult[] | null>(null);
+  const [testSuiteRunning, setTestSuiteRunning] = useState(false);
+  const testSuiteAbortRef = useRef<AbortController | null>(null);
+
+  // Update test suite when practice target changes
+  useEffect(() => {
+    const targetId = practiceTarget.type === "main" ? "main" : (practiceTarget.variationId || "main");
+    const suite = desc?.generatedTestSuites?.find((s) => s.targetId === targetId) ?? null;
+    setTestSuite(suite);
+    setTestSuiteRunResults(null);
+  }, [practiceTarget, desc]);
+
+  const handleGenerateTestSuite = useCallback(async () => {
+    if (!desc || testSuiteGenerating) return;
+    setTestSuiteGenerating(true);
+    setTestSuiteStreamContent("");
+    setTestSuiteRunResults(null);
+
+    const controller = new AbortController();
+    testSuiteAbortRef.current = controller;
+
+    const targetId = practiceTarget.type === "main" ? "main" : (practiceTarget.variationId || "main");
+
+    // Build request body based on practice target
+    let reqBody: Record<string, unknown>;
+    if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+      const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+      if (!variation) {
+        setTestSuiteGenerating(false);
+        return;
+      }
+      reqBody = {
+        problemId: problem.id,
+        targetId,
+        title: variation.title,
+        description: variation.description,
+        difficulty: variation.difficulty,
+        patterns: variation.tags || problem.patterns,
+        constraints: variation.constraints || [],
+        inputFormat: variation.inputFormat,
+        outputFormat: variation.outputFormat,
+        boilerplate: variation.boilerplate,
+        existingTestCases: variation.testCases,
+        semanticDescription: problem.semanticDescription,
+      };
+    } else {
+      reqBody = {
+        problemId: problem.id,
+        targetId,
+        title: problem.title,
+        description: desc.description,
+        difficulty: problem.difficulty,
+        patterns: problem.patterns,
+        constraints: desc.constraints,
+        inputFormat: desc.inputFormat,
+        outputFormat: desc.outputFormat,
+        boilerplate: desc.boilerplate,
+        existingTestCases: [...desc.examples, ...desc.testCases],
+        semanticDescription: problem.semanticDescription,
+      };
+    }
+
+    try {
+      const res = await fetch("/api/ai/problem/generate-test-cases", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-stream": "true",
+        },
+        body: JSON.stringify(reqBody),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) throw new Error("Generation failed");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const json = line.slice(6);
+          try {
+            const event = JSON.parse(json);
+            if (event.type === "token") {
+              setTestSuiteStreamContent((prev) => prev + event.content);
+            } else if (event.type === "done") {
+              setTestSuite(event.testSuite);
+              // Update desc state to include the new test suite
+              setDesc((prev) => {
+                if (!prev) return prev;
+                const suites = prev.generatedTestSuites || [];
+                const idx = suites.findIndex((s) => s.targetId === targetId);
+                const updatedSuites = idx >= 0
+                  ? suites.map((s, i) => (i === idx ? event.testSuite : s))
+                  : [...suites, event.testSuite];
+                return { ...prev, generatedTestSuites: updatedSuites };
+              });
+              setTestSuiteStreamContent("");
+            } else if (event.type === "error") {
+              // User can retry
+            }
+          } catch {
+            // Skip malformed events
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name !== "AbortError") {
+        // User can retry
+      }
+    } finally {
+      setTestSuiteGenerating(false);
+      testSuiteAbortRef.current = null;
+    }
+  }, [desc, problem, practiceTarget, testSuiteGenerating]);
+
+  const handleCancelTestSuite = useCallback(() => {
+    if (testSuiteAbortRef.current) {
+      testSuiteAbortRef.current.abort();
+      testSuiteAbortRef.current = null;
+    }
+    setTestSuiteGenerating(false);
+    setTestSuiteStreamContent("");
+  }, []);
+
+  const handleDeleteTestSuite = useCallback(async () => {
+    const targetId = practiceTarget.type === "main" ? "main" : (practiceTarget.variationId || "main");
+    await deleteGeneratedTestSuite(problem.id, targetId);
+    setTestSuite(null);
+    setTestSuiteRunResults(null);
+    // Update desc state
+    setDesc((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        generatedTestSuites: (prev.generatedTestSuites || []).filter(
+          (s) => s.targetId !== targetId,
+        ),
+      };
+    });
+  }, [problem.id, practiceTarget]);
+
+  const handleRunTestSuite = useCallback(async () => {
+    if (!testSuite || testSuiteRunning || !code.trim()) return;
+    setTestSuiteRunning(true);
+    setTestSuiteRunResults(null);
+
+    try {
+      // Flatten all test cases across categories
+      const allTestCases = testSuite.categories.flatMap((cat) =>
+        cat.testCases.map((tc) => ({
+          input: parseTestCaseInput(tc.input),
+          expectedOutput: parseTestCaseValue(tc.expectedOutput),
+        })),
+      );
+
+      const result = await executeCode({
+        code,
+        language: "typescript",
+        testCases: allTestCases,
+        timeout: EXECUTION_TIMEOUT,
+      });
+
+      setTestSuiteRunResults(result.testResults);
+    } catch {
+      setTestSuiteRunResults(null);
+    } finally {
+      setTestSuiteRunning(false);
+    }
+  }, [testSuite, testSuiteRunning, code]);
+
   return {
     activeTab,
     setActiveTab,
@@ -928,5 +1116,15 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     pendingSolution,
     handleConfirmSaveSolution,
     handleDismissPendingSolution,
+    // Test Suite
+    testSuite,
+    testSuiteGenerating,
+    testSuiteStreamContent,
+    testSuiteRunResults,
+    testSuiteRunning,
+    handleGenerateTestSuite,
+    handleCancelTestSuite,
+    handleDeleteTestSuite,
+    handleRunTestSuite,
   };
 }

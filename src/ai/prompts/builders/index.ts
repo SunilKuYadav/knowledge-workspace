@@ -52,11 +52,13 @@ export {
   buildGenerateDescriptionPrompt,
   buildGenerateNotePrompt,
   buildGenerateVariationPrompt,
+  buildGenerateTestCasesPrompt,
 } from "./problem";
 export type {
   GenerateDescriptionParams,
   GenerateNoteParams,
   GenerateVariationParams,
+  GenerateTestCasesParams,
 } from "./problem";
 
 // ─── Creation Assist Module ─────────────────────────────────────────────────

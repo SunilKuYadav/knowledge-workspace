@@ -12,12 +12,14 @@ export {
   ProblemVariationSchema,
   VariationPracticeEntrySchema,
   TestCaseSchema,
+  GeneratedTestSuiteSchema,
 } from "./ProblemDescription";
 export type {
   ProblemDescription,
   ProblemVariation,
   VariationPracticeEntry,
   TestCase as ProblemTestCase,
+  GeneratedTestSuite,
 } from "./ProblemDescription";
 
 export { ArtifactSchema, ARTIFACT_LABELS, ARTIFACT_ORDER } from "./Artifact";
