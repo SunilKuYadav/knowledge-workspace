@@ -130,3 +130,14 @@ export function getInferenceConfig(
 ): ModelConfig {
   return { ...MODEL_CONFIG[tier], ...overrides };
 }
+
+// | Setting               | Purpose                                | Why this value?                                            |
+// | --------------------- | -------------------------------------- | ---------------------------------------------------------- |
+// | `model`               | Select the coding-specialized model    | Better at code generation than a general model             |
+// | `contextLength`       | Maximum prompt + response window       | Large enough for long system prompts, code, and history    |
+// | `temperature: 0.15`   | Reduce randomness                      | Produces consistent, reliable code                         |
+// | `topP: 0.9`           | Filter out unlikely token choices      | Keeps responses coherent without being overly restrictive  |
+// | `topK: 40`            | Consider only the top candidate tokens | Balances quality and diversity                             |
+// | `repeatPenalty: 1.02` | Discourage repetitive text             | Prevents loops while allowing necessary repetition in code |
+// | `maxTokens: 6144`     | Maximum response length                | Accommodates full implementations, explanations, and tests |
+// | `stream: true`        | Return tokens as they're generated     | Improves perceived responsiveness for the user             |
