@@ -1,9 +1,30 @@
-export { createAIClient } from "./client";
-export type { AIClient, AIClientOptions } from "./client";
+export { createAIClient, modelConfigToParams } from "./client";
+export type { AIClient, AIClientOptions, InferenceParams } from "./client";
+
+// New config system (preferred)
+export {
+  CONTEXT_PROFILE,
+  MODEL_CONFIG,
+  getInferenceConfig,
+  getTierForRoute,
+  getModelCapabilities,
+  resolveInference,
+  resolveInferenceForTier,
+  toRequestParams,
+} from "./config";
+export type {
+  ModelTier,
+  ModelConfig,
+  ModelCapabilities,
+  ContextProfileKey,
+  InferenceRequest,
+} from "./config";
+
+// Legacy exports — thin wrappers for backward compatibility
 export { getModelForRoute, getModel, getAllModels } from "./model-router";
-export type { ModelTier } from "./model-router";
+
 export { modelManager, ensureModelLoaded } from "./model-manager";
-export { getReadyClient, getReadyClientForTier } from "./llm";
+export { getReadyClient, getReadyClientForTier, getInferenceConfigForRoute } from "./llm";
 
 export { logInput, logOutput, logError, installAIFetchLogger } from "./logger";
 

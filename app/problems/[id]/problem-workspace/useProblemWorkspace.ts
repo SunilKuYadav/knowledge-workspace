@@ -610,6 +610,177 @@ Write in clean Markdown. Be concise but thorough.`,
     }
   }, [desc, code, isExecuting, problem.id, problem.status, practiceTarget]);
 
+  // Run code against a single test case by index
+  const handleRunSingleTestCase = useCallback(async (testCaseIndex: number) => {
+    if (!desc || isExecuting) return;
+    setIsExecuting(true);
+    try {
+      let examples: { input: string; expectedOutput: string }[] = [];
+      let hiddenTestCases: { input: string; expectedOutput: string }[] = [];
+
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        if (variation) {
+          examples = variation.samples?.map((s) => ({ input: s.input, expectedOutput: s.output })) || [];
+          hiddenTestCases = variation.testCases;
+        }
+      } else {
+        examples = desc.examples;
+        hiddenTestCases = desc.testCases;
+      }
+
+      const allRawCases = [...examples, ...hiddenTestCases];
+      if (testCaseIndex < 0 || testCaseIndex >= allRawCases.length) return;
+
+      const targetCase = allRawCases[testCaseIndex];
+      const testCases = [{
+        input: parseTestCaseInput(targetCase.input),
+        expectedOutput: parseTestCaseValue(targetCase.expectedOutput),
+      }];
+
+      const result = await executeCode({
+        code,
+        language: "typescript",
+        testCases,
+        timeout: EXECUTION_TIMEOUT,
+      });
+
+      // Merge single result into the full results array
+      setExecutionResult((prev) => {
+        const totalCases = allRawCases.length;
+        // Build base array: either copy previous results or create empty slots
+        const baseResults = prev && prev.testResults.length === totalCases
+          ? [...prev.testResults]
+          : Array.from({ length: totalCases }, (_, i) =>
+              prev?.testResults?.[i] ?? undefined
+            );
+
+        // Place the new result at the target index
+        baseResults[testCaseIndex] = result.testResults[0];
+
+        return {
+          consoleOutput: result.consoleOutput,
+          testResults: baseResults.map((r) =>
+            r ?? { input: null, expectedOutput: null, actualOutput: undefined, passed: false, executionTimeMs: 0 }
+          ) as ExecutionResult["testResults"],
+          executionTimeMs: result.executionTimeMs,
+          memoryUsageMb: result.memoryUsageMb,
+        };
+      });
+    } catch {
+      // Don't overwrite all results on single test case failure
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [desc, code, isExecuting, practiceTarget]);
+
+  // ─── Validate Test Cases ──────────────────────────────────────────────────
+  const [validationResults, setValidationResults] = useState<{
+    index: number;
+    input: string;
+    expectedOutput: string;
+    isValid: boolean;
+    correctedOutput?: string;
+    reason?: string;
+  }[] | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+
+  const handleValidateTestCases = useCallback(async () => {
+    if (!desc || isValidating) return;
+    setIsValidating(true);
+    setValidationResults(null);
+
+    try {
+      let title: string;
+      let description: string;
+      let constraints: string[];
+      let inputFormat: string | undefined;
+      let outputFormat: string | undefined;
+      let boilerplate: string | undefined;
+      let testCases: { input: string; expectedOutput: string }[];
+      let variationId: string | undefined;
+
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        if (!variation) { setIsValidating(false); return; }
+        title = variation.title;
+        description = variation.description;
+        constraints = variation.constraints || [];
+        inputFormat = variation.inputFormat;
+        outputFormat = variation.outputFormat;
+        boilerplate = variation.boilerplate;
+        variationId = variation.id;
+        const samples = (variation.samples || []).map((s) => ({ input: s.input, expectedOutput: s.output }));
+        testCases = [...samples, ...variation.testCases];
+      } else {
+        title = problem.title;
+        description = desc.description;
+        constraints = desc.constraints;
+        inputFormat = desc.inputFormat;
+        outputFormat = desc.outputFormat;
+        boilerplate = desc.boilerplate;
+        testCases = [...desc.examples, ...desc.testCases];
+      }
+
+      const res = await fetch("/api/ai/problem/validate-test-cases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problemId: problem.id,
+          variationId,
+          title,
+          description,
+          constraints,
+          inputFormat,
+          outputFormat,
+          boilerplate,
+          testCases,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Validation request failed");
+      const data = await res.json();
+      setValidationResults(data.results);
+    } catch {
+      // Validation failed silently
+    } finally {
+      setIsValidating(false);
+    }
+  }, [desc, problem, practiceTarget, isValidating]);
+
+  const handleApplyTestCaseCorrections = useCallback(async () => {
+    if (!validationResults || !desc) return;
+
+    const corrections = validationResults
+      .filter((r) => !r.isValid && r.correctedOutput)
+      .map((r) => ({ index: r.index, correctedOutput: r.correctedOutput! }));
+
+    if (corrections.length === 0) return;
+
+    try {
+      const variationId = practiceTarget.type === "variation" ? practiceTarget.variationId : undefined;
+      const res = await fetch("/api/ai/problem/validate-test-cases", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problemId: problem.id,
+          variationId,
+          corrections,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Apply corrections failed");
+      const data = await res.json();
+
+      if (data.success && data.description) {
+        setDesc(data.description);
+      }
+      setValidationResults(null);
+    } catch {
+      // Silent failure
+    }
+  }, [validationResults, desc, problem.id, practiceTarget]);
+
   // Get hint/suggestion when stuck — acts like an interviewer giving hints
 
   const handleGetHint = useCallback(async () => {
@@ -1101,6 +1272,11 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     isRegeneratingNotes,
     handleGenerateVariation,
     handleRunCode,
+    handleRunSingleTestCase,
+    handleValidateTestCases,
+    handleApplyTestCaseCorrections,
+    validationResults,
+    isValidating,
     evaluation,
     isEvaluating,
     handleEvaluateSolution,

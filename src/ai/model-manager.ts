@@ -28,18 +28,10 @@ const LOAD_TIMEOUT_MS = 120_000;
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 /**
- * Recommended context lengths per model.
- * Balances output quality, memory usage, and time-to-first-token.
- *
- * - teaching (30B MoE, max 40K): 16K — long prompts with system modules + content + reasoning
- * - coding (30B MoE, max 262K): 16K — problem + code + evaluation fits easily
- * - fast (14B dense, max 131K): 8K — short utility tasks, keep lean for speed
+ * Context lengths are now provided by the inference config system
+ * (src/ai/config/model-config.ts) and passed as a parameter to ensure().
+ * This removes the duplication of hardcoded values.
  */
-const MODEL_CONTEXT_LENGTH: Record<string, number> = {
-  "qwen3-30b-a3b-mlx": 16_384,
-  "qwen3-coder-30b-a3b-instruct-mlx": 16_384,
-  "qwen2.5-coder-14b-instruct": 8_192,
-};
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -95,9 +87,12 @@ class ModelManager {
    * If the model is already loaded, this is a no-op.
    * If a different model is loaded, it will be unloaded first.
    *
+   * @param model - Model identifier to load
+   * @param contextLength - Context window size to allocate (from inference config)
+   *
    * Uses a lock (promise) to prevent concurrent load/unload races.
    */
-  async ensure(model: string): Promise<void> {
+  async ensure(model: string, contextLength?: number): Promise<void> {
     // Fast path: already loaded
     if (this.currentModel === model) {
       return;
@@ -112,7 +107,7 @@ class ModelManager {
     }
 
     // Start the load sequence
-    this.loading = this._loadSequence(model);
+    this.loading = this._loadSequence(model, contextLength);
     try {
       await this.loading;
     } finally {
@@ -166,7 +161,7 @@ class ModelManager {
 
   // ─── Private ────────────────────────────────────────────────────────────
 
-  private async _loadSequence(model: string): Promise<void> {
+  private async _loadSequence(model: string, contextLength?: number): Promise<void> {
     // Check what's actually loaded in LM Studio
     const loadedModels = await this._getLoadedInstanceIds();
 
@@ -189,7 +184,7 @@ class ModelManager {
     }
 
     // Load the requested model
-    await this._load(model);
+    await this._load(model, contextLength);
     this.currentModel = model;
   }
 
@@ -232,14 +227,13 @@ class ModelManager {
     }
   }
 
-  private async _load(model: string): Promise<void> {
+  private async _load(model: string, contextLength?: number): Promise<void> {
     logger.info("model-manager", `Loading model: ${model}`);
     const startTime = Date.now();
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), LOAD_TIMEOUT_MS);
 
-    const contextLength = MODEL_CONTEXT_LENGTH[model];
     const body: Record<string, unknown> = { model };
     if (contextLength) {
       body.context_length = contextLength;
@@ -317,16 +311,19 @@ export const modelManager = new ModelManager();
  * Convenience function for use in API routes.
  * Ensures the model for a given route is loaded before inference.
  *
+ * @param model - Model identifier to load
+ * @param contextLength - Context window size (from inference config)
+ *
  * @example
  * ```ts
  * import { ensureModelLoaded } from "@/ai";
- * import { getModelForRoute } from "@/ai";
+ * import { resolveInference } from "@/ai/config";
  *
- * const model = getModelForRoute("ai/generate-artifact");
- * await ensureModelLoaded(model);
+ * const config = resolveInference("ai/generate-artifact");
+ * await ensureModelLoaded(config.model, config.contextLength);
  * // Now safe to call OpenAI-compatible endpoint
  * ```
  */
-export async function ensureModelLoaded(model: string): Promise<void> {
-  await modelManager.ensure(model);
+export async function ensureModelLoaded(model: string, contextLength?: number): Promise<void> {
+  await modelManager.ensure(model, contextLength);
 }

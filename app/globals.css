@@ -2,51 +2,58 @@
 @import "highlight.js/styles/github.css";
 @plugin "@tailwindcss/typography";
 
-/* Dark mode: override highlight.js theme */
+/* Dark mode: VS Code Dark+ inspired theme (all colors ≥ 9:1 contrast on #1e1e1e) */
 @media (prefers-color-scheme: dark) {
   .hljs {
-    background: #1e1e2e;
-    color: #cdd6f4;
+    background: #1e1e1e;
+    color: #d4d4d4;
   }
   .hljs-keyword,
   .hljs-selector-tag,
   .hljs-built_in,
   .hljs-name,
   .hljs-tag {
-    color: #cba6f7;
+    color: #7cb8e8;
   }
   .hljs-string,
-  .hljs-title,
-  .hljs-section,
   .hljs-attribute,
-  .hljs-literal,
   .hljs-template-tag,
   .hljs-template-variable,
-  .hljs-type,
   .hljs-addition {
-    color: #a6e3a1;
+    color: #e4ad94;
+  }
+  .hljs-title,
+  .hljs-section {
+    color: #dcdcaa;
+  }
+  .hljs-type,
+  .hljs-literal {
+    color: #4ec9b0;
   }
   .hljs-comment,
   .hljs-quote,
   .hljs-deletion,
   .hljs-meta {
-    color: #6c7086;
+    color: #98c379;
+    font-style: italic;
   }
   .hljs-number,
-  .hljs-regexp,
+  .hljs-regexp {
+    color: #b5cea8;
+  }
   .hljs-selector-id,
   .hljs-selector-class {
-    color: #fab387;
+    color: #dcdcaa;
   }
   .hljs-variable,
   .hljs-params {
-    color: #f5c2e7;
+    color: #9cdcfe;
   }
   .hljs-function {
-    color: #89b4fa;
+    color: #dcdcaa;
   }
   .hljs-title.function_ {
-    color: #89b4fa;
+    color: #dcdcaa;
   }
 }
 

@@ -20,6 +20,7 @@ import {
   SummaryPanel,
   ConfirmDialog,
 } from "./components";
+import type { FullscreenActions, FullscreenPanelData } from "./components/code-editor/types";
 
 /**
  * Top-level InterviewModule component.
@@ -47,6 +48,7 @@ export function InterviewModule(props: InterviewModuleProps) {
   const language = useInterviewStore((s) => s.language);
   const duration = useInterviewStore((s) => s.duration);
   const lastExecutionResult = useInterviewStore((s) => s.lastExecutionResult);
+  const evaluation = useInterviewStore((s) => s.evaluation);
   const conversationHistory = useInterviewStore((s) => s.conversationHistory);
   const scoringReport = useInterviewStore((s) => s.scoringReport);
   const sessionSummary = useInterviewStore((s) => s.sessionSummary);
@@ -292,6 +294,20 @@ export function InterviewModule(props: InterviewModuleProps) {
 
   // Coding / Executing / Confirming phase
   if (phase === "coding" || phase === "executing" || phase === "confirming") {
+    const fullscreenActions: FullscreenActions = {
+      onRun: runCode,
+      onHint: handleRequestHint,
+      onEvaluate: handleSubmitClick,
+      isExecuting,
+      isHintLoading,
+    };
+
+    const fullscreenPanelData: FullscreenPanelData = {
+      executionResult: lastExecutionResult,
+      testResults: lastExecutionResult?.testResults ?? [],
+      evaluation,
+    };
+
     return (
       <div className="h-screen bg-zinc-50 dark:bg-zinc-950 p-4 flex flex-col overflow-hidden">
         {/* Timer at top */}
@@ -326,6 +342,8 @@ export function InterviewModule(props: InterviewModuleProps) {
                 onChange={setCode}
                 language={language}
                 boilerplate={problem?.boilerplate ?? ""}
+                fullscreenActions={fullscreenActions}
+                fullscreenPanelData={fullscreenPanelData}
               />
             </div>
 

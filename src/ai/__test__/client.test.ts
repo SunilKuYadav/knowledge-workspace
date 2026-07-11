@@ -99,7 +99,7 @@ describe("createAIClient", () => {
         body: stream,
       });
 
-      const client = createAIClient({ baseUrl, apiKey, defaultModel: "gpt-4" });
+      const client = createAIClient({ baseUrl, apiKey, defaults: { model: "gpt-4" } });
       const chunks: string[] = [];
 
       for await (const chunk of client.generate("test prompt")) {
@@ -142,7 +142,7 @@ describe("createAIClient", () => {
 
       const client = createAIClient({ baseUrl, apiKey });
       const chunks: string[] = [];
-      for await (const chunk of client.generate("test", "gpt-4o")) {
+      for await (const chunk of client.generate("test", { model: "gpt-4o" })) {
         chunks.push(chunk);
       }
 

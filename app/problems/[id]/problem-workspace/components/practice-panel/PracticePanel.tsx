@@ -5,14 +5,15 @@ import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
 import {
   CodeEditor,
   ConsolePanel,
-  TestCasePanel,
 } from "@/app/coding-interview/components";
 import type { ProblemDescription, Problem } from "@/types";
 import type { ExecutionResult } from "@/app/coding-interview/lib/types";
+import type { FullscreenActions, FullscreenPanelData } from "@/app/coding-interview/components/code-editor/types";
 import type { SolutionEvaluation, PracticeTarget } from "../../types";
 import type { SolutionEntry } from "@/src/filesystem/FileProblemRepository";
 import { CollapsibleSection } from "../collapsible-section";
 import { ConfidenceIndicator } from "../confidence-indicator";
+import { TestCaseList } from "./TestCaseList";
 
 export interface PracticePanelProps {
   problem: Problem;
@@ -30,6 +31,18 @@ export interface PracticePanelProps {
   isEvaluating: boolean;
   handleGenerateDescription: () => void;
   handleRunCode: () => void;
+  handleRunSingleTestCase: (testCaseIndex: number) => void;
+  handleValidateTestCases: () => void;
+  handleApplyTestCaseCorrections: () => void;
+  validationResults: {
+    index: number;
+    input: string;
+    expectedOutput: string;
+    isValid: boolean;
+    correctedOutput?: string;
+    reason?: string;
+  }[] | null;
+  isValidating: boolean;
   handleGenerateNote: () => void;
   handleGenerateVariation: (upgradeVariationId?: string) => void;
   handleCancelNote: () => void;
@@ -63,6 +76,11 @@ export function PracticePanel({
   isEvaluating,
   handleGenerateDescription,
   handleRunCode,
+  handleRunSingleTestCase,
+  handleValidateTestCases,
+  handleApplyTestCaseCorrections,
+  validationResults,
+  isValidating,
   handleGenerateNote,
   handleGenerateVariation,
   handleCancelNote,
@@ -334,6 +352,45 @@ export function PracticePanel({
             onChange={setCode}
             language="typescript"
             boilerplate={currentDescription?.boilerplate || "// Write your solution\n"}
+            fullscreenActions={{
+              onRun: handleRunCode,
+              onHint: () => handleGetHint(),
+              onNote: allTestsPassed ? handleGenerateNote : undefined,
+              onVariation: allTestsPassed ? () => handleGenerateVariation() : undefined,
+              onEvaluate: handleEvaluateSolution,
+              isExecuting,
+              isHintLoading: isGettingHint,
+              isEvaluating,
+              isNoteGenerating: isGenNote,
+              isVariationLoading: variationLoading,
+            }}
+            fullscreenPanelData={{
+              executionResult,
+              testResults: executionResult?.testResults ?? [],
+              evaluation: null,
+              evaluationContent: evaluation ? (
+                <PracticeEvaluationContent evaluation={evaluation} />
+              ) : undefined,
+              testCaseContent: (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="min-w-0">
+                      <ConsolePanel result={executionResult} isExecuting={isExecuting} />
+                    </div>
+                    <div className="min-w-0">
+                      <TestCaseList
+                        desc={desc}
+                        practiceTarget={practiceTarget}
+                        executionResult={executionResult}
+                        isExecuting={isExecuting}
+                        onRunSingle={handleRunSingleTestCase}
+                        validationResults={validationResults}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ),
+            }}
           />
         </div>
 
@@ -390,24 +447,110 @@ export function PracticePanel({
         {/* Console + Test Results */}
         <div className="shrink-0 max-h-[40%] overflow-y-auto">
           <CollapsibleSection
-            title="Test Results"
+            title="Test Cases"
             defaultOpen={true}
-            count={executionResult?.testResults?.length}
+            count={(() => {
+              if (!desc) return 0;
+              if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+                const v = desc.variations?.find((vr) => vr.id === practiceTarget.variationId);
+                if (v) return (v.samples?.length || 0) + (v.testCases?.length || 0);
+              }
+              return desc.examples.length + desc.testCases.length;
+            })()}
           >
-            {executionResult && !executionResult.error && executionResult.testResults.length > 0 && (
-              <div className="mb-3">
-                <ConfidenceIndicator testResults={executionResult.testResults} />
+            {/* Run All + Validate buttons */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                {executionResult && !executionResult.error && executionResult.testResults.length > 0 && (
+                  <ConfidenceIndicator testResults={executionResult.testResults} />
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleValidateTestCases}
+                  disabled={isValidating || !desc}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                >
+                  {isValidating ? (
+                    <>
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Validating...
+                    </>
+                  ) : (
+                    <>🔍 Validate</>
+                  )}
+                </button>
+                <button
+                  onClick={handleRunCode}
+                  disabled={isExecuting || !desc}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                >
+                  {isExecuting ? (
+                    <>
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Running...
+                    </>
+                  ) : (
+                    <>▶ Run All</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Validation results banner */}
+            {validationResults && (
+              <div className="mb-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                    {validationResults.filter((r) => !r.isValid).length === 0
+                      ? "✓ All test cases are valid"
+                      : `⚠ ${validationResults.filter((r) => !r.isValid).length} test case(s) have incorrect expected outputs`}
+                  </span>
+                  {validationResults.some((r) => !r.isValid) && (
+                    <button
+                      onClick={handleApplyTestCaseCorrections}
+                      className="px-2.5 py-1 text-[11px] font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 transition-colors"
+                    >
+                      Apply Corrections
+                    </button>
+                  )}
+                </div>
+                {validationResults.filter((r) => !r.isValid).map((r) => (
+                  <div key={r.index} className="text-xs text-zinc-600 dark:text-zinc-400 mt-1.5 pl-2 border-l-2 border-amber-300 dark:border-amber-700">
+                    <span className="font-medium">Case {r.index + 1}:</span>{" "}
+                    <span className="text-red-600 dark:text-red-400 line-through">{r.expectedOutput}</span>
+                    {" → "}
+                    <span className="text-green-600 dark:text-green-400">{r.correctedOutput}</span>
+                    {r.reason && <span className="text-zinc-400 ml-1">({r.reason})</span>}
+                  </div>
+                ))}
               </div>
             )}
+
+            {/* Console + Test cases side by side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ConsolePanel
-                result={executionResult}
-                isExecuting={isExecuting}
-              />
-              <TestCasePanel
-                results={executionResult?.testResults ?? []}
-                isExecuting={isExecuting}
-              />
+              {/* Console output */}
+              <div className="min-w-0">
+                <ConsolePanel result={executionResult} isExecuting={isExecuting} />
+              </div>
+
+              {/* Individual test cases */}
+              <div className="min-w-0">
+                <TestCaseList
+                  desc={desc}
+                  practiceTarget={practiceTarget}
+                  executionResult={executionResult}
+                  isExecuting={isExecuting}
+                  onRunSingle={handleRunSingleTestCase}
+                  validationResults={validationResults}
+                />
+              </div>
             </div>
           </CollapsibleSection>
         </div>
@@ -573,7 +716,7 @@ export function PracticePanel({
                   )}
                 </div>
               </div>
-              <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none">
+              <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none overflow-y-auto max-h-90">
                 <MarkdownRenderer>{isGettingHint ? hintStreamContent : (hint || "")}</MarkdownRenderer>
               </div>
             </div>
@@ -602,6 +745,109 @@ export function PracticePanel({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Evaluation content rendered inside fullscreen mode's Evaluation tab.
+ */
+function PracticeEvaluationContent({ evaluation }: { evaluation: SolutionEvaluation }) {
+  return (
+    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div
+            className={`text-2xl font-bold ${
+              evaluation.overallScore >= 80
+                ? "text-green-600 dark:text-green-400"
+                : evaluation.overallScore >= 60
+                  ? "text-yellow-600 dark:text-yellow-400"
+                  : evaluation.overallScore >= 40
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {evaluation.overallScore}/100
+          </div>
+          <div className="text-sm text-zinc-600 dark:text-zinc-400">
+            {evaluation.feedback}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-4 text-xs">
+        <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+          Time: <code className="font-mono">{evaluation.complexity.time}</code>
+        </span>
+        <span className="px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+          Space: <code className="font-mono">{evaluation.complexity.space}</code>
+        </span>
+      </div>
+
+      {evaluation.strengths.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-green-700 dark:text-green-400 uppercase mb-1">
+            ✓ Strengths
+          </h4>
+          <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            {evaluation.strengths.map((s, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-green-500 shrink-0">•</span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {evaluation.improvements.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase mb-1">
+            ↑ Improvements
+          </h4>
+          <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            {evaluation.improvements.map((s, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-amber-500 shrink-0">•</span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {evaluation.edgeCases && evaluation.edgeCases.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-blue-700 dark:text-blue-400 uppercase mb-1">
+            Edge Cases
+          </h4>
+          <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            {evaluation.edgeCases.map((s, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-blue-500 shrink-0">•</span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {evaluation.alternativeApproaches && evaluation.alternativeApproaches.length > 0 && (
+        <div>
+          <h4 className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase mb-1">
+            Alternative Approaches
+          </h4>
+          <ul className="text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
+            {evaluation.alternativeApproaches.map((s, i) => (
+              <li key={i} className="flex gap-1.5">
+                <span className="text-indigo-500 shrink-0">•</span>
+                {s}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

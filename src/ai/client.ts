@@ -12,16 +12,32 @@
 import { logInput, logOutput, logError } from "./logger";
 import { addLogEntry, emitStreamChunk } from "./log-store";
 import { logger } from "../lib/logger";
+import type { ModelConfig } from "./config";
+
+/**
+ * Inference parameters that can be passed per-request.
+ * These map to the OpenAI chat completions API (with local extensions).
+ */
+export interface InferenceParams {
+  model?: string;
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  max_tokens?: number;
+  repeat_penalty?: number;
+  stream?: boolean;
+}
 
 export interface AIClient {
   isAvailable(): Promise<boolean>;
-  generate(prompt: string, model?: string): AsyncGenerator<string>;
+  generate(prompt: string, params?: InferenceParams): AsyncGenerator<string>;
 }
 
 export interface AIClientOptions {
   baseUrl: string;
   apiKey?: string;
-  defaultModel?: string;
+  /** Default inference params applied to every request (can be overridden per-call) */
+  defaults?: InferenceParams;
 }
 
 /**
@@ -30,10 +46,10 @@ export interface AIClientOptions {
  * @param options - Configuration for the AI client
  * @param options.baseUrl - The API base URL (e.g., "http://127.0.0.1:1234/v1")
  * @param options.apiKey - Optional API key for authentication
- * @param options.defaultModel - Default model to use (defaults to "gpt-3.5-turbo")
+ * @param options.defaults - Default inference params (model, temperature, etc.)
  */
 export function createAIClient(options: AIClientOptions): AIClient {
-  const { baseUrl, apiKey, defaultModel = "gpt-3.5-turbo" } = options;
+  const { baseUrl, apiKey, defaults = {} } = options;
 
   return {
     async isAvailable(): Promise<boolean> {
@@ -55,8 +71,13 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
     async *generate(
       prompt: string,
-      model: string = defaultModel,
+      params?: InferenceParams,
     ): AsyncGenerator<string> {
+      // Merge: defaults (from tier config) → per-call overrides
+      const merged: InferenceParams = { ...defaults, ...params };
+      const model = merged.model ?? "gpt-3.5-turbo";
+      const stream = merged.stream ?? true;
+
       logInput(prompt, model);
       let fullResponse = "";
 
@@ -68,14 +89,25 @@ export function createAIClient(options: AIClientOptions): AIClient {
           headers["Authorization"] = `Bearer ${apiKey}`;
         }
 
+        // Build the request body with all inference parameters
+        const body: Record<string, unknown> = {
+          model,
+          messages: [{ role: "user", content: prompt }],
+          stream,
+        };
+
+        // Only include params that are explicitly set (avoid sending undefined)
+        if (merged.temperature !== undefined) body.temperature = merged.temperature;
+        if (merged.top_p !== undefined) body.top_p = merged.top_p;
+        if (merged.max_tokens !== undefined) body.max_tokens = merged.max_tokens;
+        // Local inference server extensions (LM Studio, llama.cpp, Ollama)
+        if (merged.top_k !== undefined) body.top_k = merged.top_k;
+        if (merged.repeat_penalty !== undefined) body.repeat_penalty = merged.repeat_penalty;
+
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
           headers,
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }],
-            stream: true,
-          }),
+          body: JSON.stringify(body),
         });
 
         if (!response.ok || !response.body) {
@@ -83,6 +115,22 @@ export function createAIClient(options: AIClientOptions): AIClient {
           return;
         }
 
+        // Non-streaming mode: read the full response at once
+        if (!stream) {
+          const data = (await response.json()) as {
+            choices?: Array<{ message?: { content?: string } }>;
+          };
+          const content = data.choices?.[0]?.message?.content ?? "";
+          if (content) {
+            fullResponse = content;
+            yield content;
+          }
+          logOutput(prompt, fullResponse);
+          addLogEntry(prompt, fullResponse, model);
+          return;
+        }
+
+        // Streaming mode: parse SSE
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -153,4 +201,17 @@ export function createAIClient(options: AIClientOptions): AIClient {
   };
 }
 
-
+/**
+ * Helper: convert a ModelConfig to InferenceParams for the client.
+ */
+export function modelConfigToParams(config: ModelConfig): InferenceParams {
+  return {
+    model: config.model,
+    temperature: config.temperature,
+    top_p: config.topP,
+    top_k: config.topK,
+    max_tokens: config.maxTokens,
+    repeat_penalty: config.repeatPenalty,
+    stream: config.stream,
+  };
+}

@@ -49,6 +49,11 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
     isRegeneratingNotes,
     handleGenerateVariation,
     handleRunCode,
+    handleRunSingleTestCase,
+    handleValidateTestCases,
+    handleApplyTestCaseCorrections,
+    validationResults,
+    isValidating,
     evaluation,
     isEvaluating,
     handleEvaluateSolution,
@@ -231,6 +236,11 @@ export default function ProblemWorkspace(props: ProblemWorkspaceProps) {
             isEvaluating={isEvaluating}
             handleGenerateDescription={handleGenerateDescription}
             handleRunCode={handleRunCode}
+            handleRunSingleTestCase={handleRunSingleTestCase}
+            handleValidateTestCases={handleValidateTestCases}
+            handleApplyTestCaseCorrections={handleApplyTestCaseCorrections}
+            validationResults={validationResults}
+            isValidating={isValidating}
             handleGenerateNote={handleGenerateNote}
             handleGenerateVariation={handleGenerateVariation}
             handleCancelNote={handleCancelNote}

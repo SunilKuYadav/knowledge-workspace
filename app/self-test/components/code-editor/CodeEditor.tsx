@@ -16,8 +16,9 @@ import {
   indentOnInput,
   bracketMatching,
   syntaxHighlighting,
-  defaultHighlightStyle,
+  HighlightStyle,
 } from "@codemirror/language";
+import { tags } from "@lezer/highlight";
 import type { CodeChallengeQuestion } from "../../lib/types";
 
 interface CodeEditorProps {
@@ -30,18 +31,18 @@ interface CodeEditorProps {
 
 const darkTheme = EditorView.theme(
   {
-    "&": { backgroundColor: "#1e1e2e", color: "#cdd6f4" },
-    ".cm-content": { caretColor: "#f5e0dc" },
-    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#f5e0dc" },
+    "&": { backgroundColor: "#1e1e1e", color: "#d4d4d4" },
+    ".cm-content": { caretColor: "#aeafad" },
+    ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#aeafad" },
     "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection":
-      { backgroundColor: "#45475a" },
+      { backgroundColor: "#264f78" },
     ".cm-gutters": {
-      backgroundColor: "#181825",
-      color: "#6c7086",
-      borderRight: "1px solid #313244",
+      backgroundColor: "#1e1e1e",
+      color: "#858585",
+      borderRight: "1px solid #333333",
     },
-    ".cm-activeLineGutter": { backgroundColor: "#1e1e2e" },
-    ".cm-activeLine": { backgroundColor: "#1e1e2e80" },
+    ".cm-activeLineGutter": { backgroundColor: "#2a2d2e" },
+    ".cm-activeLine": { backgroundColor: "#2a2d2e80" },
   },
   { dark: true },
 );
@@ -60,6 +61,39 @@ const lightTheme = EditorView.theme(
   },
   { dark: false },
 );
+
+/* ─── VS Code Dark+ Syntax Highlighting (≥ 9:1 contrast on #1e1e1e) ─── */
+
+const darkHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "#7cb8e8" },
+  { tag: tags.controlKeyword, color: "#c586c0" },
+  { tag: tags.operatorKeyword, color: "#7cb8e8" },
+  { tag: tags.definitionKeyword, color: "#7cb8e8" },
+  { tag: tags.typeName, color: "#4ec9b0" },
+  { tag: tags.typeOperator, color: "#4ec9b0" },
+  { tag: tags.className, color: "#4ec9b0" },
+  { tag: tags.function(tags.variableName), color: "#dcdcaa" },
+  { tag: tags.definition(tags.variableName), color: "#9cdcfe" },
+  { tag: tags.variableName, color: "#9cdcfe" },
+  { tag: tags.propertyName, color: "#9cdcfe" },
+  { tag: tags.definition(tags.propertyName), color: "#9cdcfe" },
+  { tag: tags.function(tags.propertyName), color: "#dcdcaa" },
+  { tag: tags.string, color: "#e4ad94" },
+  { tag: tags.regexp, color: "#d16969" },
+  { tag: tags.number, color: "#b5cea8" },
+  { tag: tags.bool, color: "#7cb8e8" },
+  { tag: tags.null, color: "#7cb8e8" },
+  { tag: tags.comment, color: "#6a9955", fontStyle: "italic" },
+  { tag: tags.lineComment, color: "#6a9955", fontStyle: "italic" },
+  { tag: tags.blockComment, color: "#6a9955", fontStyle: "italic" },
+  { tag: tags.operator, color: "#d4d4d4" },
+  { tag: tags.punctuation, color: "#d4d4d4" },
+  { tag: tags.bracket, color: "#ffd700" },
+  { tag: tags.meta, color: "#d4d4d4" },
+  { tag: tags.tagName, color: "#7cb8e8" },
+  { tag: tags.attributeName, color: "#9cdcfe" },
+  { tag: tags.attributeValue, color: "#e4ad94" },
+]);
 
 export function CodeEditor({
   question,
@@ -112,7 +146,7 @@ export function CodeEditor({
         bracketMatching(),
         closeBrackets(),
         indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(darkHighlightStyle),
         langExtension,
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, indentWithTab]),
         isDark ? darkTheme : lightTheme,
