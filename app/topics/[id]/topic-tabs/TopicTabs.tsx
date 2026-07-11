@@ -4,8 +4,13 @@ import Link from "next/link";
 import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
 import GenerateArtifactButton from "../generate-artifact-button";
 import RegenerateArtifactButton from "../regenerate-artifact-button";
+import TopicPractice from "../topic-practice";
 import { useTopicTabs } from "./useTopicTabs";
+import { ARTIFACT_ORDER } from "@/types";
 import type { TopicTabsProps } from "./types";
+
+/** Minimum artifacts required before the Practice tab is shown. */
+const MIN_ARTIFACTS_FOR_PRACTICE = 3;
 
 export default function TopicTabs({
   artifacts: initialArtifacts,
@@ -13,6 +18,8 @@ export default function TopicTabs({
   topicId,
   topicTitle,
   topicCategory,
+  tags,
+  difficulty,
   semanticDescription,
 }: TopicTabsProps) {
   const {
@@ -23,6 +30,17 @@ export default function TopicTabs({
     getLabel,
     artifactKeys,
   } = useTopicTabs(initialArtifacts);
+
+  // Show Practice tab only when enough artifact content exists (at least 3 artifacts)
+  // so AI has enough context to suggest meaningful problems.
+  const showPracticeTab = artifactKeys.length >= MIN_ARTIFACTS_FOR_PRACTICE;
+  const isPracticeActive = activeTab === "__practice__";
+
+  // Build concatenated artifact content for the practice tab's AI context
+  const artifactContent = ARTIFACT_ORDER
+    .filter((key) => artifacts[key])
+    .map((key) => `## ${getLabel(key)}\n\n${artifacts[key]}`)
+    .join("\n\n---\n\n");
 
   return (
     <div>
@@ -48,6 +66,22 @@ export default function TopicTabs({
             </button>
           ))}
 
+          {/* Practice tab — only shown when enough content exists */}
+          {showPracticeTab && (
+            <button
+              role="tab"
+              aria-selected={isPracticeActive}
+              onClick={() => setActiveTab("__practice__")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                isPracticeActive
+                  ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                  : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+              }`}
+            >
+              🧑‍💻 Practice
+            </button>
+          )}
+
           {/* AI generate button — only shown when missing artifacts exist */}
           <GenerateArtifactButton
             existingArtifacts={artifactKeys}
@@ -59,8 +93,8 @@ export default function TopicTabs({
           />
         </div>
 
-        {/* Action buttons for the active tab */}
-        {activeTab && (
+        {/* Action buttons for the active tab (not for Practice) */}
+        {activeTab && !isPracticeActive && (
           <div className="flex items-center gap-2 shrink-0">
             <RegenerateArtifactButton
               topicId={topicId}
@@ -81,7 +115,17 @@ export default function TopicTabs({
       </div>
 
       {/* Tab content */}
-      {artifactKeys.length === 0 ? (
+      {isPracticeActive ? (
+        <TopicPractice
+          topicId={topicId}
+          topicTitle={topicTitle}
+          topicCategory={topicCategory}
+          tags={tags}
+          difficulty={difficulty}
+          artifactContent={artifactContent}
+          semanticDescription={semanticDescription}
+        />
+      ) : artifactKeys.length === 0 ? (
         <div className="py-8 text-center">
           <p className="text-zinc-400 dark:text-zinc-500 italic mb-2">
             No content yet.

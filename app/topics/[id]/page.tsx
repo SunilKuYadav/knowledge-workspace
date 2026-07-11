@@ -174,6 +174,8 @@ export default async function TopicDetailPage({
             topicId={topic.id}
             topicTitle={topic.title}
             topicCategory={topic.category}
+            tags={topic.tags}
+            difficulty={topic.difficulty}
             semanticDescription={topic.semanticDescription}
           />
         </section>

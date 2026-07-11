@@ -2,7 +2,7 @@ import path from "path";
 import { rm, readdir } from "fs/promises";
 import type { Topic, FlashcardDeck, RevisionData, ArtifactType } from "@/types";
 import { ARTIFACT_ORDER } from "@/types";
-import type { TopicRepository } from "@/repository";
+import type { TopicRepository, TopicPracticeData } from "@/repository";
 import { WORKSPACE_STRUCTURE } from "../lib/constants";
 import {
   readJsonFile,
@@ -261,6 +261,33 @@ export class FileTopicRepository implements TopicRepository {
     );
 
     return revision ?? this.defaultRevisionData(id);
+  }
+
+  /**
+   * Reads persisted practice problems for a topic.
+   * Returns null if no practice-problems.json exists yet.
+   */
+  async getPracticeProblems(id: string): Promise<TopicPracticeData | null> {
+    const topicPath = await this.findTopicPath(id);
+    if (!topicPath) {
+      return null;
+    }
+
+    return readJsonFile<TopicPracticeData>(
+      path.join(topicPath, "practice-problems.json"),
+    );
+  }
+
+  /**
+   * Writes the full practice problems data for a topic.
+   */
+  async savePracticeProblems(id: string, data: TopicPracticeData): Promise<void> {
+    const topicPath = await this.findTopicPath(id);
+    if (!topicPath) {
+      throw new Error(`Topic not found: ${id}`);
+    }
+
+    await writeJsonFile(path.join(topicPath, "practice-problems.json"), data);
   }
 
   /**
