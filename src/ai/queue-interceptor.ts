@@ -20,7 +20,7 @@ import { useAIQueueStore } from "@/src/stores/aiQueueStore";
 let installed = false;
 
 /** Polling interval for server queue status */
-const SERVER_POLL_INTERVAL_MS = 3_000;
+const SERVER_POLL_INTERVAL_MS = 2_000;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
@@ -180,6 +180,17 @@ function startServerStatusPolling(): void {
         if (data.currentModel !== store.currentModel) {
           store.setCurrentModel(data.currentModel);
         }
+        // Update active request's model from server active item
+        if (data.active && store.activeRequestId) {
+          const activeReq = store.requests.find((r) => r.id === store.activeRequestId);
+          if (activeReq && !activeReq.model && data.active.model) {
+            useAIQueueStore.setState({
+              requests: store.requests.map((r) =>
+                r.id === store.activeRequestId ? { ...r, model: data.active.model } : r,
+              ),
+            });
+          }
+        }
         // Sync token usage from server history to client requests
         if (data.history && Array.isArray(data.history)) {
           syncTokenUsage(data.history);
@@ -198,6 +209,10 @@ function startServerStatusPolling(): void {
 /**
  * Sync token usage and model name from server queue items to matching client requests.
  * Matches by route key and completion timestamp proximity.
+ *
+ * The client-side completedAt can lag behind the server-side completedAt significantly
+ * (streaming responses take time to deliver), so we use a wide matching window and
+ * also fall back to matching the most recent unmatched server item per routeKey.
  */
 function syncTokenUsage(
   serverHistory: Array<{
@@ -210,21 +225,45 @@ function syncTokenUsage(
   const store = useAIQueueStore.getState();
   const clientRequests = store.requests;
 
+  // Track which server items have been matched to avoid double-matching
+  const matchedServerIds = new Set<number>();
+
   let updated = false;
   const updatedRequests = clientRequests.map((req) => {
     // Skip if already has token usage and model, or not completed
     if ((req.tokenUsage && req.model) || req.status !== "completed") return req;
 
-    // Find matching server item by route key and close completion time
-    const match = serverHistory.find(
-      (s) =>
+    // Find matching server item by route key and close completion time (30s window)
+    let matchIdx = serverHistory.findIndex(
+      (s, idx) =>
+        !matchedServerIds.has(idx) &&
         s.routeKey === req.routeKey &&
         s.completedAt &&
         req.completedAt &&
-        Math.abs(s.completedAt - req.completedAt) < 5000,
+        Math.abs(s.completedAt - req.completedAt) < 30_000,
     );
 
-    if (match) {
+    // Fallback: match the most recent server item with the same routeKey that has token usage
+    if (matchIdx === -1) {
+      for (let i = serverHistory.length - 1; i >= 0; i--) {
+        const s = serverHistory[i];
+        if (
+          !matchedServerIds.has(i) &&
+          s.routeKey === req.routeKey &&
+          s.tokenUsage &&
+          s.completedAt &&
+          req.createdAt &&
+          s.completedAt >= req.createdAt
+        ) {
+          matchIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (matchIdx >= 0) {
+      const match = serverHistory[matchIdx];
+      matchedServerIds.add(matchIdx);
       const updates: Partial<typeof req> = {};
       if (match.tokenUsage && !req.tokenUsage) updates.tokenUsage = match.tokenUsage;
       if (match.model && !req.model) updates.model = match.model;

@@ -204,6 +204,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // If the AI returned nothing, the model likely isn't loaded or errored
+    if (!fullResponse.trim()) {
+      console.error("[generate-problem] AI returned empty response. Model may not be loaded or LM Studio returned an error.");
+      return NextResponse.json(
+        { error: "AI returned an empty response. Check that the model is loaded in LM Studio." },
+        { status: 502 },
+      );
+    }
+
     // Parse JSON from response — handle markdown code blocks
     let jsonStr = fullResponse.trim();
     if (jsonStr.startsWith("```json")) {
@@ -235,9 +244,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(parsed as GeneratedProblem);
-  } catch {
+  } catch (err) {
+    console.error("[generate-problem] Unhandled error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${err instanceof Error ? err.message : String(err)}` },
       { status: 500 },
     );
   }

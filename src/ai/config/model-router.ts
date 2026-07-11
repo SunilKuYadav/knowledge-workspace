@@ -39,7 +39,9 @@ const ROUTE_TO_TIER: Record<string, ModelTier> = {
   "ai/coding-interview/generate-problem": "coding",
   "ai/coding-interview/hint": "coding",
   "ai/coding-interview/score": "coding",
+  "ai/coding-interview/validate-test-cases": "coding",
   "ai/problem/evaluate-solution": "coding",
+  "ai/problem/validate-test-cases": "coding",
 
   // ─── Fast / Utility ───────────────────────────────────────────────
   "ai/enhance-prompt": "fast",

@@ -181,6 +181,21 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
+    // Guard: AI returned nothing (model offline, upstream error, empty stream)
+    if (!fullResponse.trim()) {
+      logger.error(
+        "api/coding-interview/validate-test-cases",
+        "AI returned an empty response — model may be unavailable or overloaded",
+      );
+      return NextResponse.json(
+        {
+          error:
+            "AI model returned an empty response. The model may be unavailable or overloaded — please try again.",
+        },
+        { status: 502 },
+      );
+    }
+
     // Parse JSON from response — handle thinking blocks, code fences, extra text
     let parsed: ValidationResponse;
     try {

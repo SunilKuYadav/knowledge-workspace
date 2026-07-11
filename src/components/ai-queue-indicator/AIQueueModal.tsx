@@ -86,11 +86,37 @@ export function AIQueueModal({ onClose, activeRequest }: AIQueueModalProps) {
             </span>
           </div>
 
+          {/* Session Token Totals */}
+          {(() => {
+            const totals = historyRequests.reduce(
+              (acc, r) => {
+                if (r.tokenUsage) {
+                  acc.promptTokens += r.tokenUsage.promptTokens;
+                  acc.completionTokens += r.tokenUsage.completionTokens;
+                  acc.totalTokens += r.tokenUsage.totalTokens;
+                  acc.count += 1;
+                }
+                return acc;
+              },
+              { promptTokens: 0, completionTokens: 0, totalTokens: 0, count: 0 },
+            );
+            if (totals.count === 0) return null;
+            return (
+              <div className="flex items-center gap-4 text-xs text-zinc-400 bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-3 py-2">
+                <span className="font-medium text-zinc-300">Session tokens:</span>
+                <span title="Total input tokens">↑ {totals.promptTokens.toLocaleString()}</span>
+                <span title="Total output tokens">↓ {totals.completionTokens.toLocaleString()}</span>
+                <span title="Total tokens">Σ {totals.totalTokens.toLocaleString()}</span>
+                <span className="text-zinc-600">({totals.count} requests)</span>
+              </div>
+            );
+          })()}
+
           {/* Active Request */}
           {activeRequest && (
             <section>
               <h3 className="text-sm font-medium text-zinc-300 mb-2">Currently Processing</h3>
-              <RequestCard request={activeRequest} onCancel={() => cancelRequest(activeRequest.id)} />
+              <RequestCard request={activeRequest} onCancel={() => cancelRequest(activeRequest.id)} fallbackModel={currentModel} />
             </section>
           )}
 
@@ -186,9 +212,11 @@ export function AIQueueModal({ onClose, activeRequest }: AIQueueModalProps) {
 function RequestCard({
   request,
   onCancel,
+  fallbackModel,
 }: {
   request: AIRequest;
   onCancel?: () => void;
+  fallbackModel?: string | null;
 }) {
   const statusColor = {
     pending: "bg-yellow-500",
@@ -213,6 +241,8 @@ function RequestCard({
         ? Math.round((request.completedAt - request.startedAt) / 1000)
         : null;
 
+  const displayModel = request.model || fallbackModel;
+
   return (
     <div className="flex items-start gap-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 p-3">
       {/* Status dot */}
@@ -229,12 +259,12 @@ function RequestCard({
         <p className="text-sm text-zinc-200 truncate">{request.label}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-zinc-500">{statusLabel}</span>
-          {request.model && (
+          {displayModel && (
             <span className="text-xs text-zinc-500 font-mono bg-zinc-800 px-1.5 py-0.5 rounded">
-              {request.model}
+              {displayModel}
             </span>
           )}
-          {request.routeKey && !request.model && (
+          {request.routeKey && !displayModel && (
             <span className="text-xs text-zinc-600 font-mono">{request.routeKey}</span>
           )}
           {elapsed !== null && (
