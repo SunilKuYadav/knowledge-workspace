@@ -69,7 +69,7 @@ export const defaultInterviewState: InterviewState = {
   phase: "initializing",
   source: "practice" as InterviewSource,
   context: null,
-  language: "javascript",
+  language: "typescript",
   difficulty: null,
   duration: DEFAULT_DURATION,
 

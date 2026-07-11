@@ -16,6 +16,7 @@ import type {
   TestCaseResult,
   InterviewSource,
   InterviewContext,
+  VariationSummary,
 } from "@/app/coding-interview/lib/types";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -77,7 +78,7 @@ export function buildProblemGenerationPrompt(
   const {
     source,
     context,
-    language = "javascript",
+    language = "typescript",
     difficulty,
     userPrompt,
   } = params;
@@ -90,12 +91,50 @@ The user has requested the following type of problem:
 Generate a problem that matches this description.`;
   } else if (context) {
     if (context.source === "problem") {
+      // Build list of solved items to exclude
+      const solvedItems: string[] = [];
+      if (context.problemStatus === "solved") {
+        solvedItems.push(`Main problem: "${context.title}"`);
+      }
+
+      const unsolvedVariations: VariationSummary[] = [];
+      const solvedVariations: VariationSummary[] = [];
+      if (context.variations?.length) {
+        for (const v of context.variations) {
+          if (v.status === "solved") {
+            solvedVariations.push(v);
+            solvedItems.push(`Variation: "${v.title}" (${v.difficulty})`);
+          } else {
+            unsolvedVariations.push(v);
+          }
+        }
+      }
+
+      // Build variation context
+      let variationContext = "";
+      if (unsolvedVariations.length > 0) {
+        variationContext = `
+Unsolved variations of this problem (DO NOT regenerate these, but generate something at a SIMILAR difficulty/pattern level):
+${unsolvedVariations.map((v) => `- "${v.title}" [${v.difficulty}] tags: ${(v.tags || []).join(", ")}`).join("\n")}`;
+      }
+
+      let exclusionContext = "";
+      if (solvedItems.length > 0) {
+        exclusionContext = `
+IMPORTANT — The user has already SOLVED the following. Do NOT generate a problem that is identical or trivially similar to any of these:
+${solvedItems.map((s) => `- ${s}`).join("\n")}
+Generate a DIFFERENT problem that tests similar concepts but with a distinct twist, different constraints, or a novel angle.`;
+      }
+
       contextSection = `
 The problem should be related to:
-- Category: ${context.category}
+${context.category ? `- Category: ${context.category}` : ""}
 - Tags: ${context.tags.join(", ")}
 - Reference problem: "${context.title}"
-Generate a problem whose category or tags overlap with these.`;
+- Problem solve status: ${context.problemStatus || "unknown"}
+${variationContext}
+${exclusionContext}
+Generate a problem whose category or tags overlap with these, but that is distinct from any already-solved problems or variations listed above.`;
     } else if (context.source === "topic") {
       contextSection = `
 The problem should cover concepts from:
@@ -147,8 +186,8 @@ Generate a complete coding interview problem and respond with ONLY a valid JSON 
   ],
   "hiddenTestCases": [
     {
-      "input": "any - test input value",
-      "expectedOutput": "any - expected output value"
+      "input": "[arg1, arg2, ...] - JSON array of function arguments",
+      "expectedOutput": "any - the actual JSON return value"
     }
   ],
   "expectedTimeComplexity": "string - Big-O notation e.g., O(n log n)",
@@ -166,6 +205,27 @@ Requirements:
 - expectedTimeComplexity and expectedSpaceComplexity must be valid Big-O notation
 - boilerplate must be valid ${language} code with a clear function signature
 - The problem must have at least one valid solution implementable within 45 minutes
+
+CRITICAL TEST CASE FORMAT RULES:
+The execution engine calls the user's function by spreading the "input" array as arguments.
+For example, if the boilerplate is \`function subarraySum(nums: number[], k: number)\`:
+- "input" MUST be a JSON array of the function arguments: [[1,2,1,2,1], 3]
+- "expectedOutput" MUST be the JSON return value: 4
+
+More examples:
+- For \`function twoSum(nums: number[], target: number)\`:
+  input: [[2,7,11,15], 9], expectedOutput: [0,1]
+- For \`function isValid(s: string)\`:
+  input: ["(())"], expectedOutput: true
+- For \`function maxProfit(prices: number[])\`:
+  input: [[7,1,5,3,6,4]], expectedOutput: 5
+
+DO NOT use string representations like "nums = [1,2,3], k = 3" or "1 2 1 2 1\\n3".
+
+FORMAT BY SECTION:
+- "samples": Used for display. "input" and "output" are human-readable strings (e.g., "nums = [1,2,1,2,1], k = 3" / "4").
+- "edgeCases": Used for display. "input" and "expectedOutput" are human-readable strings. "description" explains what it tests.
+- "hiddenTestCases": Used for EXECUTION. "input" MUST be a JSON array of actual function arguments. "expectedOutput" MUST be the actual JSON return value (number, boolean, array, string, null — NOT a string representation).
 
 Respond with ONLY the JSON object.`;
 }

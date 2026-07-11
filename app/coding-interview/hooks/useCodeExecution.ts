@@ -23,7 +23,6 @@ export function useCodeExecution(): UseCodeExecutionReturn {
   const code = useInterviewStore((s) => s.code);
   const problem = useInterviewStore((s) => s.problem);
   const language = useInterviewStore((s) => s.language);
-  const lastExecutionResult = useInterviewStore((s) => s.lastExecutionResult);
   const setPhase = useInterviewStore((s) => s.setPhase);
   const setError = useInterviewStore((s) => s.setError);
   const setEvaluation = useInterviewStore((s) => s.setEvaluation);
@@ -31,6 +30,8 @@ export function useCodeExecution(): UseCodeExecutionReturn {
 
   /**
    * Run code against visible test cases without submitting.
+   * Uses the first few hidden test cases (which have structured input)
+   * since samples are display-only strings.
    * Sets isExecuting to disable buttons during execution.
    */
   const runCode = useCallback(async () => {
@@ -39,9 +40,11 @@ export function useCodeExecution(): UseCodeExecutionReturn {
     setIsExecuting(true);
 
     try {
-      const testCases = problem.samples.map((sample) => ({
-        input: sample.input,
-        expectedOutput: sample.output,
+      // Use hidden test cases (structured format with actual function args)
+      // Show first 3 for quick feedback on "Run"
+      const testCases = problem.hiddenTestCases.slice(0, 3).map((tc) => ({
+        input: tc.input,
+        expectedOutput: tc.expectedOutput,
       }));
 
       const result = await executeCode({
@@ -75,6 +78,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
 
   /**
    * Submit code for AI evaluation.
+   * Runs all hidden test cases first, then sends results to AI for evaluation.
    * Caller should show confirmation dialog before calling this.
    * Pauses timer, transitions to evaluating phase, calls evaluate API.
    */
@@ -90,11 +94,27 @@ export function useCodeExecution(): UseCodeExecutionReturn {
     setError(null);
 
     try {
+      // Run all hidden test cases for evaluation
+      const testCases = problem.hiddenTestCases.map((tc) => ({
+        input: tc.input,
+        expectedOutput: tc.expectedOutput,
+      }));
+
+      const execResult = await executeCode({
+        code,
+        language,
+        testCases,
+        timeout: EXECUTION_TIMEOUT,
+      });
+
+      // Update store with full execution result
+      useInterviewStore.setState({ lastExecutionResult: execResult });
+
       const { evaluation } = await evaluateCode({
         code,
         problem,
         language,
-        testResults: lastExecutionResult ?? undefined,
+        testResults: execResult,
       });
 
       setEvaluation(evaluation);
@@ -110,7 +130,6 @@ export function useCodeExecution(): UseCodeExecutionReturn {
     code,
     problem,
     language,
-    lastExecutionResult,
     isExecuting,
     pauseTimer,
     setPhase,

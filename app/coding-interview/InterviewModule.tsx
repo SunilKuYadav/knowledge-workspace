@@ -29,7 +29,7 @@ import type { FullscreenActions, FullscreenPanelData } from "./components/code-e
  */
 export function InterviewModule(props: InterviewModuleProps) {
   const router = useRouter();
-  const { phase, error, needsPrompt, retry, startWithPrompt } =
+  const { phase, error, needsPrompt, isValidatingTestCases, testCaseValidationResult, retry, startWithPrompt, revalidateTestCases } =
     useInterviewSession(props);
   const { isExecuting, runCode, submitCode } = useCodeExecution();
   const {
@@ -347,7 +347,7 @@ export function InterviewModule(props: InterviewModuleProps) {
               />
             </div>
 
-            {/* Run / Submit buttons */}
+            {/* Run / Submit buttons + Test Case Validation */}
             <div className="flex items-center gap-3 shrink-0">
               <button
                 type="button"
@@ -365,6 +365,35 @@ export function InterviewModule(props: InterviewModuleProps) {
               >
                 Submit
               </button>
+
+              {/* Test Case Validation Status */}
+              <div className="ml-auto flex items-center gap-2">
+                {isValidatingTestCases && (
+                  <span className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Validating test cases...
+                  </span>
+                )}
+                {!isValidatingTestCases && testCaseValidationResult && (
+                  <span className={`text-xs font-medium ${testCaseValidationResult.isValid ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}`}>
+                    {testCaseValidationResult.isValid
+                      ? "✓ Test cases verified"
+                      : `⚠ ${testCaseValidationResult.correctionCount} test case${testCaseValidationResult.correctionCount > 1 ? "s" : ""} corrected`}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={revalidateTestCases}
+                  disabled={isValidatingTestCases}
+                  className="rounded px-2 py-1 text-xs font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  title="Re-validate and fix test cases"
+                >
+                  🔄 Validate Tests
+                </button>
+              </div>
             </div>
 
             {/* Console + Test Cases */}

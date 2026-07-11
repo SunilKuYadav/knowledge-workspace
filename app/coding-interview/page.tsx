@@ -7,13 +7,14 @@ import type {
   InterviewModuleProps,
   InterviewContext,
   InterviewSource,
+  VariationSummary,
 } from "./lib/types";
 
 function InterviewPageContent() {
   const searchParams = useSearchParams();
 
   const source = (searchParams.get("source") || "practice") as InterviewSource;
-  const language = (searchParams.get("language") || "javascript") as
+  const language = (searchParams.get("language") || "typescript") as
     "javascript" | "typescript";
   const difficulty = searchParams.get("difficulty") as
     "easy" | "medium" | "hard" | null;
@@ -29,8 +30,30 @@ function InterviewPageContent() {
     const title = searchParams.get("title");
     const category = searchParams.get("category") || "";
     const tags = searchParams.get("tags")?.split(",").filter(Boolean) || [];
+    const problemStatus = searchParams.get("problemStatus") as
+      "not-started" | "attempted" | "solved" | null;
+
+    // Parse variations from JSON-encoded param
+    let variations: VariationSummary[] | undefined;
+    const variationsParam = searchParams.get("variations");
+    if (variationsParam) {
+      try {
+        variations = JSON.parse(variationsParam) as VariationSummary[];
+      } catch {
+        // Ignore malformed variations param
+      }
+    }
+
     if (id && title) {
-      context = { source: "problem", id, title, category, tags };
+      context = {
+        source: "problem",
+        id,
+        title,
+        category,
+        tags,
+        ...(problemStatus && { problemStatus }),
+        ...(variations?.length && { variations }),
+      };
     }
   } else if (source === "topic") {
     const id = searchParams.get("id");

@@ -3,6 +3,16 @@
 export type InterviewSource =
   "problem" | "topic" | "self-test" | "revision" | "practice" | "interview";
 
+/** Summary of a variation's solve state for interview context. */
+export interface VariationSummary {
+  id: string;
+  title: string;
+  difficulty: "easy" | "medium" | "hard";
+  category?: string;
+  tags?: string[];
+  status: "not-started" | "attempted" | "solved";
+}
+
 export type InterviewContext =
   | {
       source: "problem";
@@ -10,6 +20,10 @@ export type InterviewContext =
       title: string;
       category: string;
       tags: string[];
+      /** Solve status of the main problem */
+      problemStatus?: "not-started" | "attempted" | "solved";
+      /** Variation summaries with solve states */
+      variations?: VariationSummary[];
     }
   | { source: "topic"; id: string; title: string; concepts: string[] }
   | { source: "revision"; sessionId: string; topicIds: string[] }

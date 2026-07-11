@@ -15,6 +15,8 @@ export default function CodingInterviewButton({
   tags,
   concepts,
   difficulty,
+  problemStatus,
+  variations,
   variant = "button",
 }: CodingInterviewButtonProps) {
   const params = new URLSearchParams();
@@ -26,6 +28,8 @@ export default function CodingInterviewButton({
   if (tags?.length) params.set("tags", tags.join(","));
   if (concepts?.length) params.set("concepts", concepts.join(","));
   if (difficulty) params.set("difficulty", difficulty);
+  if (problemStatus) params.set("problemStatus", problemStatus);
+  if (variations?.length) params.set("variations", JSON.stringify(variations));
 
   const href = `/coding-interview?${params.toString()}`;
 

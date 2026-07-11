@@ -101,9 +101,20 @@ export default async function ProblemDetailPage({
               source="problem"
               id={id}
               title={problem.title}
-              category={problem.patterns[0] || ""}
+              category={problem.patterns[0] || description?.category || ""}
               tags={problem.patterns}
               difficulty={problem.difficulty}
+              problemStatus={problem.status}
+              variations={
+                description?.variations?.map((v) => ({
+                  id: v.id,
+                  title: v.title,
+                  difficulty: v.difficulty,
+                  category: v.category,
+                  tags: v.tags,
+                  status: v.status || "not-started",
+                })) || []
+              }
             />
             {problem.url && (
               <a
