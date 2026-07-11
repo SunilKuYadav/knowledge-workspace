@@ -20,5 +20,7 @@ export interface CodingInterviewButtonProps {
   problemStatus?: "not-started" | "attempted" | "solved";
   /** Variations with their solve states (when source="problem") */
   variations?: VariationInfo[];
+  /** Problem titles to avoid generating (when source="topic") — from practice suggestions */
+  avoidProblems?: string[];
   variant?: "button" | "card";
 }

@@ -31,11 +31,12 @@ export default async function TopicDetailPage({
     notFound();
   }
 
-  const [artifacts, flashcards, revision, allProblems] = await Promise.all([
+  const [artifacts, flashcards, revision, allProblems, practiceData] = await Promise.all([
     topicService.getArtifacts(id),
     topicService.getFlashcards(id),
     topicService.getRevision(id),
     problemService.getAllProblems(),
+    topicService.getPracticeProblems(id),
   ]);
 
   const linkedProblemIds = topic.relatedProblemIds ?? [];
@@ -44,6 +45,19 @@ export default async function TopicDetailPage({
     title: p.title,
     difficulty: p.difficulty,
   }));
+
+  // Collect practice problem titles + suggestion titles for interview exclusion
+  const avoidProblems: string[] = [];
+  if (practiceData) {
+    for (const p of practiceData.problems) {
+      avoidProblems.push(p.title);
+    }
+    for (const s of practiceData.suggestions) {
+      if (!avoidProblems.includes(s.title)) {
+        avoidProblems.push(s.title);
+      }
+    }
+  }
 
   const difficultyColor: Record<string, string> = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -156,6 +170,7 @@ export default async function TopicDetailPage({
                 title={topic.title}
                 concepts={topic.tags}
                 difficulty={topic.difficulty as "easy" | "medium" | "hard"}
+                avoidProblems={avoidProblems}
               />
               <SelfTestButton
                 itemId={id}

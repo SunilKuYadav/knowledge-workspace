@@ -25,7 +25,7 @@ export type InterviewContext =
       /** Variation summaries with solve states */
       variations?: VariationSummary[];
     }
-  | { source: "topic"; id: string; title: string; concepts: string[] }
+  | { source: "topic"; id: string; title: string; concepts: string[]; avoidProblems?: string[] }
   | { source: "revision"; sessionId: string; topicIds: string[] }
   | { source: "self-test" | "practice" | "interview" };
 

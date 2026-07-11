@@ -136,10 +136,20 @@ ${variationContext}
 ${exclusionContext}
 Generate a problem whose category or tags overlap with these, but that is distinct from any already-solved problems or variations listed above.`;
     } else if (context.source === "topic") {
+      let exclusionContext = "";
+      if (context.avoidProblems && context.avoidProblems.length > 0) {
+        exclusionContext = `
+
+IMPORTANT — The user already has the following PRACTICE PROBLEMS for this topic. Do NOT generate a problem that is identical or trivially similar to any of these:
+${context.avoidProblems.map((p) => `- "${p}"`).join("\n")}
+Generate a DIFFERENT problem that tests the same topic concepts but from a distinct angle, with different constraints, or a novel twist. The problem should complement these existing practice problems, not duplicate them.`;
+      }
+
       contextSection = `
 The problem should cover concepts from:
 - Topic: "${context.title}"
 - Concepts: ${context.concepts.join(", ")}
+${exclusionContext}
 Generate a problem whose tags or category overlap with these concepts.`;
     } else if (context.source === "revision") {
       contextSection = `

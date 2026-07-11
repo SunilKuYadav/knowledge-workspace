@@ -60,8 +60,26 @@ function InterviewPageContent() {
     const title = searchParams.get("title");
     const concepts =
       searchParams.get("concepts")?.split(",").filter(Boolean) || [];
+
+    // Parse avoidProblems — practice problem titles to exclude
+    let avoidProblems: string[] | undefined;
+    const avoidParam = searchParams.get("avoidProblems");
+    if (avoidParam) {
+      try {
+        avoidProblems = JSON.parse(avoidParam) as string[];
+      } catch {
+        // Ignore malformed param
+      }
+    }
+
     if (id && title) {
-      context = { source: "topic", id, title, concepts };
+      context = {
+        source: "topic",
+        id,
+        title,
+        concepts,
+        ...(avoidProblems?.length && { avoidProblems }),
+      };
     }
   } else if (source === "revision") {
     const sessionId = searchParams.get("sessionId") || "";
