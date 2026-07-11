@@ -28,9 +28,20 @@ export interface InferenceParams {
   stream?: boolean;
 }
 
+/**
+ * Token usage stats from the last generate() call.
+ */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 export interface AIClient {
   isAvailable(): Promise<boolean>;
   generate(prompt: string, params?: InferenceParams): AsyncGenerator<string>;
+  /** Returns token usage from the last completed generate() call, or null if unavailable */
+  getLastUsage(): TokenUsage | null;
 }
 
 export interface AIClientOptions {
@@ -50,8 +61,13 @@ export interface AIClientOptions {
  */
 export function createAIClient(options: AIClientOptions): AIClient {
   const { baseUrl, apiKey, defaults = {} } = options;
+  let lastUsage: TokenUsage | null = null;
 
   return {
+    getLastUsage(): TokenUsage | null {
+      return lastUsage;
+    },
+
     async isAvailable(): Promise<boolean> {
       try {
         const controller = new AbortController();
@@ -78,6 +94,9 @@ export function createAIClient(options: AIClientOptions): AIClient {
       const model = merged.model ?? "gpt-3.5-turbo";
       const stream = merged.stream ?? true;
 
+      // Reset usage for this generation
+      lastUsage = null;
+
       logInput(prompt, model);
       let fullResponse = "";
 
@@ -95,6 +114,11 @@ export function createAIClient(options: AIClientOptions): AIClient {
           messages: [{ role: "user", content: prompt }],
           stream,
         };
+
+        // Request usage stats in streaming mode (OpenAI-compatible extension)
+        if (stream) {
+          body.stream_options = { include_usage: true };
+        }
 
         // Only include params that are explicitly set (avoid sending undefined)
         if (merged.temperature !== undefined) body.temperature = merged.temperature;
@@ -119,8 +143,16 @@ export function createAIClient(options: AIClientOptions): AIClient {
         if (!stream) {
           const data = (await response.json()) as {
             choices?: Array<{ message?: { content?: string } }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
           };
           const content = data.choices?.[0]?.message?.content ?? "";
+          if (data.usage) {
+            lastUsage = {
+              promptTokens: data.usage.prompt_tokens ?? 0,
+              completionTokens: data.usage.completion_tokens ?? 0,
+              totalTokens: data.usage.total_tokens ?? 0,
+            };
+          }
           if (content) {
             fullResponse = content;
             yield content;
@@ -158,7 +190,16 @@ export function createAIClient(options: AIClientOptions): AIClient {
             try {
               const parsed = JSON.parse(data) as {
                 choices?: Array<{ delta?: { content?: string } }>;
+                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
+              // Capture usage from the final chunk (when stream_options.include_usage is set)
+              if (parsed.usage) {
+                lastUsage = {
+                  promptTokens: parsed.usage.prompt_tokens ?? 0,
+                  completionTokens: parsed.usage.completion_tokens ?? 0,
+                  totalTokens: parsed.usage.total_tokens ?? 0,
+                };
+              }
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 fullResponse += content;
@@ -178,7 +219,15 @@ export function createAIClient(options: AIClientOptions): AIClient {
             try {
               const parsed = JSON.parse(trimmed.slice(6)) as {
                 choices?: Array<{ delta?: { content?: string } }>;
+                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
+              if (parsed.usage) {
+                lastUsage = {
+                  promptTokens: parsed.usage.prompt_tokens ?? 0,
+                  completionTokens: parsed.usage.completion_tokens ?? 0,
+                  totalTokens: parsed.usage.total_tokens ?? 0,
+                };
+              }
               const content = parsed.choices?.[0]?.delta?.content;
               if (content) {
                 fullResponse += content;

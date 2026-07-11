@@ -1,5 +1,5 @@
 export { createAIClient, modelConfigToParams } from "./client";
-export type { AIClient, AIClientOptions, InferenceParams } from "./client";
+export type { AIClient, AIClientOptions, InferenceParams, TokenUsage } from "./client";
 
 // New config system (preferred)
 export {
@@ -22,6 +22,10 @@ export type {
 
 // Legacy exports — thin wrappers for backward compatibility
 export { getModelForRoute, getModel, getAllModels } from "./model-router";
+
+// Server-side AI queue
+export { aiServerQueue } from "./queue";
+export type { ServerQueueSnapshot, ServerQueueItem } from "./queue";
 
 export { modelManager, ensureModelLoaded } from "./model-manager";
 export { getReadyClient, getReadyClientForTier, getInferenceConfigForRoute } from "./llm";

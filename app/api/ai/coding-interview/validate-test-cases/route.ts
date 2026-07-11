@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReadyClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
+import { logger } from "@/src/lib/logger";
 import type { GeneratedProblem } from "@/app/coding-interview/lib/types";
 
 interface Correction {
@@ -98,6 +99,46 @@ IMPORTANT:
 - If all test cases are already correct and properly formatted, return them unchanged with empty corrections array.`;
 }
 
+/**
+ * Robustly extract a JSON object from an LLM response that may contain:
+ * - <think>...</think> blocks (qwen3, deepseek)
+ * - ```json ... ``` code fences
+ * - Leading/trailing prose
+ * - Multiple code blocks (picks the first valid JSON one)
+ */
+function extractJSON<T>(raw: string): T {
+  let text = raw;
+
+  // Strip <think>...</think> blocks (greedy, handles multiline)
+  text = text.replace(/<think>[\s\S]*?<\/think>/gi, "");
+
+  // Try to find JSON inside a code fence first
+  const fenceMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  if (fenceMatch) {
+    const candidate = fenceMatch[1].trim();
+    try {
+      return JSON.parse(candidate) as T;
+    } catch {
+      // Fall through to other strategies
+    }
+  }
+
+  // Try to find the first { ... } block that parses as valid JSON
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const candidate = text.slice(firstBrace, lastBrace + 1);
+    try {
+      return JSON.parse(candidate) as T;
+    } catch {
+      // Fall through
+    }
+  }
+
+  // Last resort: try parsing the whole trimmed text
+  return JSON.parse(text.trim()) as T;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as { problem: GeneratedProblem };
@@ -140,19 +181,25 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    // Parse JSON from response
-    let jsonStr = fullResponse.trim();
-    if (jsonStr.startsWith("```json")) jsonStr = jsonStr.slice(7);
-    else if (jsonStr.startsWith("```")) jsonStr = jsonStr.slice(3);
-    if (jsonStr.endsWith("```")) jsonStr = jsonStr.slice(0, -3);
-    jsonStr = jsonStr.trim();
-
+    // Parse JSON from response — handle thinking blocks, code fences, extra text
     let parsed: ValidationResponse;
     try {
-      parsed = JSON.parse(jsonStr);
-    } catch {
+      parsed = extractJSON<ValidationResponse>(fullResponse);
+    } catch (parseErr) {
+      logger.error(
+        "api/coding-interview/validate-test-cases",
+        "Failed to parse AI response",
+        {
+          error: parseErr instanceof Error ? parseErr.message : String(parseErr),
+          rawResponse: fullResponse.slice(0, 2000),
+        },
+      );
       return NextResponse.json(
-        { error: "Failed to parse AI validation response" },
+        {
+          error: "Failed to parse AI validation response",
+          detail: parseErr instanceof Error ? parseErr.message : String(parseErr),
+          rawSnippet: fullResponse.slice(0, 500),
+        },
         { status: 502 },
       );
     }
@@ -172,7 +219,12 @@ export async function POST(request: NextRequest) {
       corrections: parsed.corrections || [],
       isValid,
     });
-  } catch {
+  } catch (err) {
+    logger.error(
+      "api/coding-interview/validate-test-cases",
+      `Unhandled error: ${err instanceof Error ? err.message : String(err)}`,
+      err instanceof Error ? err.stack : undefined,
+    );
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
