@@ -197,13 +197,25 @@ class AIServerQueue {
     this.updateItem(task.id, { status: "processing", startedAt: Date.now() });
     logger.info("ai-queue", `Processing: [${task.id}] ${task.label}`);
 
+    // Safety timeout: if a task runs longer than 5 minutes, abort it.
+    // This prevents the queue from getting permanently stuck when the LLM hangs.
+    const TASK_TIMEOUT_MS = 300_000; // 5 minutes
+    const taskTimeoutId = setTimeout(() => {
+      if (this.activeId === task.id && !task.abortController.signal.aborted) {
+        logger.info("ai-queue", `Timeout: [${task.id}] ${task.label} exceeded ${TASK_TIMEOUT_MS / 1000}s — aborting`);
+        task.abortController.abort();
+      }
+    }, TASK_TIMEOUT_MS);
+
     try {
       const result = await task.execute(task.abortController.signal);
+      clearTimeout(taskTimeoutId);
       this.updateItem(task.id, { status: "completed", completedAt: Date.now() });
       this.currentModel = task.model;
       logger.info("ai-queue", `Completed: [${task.id}] ${task.label}`);
       task.resolve(result);
     } catch (err) {
+      clearTimeout(taskTimeoutId);
       if (task.abortController.signal.aborted) {
         this.updateItem(task.id, { status: "cancelled", completedAt: Date.now() });
         task.reject(new Error("Request cancelled"));

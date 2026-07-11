@@ -39,7 +39,7 @@ export interface TokenUsage {
 
 export interface AIClient {
   isAvailable(): Promise<boolean>;
-  generate(prompt: string, params?: InferenceParams): AsyncGenerator<string>;
+  generate(prompt: string, params?: InferenceParams, signal?: AbortSignal): AsyncGenerator<string>;
   /** Returns token usage from the last completed generate() call, or null if unavailable */
   getLastUsage(): TokenUsage | null;
 }
@@ -88,6 +88,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
     async *generate(
       prompt: string,
       params?: InferenceParams,
+      signal?: AbortSignal,
     ): AsyncGenerator<string> {
       // Merge: defaults (from tier config) → per-call overrides
       const merged: InferenceParams = { ...defaults, ...params };
@@ -132,6 +133,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
           method: "POST",
           headers,
           body: JSON.stringify(body),
+          signal,
         });
 
         if (!response.ok || !response.body) {

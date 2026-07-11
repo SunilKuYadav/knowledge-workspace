@@ -199,6 +199,7 @@ export type InterviewPhase =
   | "follow-up"
   | "scoring"
   | "summary"
+  | "ended"
   | "error";
 
 export interface ConversationMessage {

@@ -113,6 +113,12 @@ export const defaultInterviewState: InterviewState = {
   error: null,
 };
 
+/**
+ * Flag to suppress persistence during clearSession().
+ * Prevents the auto-persist subscriber from saving the reset state.
+ */
+let _suppressPersistence = false;
+
 /* ─── Resolve Initial State (restore from sessionStorage if fresh) ─── */
 
 function getInitialState(): InterviewState {
@@ -182,12 +188,17 @@ export const useInterviewStore = create<InterviewStore>()(
     setError: (error: string | null) => set({ error }),
 
     clearSession: () => {
+      _suppressPersistence = true;
       clearPersistedState();
       set({
         ...defaultInterviewState,
+        // Use a terminal phase that won't trigger doGenerate() in useInterviewSession
+        phase: "ended",
         sessionStartTime: Date.now(),
         lastPersistedAt: Date.now(),
       });
+      // Re-enable persistence after the synchronous set completes
+      _suppressPersistence = false;
     },
   })),
 );
@@ -197,6 +208,12 @@ export const useInterviewStore = create<InterviewStore>()(
 // Subscribe to all state changes and persist to sessionStorage.
 // This runs after every set() call in the store.
 useInterviewStore.subscribe((state) => {
+  // Skip persistence when session is being cleared
+  if (_suppressPersistence) return;
+
+  // Don't persist terminal/ended state
+  if (state.phase === "ended") return;
+
   // Extract only the data fields (exclude action functions) for persistence
   /* eslint-disable @typescript-eslint/no-unused-vars */
   const {

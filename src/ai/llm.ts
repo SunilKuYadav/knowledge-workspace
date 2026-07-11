@@ -145,7 +145,7 @@ function createQueuedClient(routeKey: string, config: ModelConfig): AIClient {
         routeKey,
         label,
         config.model,
-        async (_signal) => {
+        async (signal) => {
           // Ensure the model is loaded before inference
           try {
             await ensureModelLoaded(config.model, config.contextLength);
@@ -158,7 +158,8 @@ function createQueuedClient(routeKey: string, config: ModelConfig): AIClient {
           }
 
           // Run the actual generation and push chunks to the channel
-          for await (const chunk of rawClient.generate(prompt, params)) {
+          for await (const chunk of rawClient.generate(prompt, params, signal)) {
+            if (signal.aborted) break;
             chunks.push(chunk);
             notify();
           }

@@ -23,15 +23,28 @@ interface EvaluateRequestBody {
   code: string;
   language: "javascript" | "typescript";
   problem: GeneratedProblem;
-  testResults: TestCaseResult[];
+  testResults: TestCaseResult[] | {
+    testResults: TestCaseResult[];
+    consoleOutput?: string;
+    executionTimeMs?: number;
+    memoryUsageMb?: number;
+    error?: unknown;
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as EvaluateRequestBody;
-    const { code, language, problem, testResults } = body;
+    const { code, language, problem } = body;
 
-    if (!code || !language || !problem || !testResults) {
+    // The client sends an ExecutionResult object; extract the testResults array
+    const testResults: TestCaseResult[] = Array.isArray(body.testResults)
+      ? body.testResults
+      : Array.isArray((body.testResults as { testResults?: unknown })?.testResults)
+        ? (body.testResults as { testResults: TestCaseResult[] }).testResults
+        : [];
+
+    if (!code || !language || !problem || testResults.length === 0) {
       return NextResponse.json(
         {
           error:

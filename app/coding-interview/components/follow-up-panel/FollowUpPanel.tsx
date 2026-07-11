@@ -36,7 +36,7 @@ export function FollowUpPanel({
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[200px] max-h-[400px] p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[200px] h-[80vh] p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
         {messages.map((msg, idx) => (
           <div
             key={idx}

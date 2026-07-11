@@ -1,8 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import type { HintPanelProps } from "./types";
 import { LEVEL_LABELS } from "./constants";
 import { useHintPanel } from "./useHintPanel";
+
+function CollapsibleHint({
+  level,
+  content,
+}: {
+  level: number;
+  content: string;
+}) {
+  const [isOpen, setIsOpen] = useState(true);
+
+  return (
+    <div className="rounded-lg border border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-3 text-left hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors"
+        aria-expanded={isOpen}
+      >
+        <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          Level {level} — {LEVEL_LABELS[level]}
+        </p>
+        <svg
+          className={`w-4 h-4 text-zinc-400 dark:text-zinc-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19.5 8.25l-7.5 7.5-7.5-7.5"
+          />
+        </svg>
+      </button>
+      {isOpen && (
+        <div className="px-3 pb-3">
+          <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+            {content}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function HintPanel({
   onRequestHint,
@@ -70,21 +118,11 @@ export function HintPanel({
         )}
       </button>
 
-      {/* Consumed hints displayed chronologically */}
+      {/* Consumed hints displayed chronologically — each collapsible */}
       {hints.length > 0 && (
         <div className="space-y-3">
           {hints.map((hint, i) => (
-            <div
-              key={i}
-              className="rounded-lg border border-zinc-100 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 p-3"
-            >
-              <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-1">
-                Level {i + 1} — {LEVEL_LABELS[i + 1]}
-              </p>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
-                {hint}
-              </p>
-            </div>
+            <CollapsibleHint key={i} level={i + 1} content={hint} />
           ))}
         </div>
       )}
