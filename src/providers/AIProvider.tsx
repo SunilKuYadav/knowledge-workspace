@@ -27,7 +27,7 @@ const AIStatusContext = createContext<AIStatusContextValue>({
   available: false,
 });
 
-const HEALTH_CHECK_INTERVAL_MS = 30_000;
+const HEALTH_CHECK_INTERVAL_MS = 90_000;
 
 export function AIProvider({ children }: { children: ReactNode }) {
   const [available, setAvailable] = useState(false);

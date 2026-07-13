@@ -20,7 +20,7 @@ import { useAIQueueStore } from "@/src/stores/aiQueueStore";
 let installed = false;
 
 /** Polling interval for server queue status */
-const SERVER_POLL_INTERVAL_MS = 120_000;
+const SERVER_POLL_INTERVAL_MS = 30_000;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 /**
