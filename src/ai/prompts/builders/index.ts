@@ -99,3 +99,35 @@ export type {
   ProgressAction,
   CoverageStats,
 } from "./learning-progress";
+
+// ─── Topic Problems Module ──────────────────────────────────────────────────
+export {
+  buildSuggestProblemsPrompt,
+  buildGenerateProblemFromTopicPrompt,
+} from "./topic-problems";
+export type {
+  SuggestProblemsParams,
+  GenerateProblemFromTopicParams,
+} from "./topic-problems";
+
+// ─── Solution Evaluation Module ─────────────────────────────────────────────
+export { buildEvaluateSolutionPrompt } from "./solution-evaluation";
+export type {
+  EvaluateSolutionParams,
+  TestResultInput,
+} from "./solution-evaluation";
+
+// ─── Test Validation Module ─────────────────────────────────────────────────
+export {
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+} from "./test-validation";
+export type { ProblemTestValidationParams } from "./test-validation";
+
+// ─── Evaluation Actions Module ──────────────────────────────────────────────
+export { buildEvaluationActionPrompt } from "./evaluation-actions";
+export type {
+  EvaluationActionContext,
+  EvaluationActionConfig,
+  EvaluationAction,
+} from "./evaluation-actions";

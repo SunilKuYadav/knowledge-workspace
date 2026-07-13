@@ -74,6 +74,16 @@ export {
   buildTopicCreationAssistPrompt,
   buildProblemCreationAssistPrompt,
   buildStudyPlanPrompt,
+  // Topic Problems Module
+  buildSuggestProblemsPrompt,
+  buildGenerateProblemFromTopicPrompt,
+  // Solution Evaluation Module
+  buildEvaluateSolutionPrompt,
+  // Test Validation Module
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+  // Evaluation Actions Module
+  buildEvaluationActionPrompt,
 } from "./builders";
 export type {
   GenerateProblemParams,
@@ -86,6 +96,14 @@ export type {
   TopicCreationAssistParams,
   ProblemCreationAssistParams,
   StudyPlanGenerationParams,
+  SuggestProblemsParams,
+  GenerateProblemFromTopicParams,
+  EvaluateSolutionParams,
+  TestResultInput,
+  ProblemTestValidationParams,
+  EvaluationActionContext,
+  EvaluationActionConfig,
+  EvaluationAction,
 } from "./builders";
 
 // ─── Schemas ───

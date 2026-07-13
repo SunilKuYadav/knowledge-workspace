@@ -34,7 +34,8 @@ The prompt system is **user-configurable** via `/settings` (UI) or the config fi
 
 | Level | Target | Teaching Depth |
 |-------|--------|----------------|
-| **5 years (default)** | Senior (L4/L5) | Clear foundations, practical examples, pattern recognition |
+| **1 year (default)** | Junior/Mid (L3/L4) | Step-by-step explanations, visual analogies, building blocks |
+| 5 years | Senior (L4/L5) | Clear foundations, practical examples, pattern recognition |
 | 10 years | Staff (L5/L6) | First principles, formal analysis, production depth |
 | 15 years | Principal (L6/L7) | Architectural thinking, skip fundamentals, organizational impact |
 
@@ -42,8 +43,8 @@ The prompt system is **user-configurable** via `/settings` (UI) or the config fi
 
 ```typescript
 {
-  experienceLevel: 5 | 10 | 15,        // Default: 5
-  targetRole: string,                    // Default: "Senior Engineer (L4/L5)"
+  experienceLevel: 1 | 5 | 10 | 15,        // Default: 1
+  targetRole: string,                    // Default: "Junior/Mid Engineer (L3/L4)"
   targetCompanies: string[],             // Default: ["Google", "Meta", "Microsoft", "Amazon", "Apple"]
   overrides: {                           // Per-action customization (optional)
     [actionKey]: {
@@ -172,6 +173,33 @@ or dynamically via `composeWithConfig({ actionKeys: [...], task, config })`.
 | `buildGenerateDescriptionPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-description` | Generate full problem description with test cases |
 | `buildGenerateNotePrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-note` | Generate "key things to remember" note from solution |
 | `buildGenerateVariationPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-variation` | Generate a problem variation testing same patterns |
+| `buildGenerateTestCasesPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-test-cases` | Generate comprehensive categorized test suite |
+
+### Topic Problem Generation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildSuggestProblemsPrompt(params, level, role)` | `builders/topic-problems.ts` | `/api/ai/topic/suggest-problems` | Suggest 5-8 coding problems for a topic |
+| `buildGenerateProblemFromTopicPrompt(params, level)` | `builders/topic-problems.ts` | `/api/ai/topic/generate-problem` | Generate a complete problem from topic metadata |
+
+### Solution Evaluation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildEvaluateSolutionPrompt(params, level, role)` | `builders/solution-evaluation.ts` | `/api/ai/problem/evaluate-solution` | Evaluate submitted code with experience-calibrated scoring |
+
+### Test Validation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildProblemTestValidationPrompt(params)` | `builders/test-validation.ts` | `/api/ai/problem/validate-test-cases` | Validate test case correctness for problem descriptions |
+| `buildCodingInterviewTestValidationPrompt(problem)` | `builders/test-validation.ts` | `/api/ai/coding-interview/validate-test-cases` | Validate hidden test cases for coding interview problems |
+
+### Evaluation Actions (AI Sidebar)
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildEvaluationActionPrompt(action, ctx, config)` | `builders/evaluation-actions.ts` | `/api/ai` (sidebar) | Post-evaluation actions: improve solution, generate notes, alternative approach, follow-up suggestions |
 
 ---
 
@@ -238,6 +266,12 @@ import {
   MARKDOWN_CONTEXT,
   buildArtifactPrompt,
   buildProblemGenerationPrompt,
+  buildSuggestProblemsPrompt,
+  buildEvaluateSolutionPrompt,
+  buildEvaluationActionPrompt,
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+  buildGenerateProblemFromTopicPrompt,
 } from "@/ai/prompts";
 
 // ─── Legacy: Static module composition ───
@@ -247,7 +281,7 @@ const prompt = composePrompt({
 });
 
 // ─── Preferred: Config-aware composition ───
-const config = await loadPromptConfig(); // loads from workspace or defaults (5 YOE)
+const config = await loadPromptConfig(); // loads from workspace or defaults (1 YOE)
 
 const configPrompt = composeWithConfig({
   actionKeys: ["identity", "teaching"],
@@ -259,7 +293,7 @@ const configPrompt = composeWithConfig({
 // ─── Get a single action's final prompt ───
 const interviewPrompt = getPromptForAction("interview", config);
 
-// ─── Builders (unchanged) ───
+// ─── Builders ───
 const artifactPrompt = buildArtifactPrompt("Binary Search", "dsa", "notes");
 
 const problemPrompt = buildProblemGenerationPrompt({
@@ -267,4 +301,21 @@ const problemPrompt = buildProblemGenerationPrompt({
   difficulty: "medium",
   language: "typescript",
 });
+
+// ─── Topic problem suggestions (experience-calibrated) ───
+const suggestPrompt = buildSuggestProblemsPrompt(
+  { topicId: "...", topicTitle: "Binary Search", category: "dsa", tags: ["binary-search"], difficulty: "medium", artifactContent: "..." },
+  config.experienceLevel,
+  config.targetRole,
+);
+
+// ─── Solution evaluation (experience-calibrated) ───
+const evalPrompt = buildEvaluateSolutionPrompt(
+  { code: "...", problemId: "...", title: "Two Sum", description: "...", difficulty: "easy", patterns: ["hash-map"], constraints: ["..."], testResults: [] },
+  config.experienceLevel,
+  config.targetRole,
+);
+
+// ─── Evaluation follow-up actions ───
+const followUpPrompt = buildEvaluationActionPrompt("eval-followup", evaluationContext, config);
 ```

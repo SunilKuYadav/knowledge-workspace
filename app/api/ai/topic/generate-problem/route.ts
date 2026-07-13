@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReadyClient } from "@/ai";
 import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
+import { buildGenerateProblemFromTopicPrompt } from "@/ai/prompts/builders/topic-problems";
 
 interface RequestBody {
   title: string;
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = await loadPromptConfig();
-    const prompt = buildGenerateProblemPrompt(body, config.experienceLevel);
+    const prompt = buildGenerateProblemFromTopicPrompt(body, config.experienceLevel);
 
     let raw = "";
     for await (const chunk of client.generate(prompt)) {
@@ -65,59 +66,6 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-function buildGenerateProblemPrompt(body: RequestBody, experienceLevel: number): string {
-  const levelHint = experienceLevel === 1
-    ? "Design the problem for a junior engineer. Include clear input/output formats, simple constraints, and a straightforward boilerplate. Examples should be easy to follow."
-    : experienceLevel === 5
-      ? "Design for a senior engineer. Include non-trivial edge cases, meaningful constraints, and expect optimal solutions."
-      : experienceLevel >= 10
-        ? "Design for a staff+ engineer. Include challenging edge cases, tight constraints that require optimal approaches, and test cases that catch subtle bugs."
-        : "Design for an experienced engineer.";
-
-  const topicContent = body.artifactContent.slice(0, 3000);
-
-  return `You are an expert at creating LeetCode-style coding problems. Generate a complete, well-structured coding problem based on this specification.
-
-Problem: ${body.title}
-Difficulty: ${body.difficulty}
-Brief: ${body.description}
-Patterns: ${body.patterns.join(", ")}
-Topic Context: ${body.topicTitle} (${body.topicCategory})
-
-${levelHint}
-
-Related topic content for context:
-${topicContent}
-
-Return ONLY a valid JSON object with this exact structure:
-{
-  "title": "${body.title}",
-  "difficulty": "${body.difficulty}",
-  "description": "Full problem statement in markdown. Include the problem narrative, input/output description, and any special conditions.",
-  "constraints": ["constraint 1", "constraint 2", ...],
-  "examples": [
-    { "input": "formatted input string", "expectedOutput": "expected output", "explanation": "step-by-step explanation" }
-  ],
-  "testCases": [
-    { "input": "test input", "expectedOutput": "expected output" }
-  ],
-  "boilerplate": "function solutionName(params: types): returnType {\\n  // Your solution here\\n}",
-  "timeComplexity": "O(...)",
-  "spaceComplexity": "O(...)",
-  "patterns": ${JSON.stringify(body.patterns)}
-}
-
-Requirements:
-- Provide 2-3 examples with clear explanations
-- Provide 5-8 test cases covering edge cases, typical cases, and boundary conditions
-- The boilerplate should be TypeScript with proper types
-- Input/output formats should be parseable (use JSON-like format for arrays/objects)
-- Constraints should be specific (e.g., "1 <= nums.length <= 10^5")
-- Description should be clear, complete, and unambiguous
-
-Respond with ONLY the JSON.`;
 }
 
 function parseProblemResponse(raw: string, body: RequestBody): Record<string, unknown> {
