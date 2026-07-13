@@ -47,6 +47,8 @@ const ROUTE_TO_TIER: Record<string, ModelTier> = {
   "ai/enhance-prompt": "fast",
   "ai/parse-form": "fast",
   "ai/status": "fast",
+  "ai/quick-chat": "fast",
+  "ai/quick-chat/summarize": "fast",
 };
 
 /**

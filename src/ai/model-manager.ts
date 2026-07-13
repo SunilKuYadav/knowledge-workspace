@@ -80,6 +80,7 @@ interface UnloadModelResponse {
 
 class ModelManager {
   private currentModel: string | null = null;
+  private currentContextLength: number | null = null;
   private loading: Promise<void> | null = null;
 
   /**
@@ -93,15 +94,15 @@ class ModelManager {
    * Uses a lock (promise) to prevent concurrent load/unload races.
    */
   async ensure(model: string, contextLength?: number): Promise<void> {
-    // Fast path: already loaded
-    if (this.currentModel === model) {
+    // Fast path: already loaded with the same context length
+    if (this.currentModel === model && this.currentContextLength === (contextLength ?? null)) {
       return;
     }
 
     // If a load is in progress, wait for it to finish then re-check
     if (this.loading) {
       await this.loading;
-      if (this.currentModel === model) {
+      if (this.currentModel === model && this.currentContextLength === (contextLength ?? null)) {
         return;
       }
     }
@@ -146,9 +147,11 @@ class ModelManager {
       const loaded = models.filter((m) => m.loaded_instances.length > 0);
       if (loaded.length > 0) {
         this.currentModel = loaded[0].key;
-        logger.info("model-manager", `Synced: ${this.currentModel} is loaded`);
+        this.currentContextLength = loaded[0].loaded_instances[0]?.config.context_length ?? null;
+        logger.info("model-manager", `Synced: ${this.currentModel} is loaded (ctx: ${this.currentContextLength})`);
       } else {
         this.currentModel = null;
+        this.currentContextLength = null;
         logger.info("model-manager", "Synced: no models currently loaded");
       }
     } catch (err) {
@@ -163,22 +166,50 @@ class ModelManager {
 
   private async _loadSequence(model: string, contextLength?: number): Promise<void> {
     // Check what's actually loaded in LM Studio
-    const loadedModels = await this._getLoadedInstanceIds();
+    const models = await this._listModels().catch(() => [] as ModelInfo[]);
+    const loadedModels: string[] = [];
+    for (const m of models) {
+      for (const instance of m.loaded_instances) {
+        loadedModels.push(instance.id);
+      }
+    }
 
-    // If the target model is already loaded, just update tracking
-    if (loadedModels.includes(model)) {
+    // Check if the target model is already loaded with the correct context length
+    const targetModelInfo = models.find(
+      (m) => m.key === model && m.loaded_instances.length > 0,
+    );
+
+    if (targetModelInfo && contextLength) {
+      const instance = targetModelInfo.loaded_instances[0];
+      if (instance.config.context_length === contextLength) {
+        // Same model, same context — just update tracking
+        this.currentModel = model;
+        this.currentContextLength = contextLength;
+        logger.info("model-manager", `Model already loaded with matching context: ${model} (ctx: ${contextLength})`);
+        return;
+      }
+      // Same model but different context length — unload and reload
+      logger.info(
+        "model-manager",
+        `Context length mismatch for ${model}: loaded=${instance.config.context_length}, requested=${contextLength}. Reloading.`,
+      );
+      await this._unload(instance.id);
+    } else if (targetModelInfo) {
+      // Model loaded, no specific context requested — accept as-is
       this.currentModel = model;
+      this.currentContextLength = targetModelInfo.loaded_instances[0]?.config.context_length ?? null;
       logger.info("model-manager", `Model already loaded: ${model}`);
       return;
     }
 
-    // Always unload current model(s) before loading a new one
-    if (loadedModels.length > 0) {
+    // Unload any other loaded models
+    const remainingLoaded = await this._getLoadedInstanceIds();
+    if (remainingLoaded.length > 0) {
       logger.info(
         "model-manager",
-        `Unloading ${loadedModels.length} model(s) before loading ${model}: [${loadedModels.join(", ")}]`,
+        `Unloading ${remainingLoaded.length} model(s) before loading ${model}: [${remainingLoaded.join(", ")}]`,
       );
-      for (const instanceId of loadedModels) {
+      for (const instanceId of remainingLoaded) {
         await this._unload(instanceId);
       }
     }
@@ -186,6 +217,7 @@ class ModelManager {
     // Load the requested model
     await this._load(model, contextLength);
     this.currentModel = model;
+    this.currentContextLength = contextLength ?? null;
   }
 
   private async _listModels(): Promise<ModelInfo[]> {
