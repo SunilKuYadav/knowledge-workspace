@@ -16,10 +16,10 @@ function createRecord(overrides: Partial<AssessmentRecord> = {}): AssessmentReco
     status: "completed",
     startedAt: new Date().toISOString(),
     experienceLevel: 10,
-    phases: [],
+    phases: [] as AssessmentRecord["phases"],
     initialDifficulty: "medium",
     ...overrides,
-  };
+  } as AssessmentRecord;
 }
 
 /**
@@ -34,10 +34,10 @@ const assessmentRecordArb = fc
       (ms) => new Date(ms).toISOString(),
     ),
     experienceLevel: fc.constantFrom(5 as const, 10 as const, 15 as const),
-    phases: fc.constant([]),
+    phases: fc.constant([] as AssessmentRecord["phases"]),
     initialDifficulty: fc.constantFrom("easy" as const, "medium" as const, "hard" as const),
   })
-  .map((r) => r as AssessmentRecord);
+  .map((r) => r as unknown as AssessmentRecord);
 
 /* ─── Unit Tests: FIFO Eviction ──────────────────────────── */
 

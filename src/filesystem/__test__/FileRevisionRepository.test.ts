@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import { mkdtemp, rm, mkdir, writeFile } from "fs/promises";
 import { tmpdir } from "os";
-import { FileRevisionRepository } from "./FileRevisionRepository";
+import { FileRevisionRepository } from "../FileRevisionRepository";
 import type { RevisionData, RevisionEntry } from "@/types";
 
 describe("FileRevisionRepository", () => {

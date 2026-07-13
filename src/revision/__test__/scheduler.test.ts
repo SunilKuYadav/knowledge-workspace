@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeNextReview } from "./scheduler";
+import { computeNextReview } from "../scheduler";
 
 describe("computeNextReview", () => {
   it("computes next review date by adding interval days to review date", () => {

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { SearchIndex, SearchDocument } from "./search-index";
-import { search, SearchOptions } from "./query";
-import { buildSearchDocuments, TopicContent, ProblemContent } from "./builder";
+import { SearchIndex, SearchDocument } from "../search-index";
+import { search, SearchOptions } from "../query";
+import { buildSearchDocuments, TopicContent, ProblemContent } from "../builder";
 import { Topic } from "@/types/Topic";
 import { Problem } from "@/types/Problem";
 import { Flashcard } from "@/types/Flashcard";

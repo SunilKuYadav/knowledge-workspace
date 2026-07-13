@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import { mkdtemp, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { FileProblemRepository } from "./FileProblemRepository";
+import { FileProblemRepository } from "../FileProblemRepository";
 import type { Problem } from "@/types";
 
 describe("FileProblemRepository", () => {

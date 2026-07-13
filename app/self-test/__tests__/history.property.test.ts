@@ -19,14 +19,14 @@ const assessmentRecordArb = fc
       .integer({ min: 1577836800000, max: 1893456000000 })
       .map((ms) => new Date(ms).toISOString()),
     experienceLevel: fc.constantFrom(5 as const, 10 as const, 15 as const),
-    phases: fc.constant([]),
+    phases: fc.constant([] as AssessmentRecord["phases"]),
     initialDifficulty: fc.constantFrom(
       "easy" as const,
       "medium" as const,
       "hard" as const,
     ),
   })
-  .map((r) => r as AssessmentRecord);
+  .map((r) => r as unknown as AssessmentRecord);
 
 /**
  * Arbitrary for a completed record with a specific confidence score.
@@ -41,7 +41,7 @@ const completedRecordWithConfidence = (confidence: fc.Arbitrary<number>) =>
         .integer({ min: 1577836800000, max: 1893456000000 })
         .map((ms) => new Date(ms).toISOString()),
       experienceLevel: fc.constantFrom(5 as const, 10 as const, 15 as const),
-      phases: fc.constant([]),
+      phases: fc.constant([] as AssessmentRecord["phases"]),
       initialDifficulty: fc.constantFrom(
         "easy" as const,
         "medium" as const,
@@ -49,7 +49,7 @@ const completedRecordWithConfidence = (confidence: fc.Arbitrary<number>) =>
       ),
       confidenceScore: confidence,
     })
-    .map((r) => r as AssessmentRecord);
+    .map((r) => r as unknown as AssessmentRecord);
 
 /* ─── Property 10: FIFO Eviction ─────────────────────────── */
 

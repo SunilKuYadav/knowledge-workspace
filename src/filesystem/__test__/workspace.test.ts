@@ -10,7 +10,7 @@ import {
   readMarkdownFile,
   writeMarkdownFile,
   getWorkspacePath,
-} from "./workspace";
+} from "../workspace";
 
 describe("workspace filesystem utilities", () => {
   let tempDir: string;

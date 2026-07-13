@@ -35,7 +35,7 @@ const RequestBodySchema = z.object({
   incorrectQuestions: z.array(z.string()).optional(),
 });
 
-function getSchemaForPhase(phaseType: AssessmentPhaseType) {
+function getSchemaForPhase(phaseType: AssessmentPhaseType): z.ZodSchema {
   switch (phaseType) {
     case "conceptual":
       return z.array(ConceptualQuestionSchema).min(2).max(3);

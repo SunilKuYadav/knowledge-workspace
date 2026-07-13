@@ -296,8 +296,8 @@ describe("Property 1: Phase Score Computation", () => {
           fc.record({
             score: fc.integer({ min: 0, max: 10 }),
             feedback: fc.constant("feedback"),
-            mistakes: fc.constant([]),
-            keyInsights: fc.constant([]),
+            mistakes: fc.constant([] as string[]),
+            keyInsights: fc.constant([] as string[]),
           }),
           { minLength: 1, maxLength: 10 }
         ),

@@ -3,8 +3,8 @@ import {
   explainConcept,
   suggestSimilarProblems,
   generateInterviewPrep,
-} from "./explain";
-import type { AIClient } from "./client";
+} from "../explain";
+import type { AIClient } from "../client";
 import type { Problem } from "@/types";
 
 function createMockClient(responses: string[], available = true): AIClient {
@@ -16,6 +16,9 @@ function createMockClient(responses: string[], available = true): AIClient {
       for (const r of responses) {
         yield r;
       }
+    },
+    getLastUsage() {
+      return null;
     },
   };
 }
