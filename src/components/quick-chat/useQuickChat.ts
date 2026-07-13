@@ -45,7 +45,7 @@ export function useQuickChat() {
       if (!tab) return;
 
       try {
-        await fetch("/api/ai/quick-chat/persist", {
+        await fetch("/api/chat-persist", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -66,7 +66,7 @@ export function useQuickChat() {
     loadingTabsRef.current.add(tabId);
 
     try {
-      const res = await fetch(`/api/ai/quick-chat/persist/${encodeURIComponent(tabId)}`);
+      const res = await fetch(`/api/chat-persist/${encodeURIComponent(tabId)}`);
       if (!res.ok) {
         // Tab file doesn't exist yet — mark as loaded with empty messages
         setTabMessages(tabId, []);
@@ -89,7 +89,7 @@ export function useQuickChat() {
   // Soft-delete a tab in the repository
   const persistDelete = useCallback(async (tabId: string) => {
     try {
-      await fetch(`/api/ai/quick-chat/persist?id=${encodeURIComponent(tabId)}`, {
+      await fetch(`/api/chat-persist?id=${encodeURIComponent(tabId)}`, {
         method: "DELETE",
       });
     } catch {
@@ -101,7 +101,7 @@ export function useQuickChat() {
   useEffect(() => {
     async function loadIndex() {
       try {
-        const res = await fetch("/api/ai/quick-chat/persist");
+        const res = await fetch("/api/chat-persist");
         if (!res.ok) return;
         const data = await res.json();
         if (data.tabs && data.tabs.length > 0) {
@@ -229,6 +229,20 @@ export function useQuickChat() {
             accumulated += decoder.decode(value, { stream: true });
             updateLastAssistantMessage(tabId, accumulated);
           }
+
+          // If the stream completed but yielded nothing (model failed to generate),
+          // show an error so the UI doesn't get stuck in streaming state.
+          if (!accumulated.trim()) {
+            updateLastAssistantMessage(
+              tabId,
+              "Error: No response received. The model may still be loading — try again in a moment.",
+            );
+          }
+        } else {
+          updateLastAssistantMessage(
+            tabId,
+            "Error: No response body. Please try again.",
+          );
         }
 
         // After successful exchange, generate summary and persist tab

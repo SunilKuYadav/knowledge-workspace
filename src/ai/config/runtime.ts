@@ -72,5 +72,9 @@ export function toRequestParams(config: ModelConfig) {
     // They're ignored by OpenAI but supported by local inference servers
     top_k: config.topK,
     repeat_penalty: config.repeatPenalty,
+    // LM Studio JIT TTL — auto-unload after N seconds of inactivity
+    ttl: config.ttl,
+    // LM Studio JIT loading — context length to allocate
+    context_length: config.contextLength,
   };
 }

@@ -63,7 +63,7 @@ function getTabPath(tabId: string): string {
 
 /**
  * GET — Load the index only (tab metadata without messages).
- * Individual tab messages are loaded on demand via GET /persist/{tabId}.
+ * Individual tab messages are loaded on demand via GET /api/chat-persist/{tabId}.
  */
 export async function GET() {
   try {

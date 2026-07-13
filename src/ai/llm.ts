@@ -1,16 +1,20 @@
 /**
- * High-level LLM access — combines inference config, model management, and client creation.
+ * High-level LLM access — combines inference config and client creation.
  *
  * This is the primary entry point for AI routes. It:
  * 1. Resolves the full inference profile for the route (model + all params)
- * 2. Ensures that model is loaded in LM Studio via the management API
- * 3. Returns a ready-to-use AIClient configured with the correct inference params
+ * 2. Returns a queued AIClient that includes `ttl` for LM Studio JIT loading
+ *
+ * Model lifecycle is managed entirely by LM Studio:
+ * - JIT loading: The model auto-loads when an inference request arrives
+ * - TTL auto-unload: Models unload after N seconds of inactivity (per-request `ttl` field)
+ * - Auto-evict: Previous JIT models are evicted when a new one loads
  *
  * Usage:
  * ```ts
  * import { getReadyClient } from "@/ai/llm";
  *
- * // Basic — uses tier defaults for temperature, maxTokens, etc.
+ * // Basic — uses tier defaults for temperature, maxTokens, ttl, etc.
  * const client = await getReadyClient("ai/generate-artifact");
  * for await (const chunk of client.generate(prompt)) { ... }
  *
@@ -29,9 +33,8 @@ import {
   type ModelTier,
   type ModelConfig,
 } from "./config";
-import { ensureModelLoaded } from "./model-manager";
+import { modelManager } from "./model-manager";
 import { aiServerQueue } from "./queue";
-import { logger } from "../lib/logger";
 
 const DEFAULT_BASE_URL =
   process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
@@ -146,16 +149,11 @@ function createQueuedClient(routeKey: string, config: ModelConfig): AIClient {
         label,
         config.model,
         async (signal) => {
-          // Ensure the model is loaded before inference
-          try {
-            await ensureModelLoaded(config.model, config.contextLength);
-            aiServerQueue.setCurrentModel(config.model);
-          } catch (err) {
-            logger.info(
-              "llm",
-              `Model load failed for ${config.model}: ${err instanceof Error ? err.message : String(err)}. Proceeding anyway.`,
-            );
-          }
+          // Unload any other model before inference — only one model in memory at a time.
+          // The inference request itself will JIT-load the requested model (via `ttl` field).
+          await modelManager.ensureUnloaded(config.model);
+          aiServerQueue.setCurrentModel(config.model);
+          modelManager.setCurrentModel(config.model);
 
           // Run the actual generation and push chunks to the channel
           for await (const chunk of rawClient.generate(prompt, params, signal)) {

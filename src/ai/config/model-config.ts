@@ -18,6 +18,13 @@ import { CONTEXT_PROFILE } from "./context-profiles";
 
 export type ModelTier = "teaching" | "coding" | "fast";
 
+/**
+ * Default TTL (in seconds) for JIT-loaded models.
+ * LM Studio auto-unloads the model after this many seconds of inactivity.
+ * Override via MODEL_TTL_SECONDS env var. Default: 1s.
+ */
+const DEFAULT_TTL_SECONDS = parseInt(process.env.MODEL_TTL_SECONDS ?? "10", 10);
+
 export interface ModelConfig {
   /** Model identifier (as registered in LM Studio or OpenAI API) */
   model: string;
@@ -42,6 +49,14 @@ export interface ModelConfig {
 
   /** Whether to stream the response token-by-token */
   stream: boolean;
+
+  /**
+   * Auto-unload TTL in seconds.
+   * LM Studio will automatically unload the model after this many seconds of inactivity.
+   * If the model isn't loaded, LM Studio JIT-loads it on the inference request.
+   * Set to 0 or omit to disable auto-unload (use LM Studio's global setting).
+   */
+  ttl?: number;
 }
 
 /**
@@ -77,6 +92,8 @@ export const MODEL_CONFIG: Record<ModelTier, ModelConfig> = {
     maxTokens: 4_096,
 
     stream: true,
+
+    ttl: DEFAULT_TTL_SECONDS,
   },
 
   coding: {
@@ -96,6 +113,8 @@ export const MODEL_CONFIG: Record<ModelTier, ModelConfig> = {
     maxTokens: 5_144,
 
     stream: true,
+
+    ttl: DEFAULT_TTL_SECONDS,
   },
 
   fast: {
@@ -115,6 +134,8 @@ export const MODEL_CONFIG: Record<ModelTier, ModelConfig> = {
     maxTokens: 2_048,
 
     stream: true,
+
+    ttl: DEFAULT_TTL_SECONDS,
   },
 };
 

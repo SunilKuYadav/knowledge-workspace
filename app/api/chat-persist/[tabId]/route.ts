@@ -1,7 +1,7 @@
 /**
  * API route for loading a single tab's full data (including messages).
  *
- * GET /api/ai/quick-chat/persist/{tabId} — Load one tab's messages on demand.
+ * GET /api/chat-persist/{tabId} — Load one tab's messages on demand.
  */
 
 import { NextRequest, NextResponse } from "next/server";

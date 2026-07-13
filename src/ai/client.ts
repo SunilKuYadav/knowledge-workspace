@@ -26,6 +26,10 @@ export interface InferenceParams {
   max_tokens?: number;
   repeat_penalty?: number;
   stream?: boolean;
+  /** LM Studio JIT TTL — auto-unload after N seconds of inactivity */
+  ttl?: number;
+  /** Context length for JIT loading — how much context to allocate */
+  context_length?: number;
 }
 
 /**
@@ -128,6 +132,10 @@ export function createAIClient(options: AIClientOptions): AIClient {
         // Local inference server extensions (LM Studio, llama.cpp, Ollama)
         if (merged.top_k !== undefined) body.top_k = merged.top_k;
         if (merged.repeat_penalty !== undefined) body.repeat_penalty = merged.repeat_penalty;
+        // LM Studio JIT loading — TTL for auto-unload after idle period
+        if (merged.ttl !== undefined && merged.ttl > 0) body.ttl = merged.ttl;
+        // LM Studio JIT loading — context length to allocate on load
+        if (merged.context_length !== undefined && merged.context_length > 0) body.context_length = merged.context_length;
 
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
@@ -144,10 +152,11 @@ export function createAIClient(options: AIClientOptions): AIClient {
         // Non-streaming mode: read the full response at once
         if (!stream) {
           const data = (await response.json()) as {
-            choices?: Array<{ message?: { content?: string } }>;
+            choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
             usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
           };
-          const content = data.choices?.[0]?.message?.content ?? "";
+          const message = data.choices?.[0]?.message;
+          const content = message?.content || message?.reasoning_content || "";
           if (data.usage) {
             lastUsage = {
               promptTokens: data.usage.prompt_tokens ?? 0,
@@ -168,6 +177,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let reasoningBuffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -184,6 +194,14 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
             const data = trimmed.slice(6);
             if (data === "[DONE]") {
+              // If the model only produced reasoning (e.g., Qwen3 hit max_tokens
+              // during thinking), yield the reasoning as fallback content.
+              if (!fullResponse && reasoningBuffer.trim()) {
+                const fallback = reasoningBuffer.trim();
+                fullResponse = fallback;
+                emitStreamChunk(prompt, fallback, model);
+                yield fallback;
+              }
               logOutput(prompt, fullResponse);
               addLogEntry(prompt, fullResponse, model);
               return;
@@ -191,7 +209,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
             try {
               const parsed = JSON.parse(data) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string } }>;
                 usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
               // Capture usage from the final chunk (when stream_options.include_usage is set)
@@ -202,11 +220,17 @@ export function createAIClient(options: AIClientOptions): AIClient {
                   totalTokens: parsed.usage.total_tokens ?? 0,
                 };
               }
-              const content = parsed.choices?.[0]?.delta?.content;
+              const delta = parsed.choices?.[0]?.delta;
+              const content = delta?.content;
               if (content) {
                 fullResponse += content;
                 emitStreamChunk(prompt, content, model);
                 yield content;
+              }
+              // Accumulate reasoning in case content never arrives
+              const reasoning = delta?.reasoning_content;
+              if (reasoning) {
+                reasoningBuffer += reasoning;
               }
             } catch {
               // Skip malformed SSE lines
@@ -220,7 +244,7 @@ export function createAIClient(options: AIClientOptions): AIClient {
           if (trimmed.startsWith("data: ") && trimmed.slice(6) !== "[DONE]") {
             try {
               const parsed = JSON.parse(trimmed.slice(6)) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string } }>;
                 usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
               if (parsed.usage) {
@@ -230,16 +254,29 @@ export function createAIClient(options: AIClientOptions): AIClient {
                   totalTokens: parsed.usage.total_tokens ?? 0,
                 };
               }
-              const content = parsed.choices?.[0]?.delta?.content;
+              const delta = parsed.choices?.[0]?.delta;
+              const content = delta?.content;
               if (content) {
                 fullResponse += content;
                 emitStreamChunk(prompt, content, model);
                 yield content;
               }
+              if (delta?.reasoning_content) {
+                reasoningBuffer += delta.reasoning_content;
+              }
             } catch {
               // Skip malformed trailing content
             }
           }
+        }
+
+        // Fallback: if stream ended without [DONE] and no content was produced,
+        // yield accumulated reasoning so the user sees something.
+        if (!fullResponse && reasoningBuffer.trim()) {
+          const fallback = reasoningBuffer.trim();
+          fullResponse = fallback;
+          emitStreamChunk(prompt, fallback, model);
+          yield fallback;
         }
 
         logOutput(prompt, fullResponse);
@@ -264,5 +301,7 @@ export function modelConfigToParams(config: ModelConfig): InferenceParams {
     max_tokens: config.maxTokens,
     repeat_penalty: config.repeatPenalty,
     stream: config.stream,
+    ttl: config.ttl,
+    context_length: config.contextLength,
   };
 }
