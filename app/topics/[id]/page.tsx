@@ -46,6 +46,43 @@ export default async function TopicDetailPage({
     difficulty: p.difficulty,
   }));
 
+  // Build linked practice problems with description data for inline practice
+  const linkedProblemsForPractice = await Promise.all(
+    linkedProblemIds.map(async (problemId) => {
+      const problem = allProblems.find((p) => p.id === problemId);
+      if (!problem) return null;
+      const description = await problemService.getDescription(problemId);
+      if (!description) {
+        // Problem exists but has no description data — can't practice inline
+        return null;
+      }
+      return {
+        id: problem.id,
+        title: problem.title,
+        difficulty: problem.difficulty,
+        patterns: problem.patterns,
+        status: problem.status,
+        description: description.description,
+        constraints: description.constraints,
+        examples: description.examples.map((ex) => ({
+          input: ex.input,
+          expectedOutput: ex.expectedOutput,
+          explanation: ex.explanation,
+        })),
+        testCases: description.testCases.map((tc) => ({
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+        })),
+        boilerplate: description.boilerplate || "// Write your solution\n",
+        timeComplexity: description.timeComplexity,
+        spaceComplexity: description.spaceComplexity,
+      };
+    }),
+  );
+  const linkedProblems = linkedProblemsForPractice.filter(
+    (p): p is NonNullable<typeof p> => p !== null,
+  );
+
   // Collect practice problem titles + suggestion titles for interview exclusion
   const avoidProblems: string[] = [];
   if (practiceData) {
@@ -192,6 +229,7 @@ export default async function TopicDetailPage({
             tags={topic.tags}
             difficulty={topic.difficulty}
             semanticDescription={topic.semanticDescription}
+            linkedProblems={linkedProblems}
           />
         </section>
 

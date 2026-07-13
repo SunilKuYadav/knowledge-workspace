@@ -4,15 +4,15 @@ import { useState, useCallback, useEffect } from "react";
 import { executeCode } from "@/app/coding-interview/services/executionService";
 import type { ExecutionResult } from "@/app/coding-interview/lib/types";
 import {
-  loadPracticeProblems,
+  loadPracticeSuggestions,
   saveSuggestions,
-  savePracticeProblem,
-  deletePracticeProblem,
+  createPracticeAsStandaloneProblem,
+  unlinkPracticeProblem,
   savePracticeSolution,
 } from "./actions";
 import type {
   SuggestedProblem,
-  GeneratedPracticeProblem,
+  LinkedPracticeProblem,
   PracticeEvaluation,
 } from "./types";
 
@@ -24,6 +24,8 @@ interface UseTopicPracticeParams {
   difficulty: string;
   artifactContent: string;
   semanticDescription?: Record<string, unknown>;
+  /** Linked problems with description data, passed from the server component */
+  linkedProblems: LinkedPracticeProblem[];
 }
 
 export function useTopicPractice({
@@ -34,23 +36,29 @@ export function useTopicPractice({
   difficulty,
   artifactContent,
   semanticDescription,
+  linkedProblems: initialLinkedProblems,
 }: UseTopicPracticeParams) {
-  // ─── Persisted Data ─────────────────────────────────────────────────────────
-  const [savedProblems, setSavedProblems] = useState<GeneratedPracticeProblem[]>([]);
+  // ─── Linked Problems (from server) ──────────────────────────────────────────
+  const [linkedProblems, setLinkedProblems] = useState<LinkedPracticeProblem[]>(initialLinkedProblems);
+
+  // ─── Persisted Suggestions ──────────────────────────────────────────────────
   const [suggestions, setSuggestions] = useState<SuggestedProblem[]>([]);
   const [isLoadingPersistedData, setIsLoadingPersistedData] = useState(true);
 
-  // Load persisted data (suggestions + problems) on mount
+  // Load persisted suggestions on mount
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const data = await loadPracticeProblems(topicId);
-        if (!cancelled && data) {
-          setSavedProblems(data.problems as GeneratedPracticeProblem[]);
-          if (data.suggestions && data.suggestions.length > 0) {
-            setSuggestions(data.suggestions as SuggestedProblem[]);
-          }
+        const data = await loadPracticeSuggestions(topicId);
+        if (!cancelled && data && data.suggestions.length > 0) {
+          // Mark suggestions that already have generated problems (by title match)
+          const generatedTitles = new Set(linkedProblems.map((p) => p.title.toLowerCase()));
+          const marked = (data.suggestions as SuggestedProblem[]).map((s) => ({
+            ...s,
+            generated: s.generated || generatedTitles.has(s.title.toLowerCase()),
+          }));
+          setSuggestions(marked);
         }
       } catch {
         // Ignore — will start fresh
@@ -59,7 +67,7 @@ export function useTopicPractice({
       }
     })();
     return () => { cancelled = true; };
-  }, [topicId]);
+  }, [topicId, linkedProblems]);
 
   // ─── Suggestions (generate + persist) ───────────────────────────────────────
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
@@ -91,7 +99,7 @@ export function useTopicPractice({
       const newSuggestions = (data.suggestions || []) as SuggestedProblem[];
 
       // Mark suggestions that already have generated problems
-      const generatedTitles = new Set(savedProblems.map((p) => p.title.toLowerCase()));
+      const generatedTitles = new Set(linkedProblems.map((p) => p.title.toLowerCase()));
       const marked = newSuggestions.map((s) => ({
         ...s,
         generated: generatedTitles.has(s.title.toLowerCase()),
@@ -106,10 +114,10 @@ export function useTopicPractice({
     } finally {
       setIsLoadingSuggestions(false);
     }
-  }, [topicId, topicTitle, topicCategory, tags, difficulty, artifactContent, semanticDescription, isLoadingSuggestions, savedProblems]);
+  }, [topicId, topicTitle, topicCategory, tags, difficulty, artifactContent, semanticDescription, isLoadingSuggestions, linkedProblems]);
 
-  // ─── Problem Generation + Persistence ───────────────────────────────────────
-  const [activeProblem, setActiveProblem] = useState<GeneratedPracticeProblem | null>(null);
+  // ─── Problem Generation (creates standalone + links) ────────────────────────
+  const [activeProblem, setActiveProblem] = useState<LinkedPracticeProblem | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateProblem = useCallback(async (suggestion: SuggestedProblem) => {
@@ -135,30 +143,51 @@ export function useTopicPractice({
       if (!res.ok) throw new Error("Generation failed");
 
       const data = await res.json();
-      const problemId = `tp-${topicId}-${Date.now()}`;
-      const problem: GeneratedPracticeProblem = {
-        id: problemId,
-        suggestionId: suggestion.id,
-        title: data.problem.title,
-        difficulty: data.problem.difficulty,
-        description: data.problem.description,
-        constraints: data.problem.constraints || [],
-        examples: data.problem.examples || [],
-        testCases: data.problem.testCases || [],
-        boilerplate: data.problem.boilerplate || "// Write your solution\n",
-        timeComplexity: data.problem.timeComplexity,
-        spaceComplexity: data.problem.spaceComplexity,
-        patterns: data.problem.patterns || suggestion.patterns,
-        createdAt: new Date().toISOString(),
+
+      const problemData = {
+        title: data.problem.title as string,
+        difficulty: data.problem.difficulty as "easy" | "medium" | "hard",
+        description: data.problem.description as string,
+        constraints: (data.problem.constraints || []) as string[],
+        examples: (data.problem.examples || []) as { input: string; expectedOutput: string; explanation?: string }[],
+        testCases: (data.problem.testCases || []) as { input: string; expectedOutput: string }[],
+        boilerplate: (data.problem.boilerplate || "// Write your solution\n") as string,
+        timeComplexity: data.problem.timeComplexity as string | undefined,
+        spaceComplexity: data.problem.spaceComplexity as string | undefined,
+        patterns: (data.problem.patterns || suggestion.patterns) as string[],
       };
 
-      // Persist to filesystem (also marks suggestion as generated)
-      await savePracticeProblem(topicId, problem);
+      // Create as standalone problem and link to topic
+      const result = await createPracticeAsStandaloneProblem(
+        topicId,
+        suggestion.id,
+        problemData,
+      );
+
+      if (!result.success || !result.problemId) {
+        throw new Error(result.error || "Failed to create problem");
+      }
+
+      // Build the linked practice problem for local state
+      const newLinkedProblem: LinkedPracticeProblem = {
+        id: result.problemId,
+        title: problemData.title,
+        difficulty: problemData.difficulty,
+        patterns: problemData.patterns,
+        status: "not-started",
+        description: problemData.description,
+        constraints: problemData.constraints,
+        examples: problemData.examples,
+        testCases: problemData.testCases,
+        boilerplate: problemData.boilerplate,
+        timeComplexity: problemData.timeComplexity,
+        spaceComplexity: problemData.spaceComplexity,
+      };
 
       // Update local state
-      setSavedProblems((prev) => [...prev, problem]);
-      setActiveProblem(problem);
-      setCode(problem.boilerplate);
+      setLinkedProblems((prev) => [...prev, newLinkedProblem]);
+      setActiveProblem(newLinkedProblem);
+      setCode(problemData.boilerplate);
       setEvaluation(null);
       setExecutionResult(null);
 
@@ -173,24 +202,29 @@ export function useTopicPractice({
     }
   }, [isGenerating, topicId, topicTitle, topicCategory, artifactContent]);
 
-  // ─── Delete Problem ─────────────────────────────────────────────────────────
+  // ─── Unlink Problem ─────────────────────────────────────────────────────────
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteProblem = useCallback(async (problemId: string) => {
+  const handleUnlinkProblem = useCallback(async (problemId: string) => {
     setIsDeleting(true);
     try {
-      await deletePracticeProblem(topicId, problemId);
+      // Find matching suggestion to un-mark
+      const problem = linkedProblems.find((p) => p.id === problemId);
+      const matchingSuggestion = problem
+        ? suggestions.find((s) => s.title.toLowerCase() === problem.title.toLowerCase())
+        : undefined;
 
-      // Find which suggestion it came from and un-mark locally
-      const removed = savedProblems.find((p) => p.id === problemId);
-      setSavedProblems((prev) => prev.filter((p) => p.id !== problemId));
-      if (removed) {
+      await unlinkPracticeProblem(topicId, problemId, matchingSuggestion?.id);
+
+      // Update local state
+      setLinkedProblems((prev) => prev.filter((p) => p.id !== problemId));
+      if (matchingSuggestion) {
         setSuggestions((prev) =>
-          prev.map((s) => (s.id === removed.suggestionId ? { ...s, generated: false } : s)),
+          prev.map((s) => (s.id === matchingSuggestion.id ? { ...s, generated: false } : s)),
         );
       }
 
-      // If we're deleting the active problem, go back
+      // If we're unlinking the active problem, go back
       if (activeProblem?.id === problemId) {
         setActiveProblem(null);
         setCode("");
@@ -202,12 +236,12 @@ export function useTopicPractice({
     } finally {
       setIsDeleting(false);
     }
-  }, [topicId, activeProblem, savedProblems]);
+  }, [topicId, activeProblem, linkedProblems, suggestions]);
 
-  // ─── Open Saved Problem ─────────────────────────────────────────────────────
-  const openSavedProblem = useCallback((problem: GeneratedPracticeProblem) => {
+  // ─── Open Linked Problem ────────────────────────────────────────────────────
+  const openLinkedProblem = useCallback((problem: LinkedPracticeProblem) => {
     setActiveProblem(problem);
-    setCode(problem.savedSolution || problem.boilerplate);
+    setCode(problem.boilerplate);
     setEvaluation(null);
     setExecutionResult(null);
   }, []);
@@ -333,14 +367,15 @@ export function useTopicPractice({
       const evalResult = data.evaluation as PracticeEvaluation;
       setEvaluation(evalResult);
 
-      // Persist solution and score
-      await savePracticeSolution(topicId, activeProblem.id, code, evalResult.overallScore);
+      // Persist solution and update status on the standalone problem
+      await savePracticeSolution(activeProblem.id, code, evalResult.overallScore);
 
-      // Update local state with saved solution
-      setSavedProblems((prev) =>
+      // Update local state with new status
+      const newStatus = evalResult.overallScore >= 60 ? "solved" : "attempted";
+      setLinkedProblems((prev) =>
         prev.map((p) =>
           p.id === activeProblem.id
-            ? { ...p, savedSolution: code, lastScore: evalResult.overallScore }
+            ? { ...p, status: newStatus as LinkedPracticeProblem["status"] }
             : p,
         ),
       );
@@ -355,7 +390,7 @@ export function useTopicPractice({
     } finally {
       setIsEvaluating(false);
     }
-  }, [activeProblem, code, isEvaluating, executionResult, topicId]);
+  }, [activeProblem, code, isEvaluating, executionResult]);
 
   // ─── Navigation ─────────────────────────────────────────────────────────────
   const handleBackToSuggestions = useCallback(() => {
@@ -366,8 +401,8 @@ export function useTopicPractice({
   }, []);
 
   return {
-    // Persisted data
-    savedProblems,
+    // Linked problems
+    linkedProblems,
     isLoadingPersistedData,
     // Suggestions
     suggestions,
@@ -378,11 +413,11 @@ export function useTopicPractice({
     activeProblem,
     isGenerating,
     generateProblem,
-    // Delete
+    // Unlink
     isDeleting,
-    handleDeleteProblem,
-    // Open saved
-    openSavedProblem,
+    handleUnlinkProblem,
+    // Open linked
+    openLinkedProblem,
     // Code + execution
     code,
     setCode,

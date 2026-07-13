@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { MarkdownRenderer } from "@/src/components/MarkdownRenderer";
 import { CodeEditor, ConsolePanel } from "@/app/coding-interview/components";
 import { useTopicPractice } from "./useTopicPractice";
-import type { SuggestedProblem, GeneratedPracticeProblem, PracticeEvaluation } from "./types";
+import type { SuggestedProblem, LinkedPracticeProblem, PracticeEvaluation } from "./types";
 import type { SemanticDescription } from "@/types";
 
 interface TopicPracticeProps {
@@ -15,11 +16,13 @@ interface TopicPracticeProps {
   difficulty: string;
   artifactContent: string;
   semanticDescription?: SemanticDescription;
+  /** Linked problems with description data, loaded from the server */
+  linkedProblems: LinkedPracticeProblem[];
 }
 
 export default function TopicPractice(props: TopicPracticeProps) {
   const {
-    savedProblems,
+    linkedProblems,
     isLoadingPersistedData,
     suggestions,
     isLoadingSuggestions,
@@ -29,8 +32,8 @@ export default function TopicPractice(props: TopicPracticeProps) {
     isGenerating,
     generateProblem,
     isDeleting,
-    handleDeleteProblem,
-    openSavedProblem,
+    handleUnlinkProblem,
+    openLinkedProblem,
     code,
     setCode,
     executionResult,
@@ -56,7 +59,7 @@ export default function TopicPractice(props: TopicPracticeProps) {
         isEvaluating={isEvaluating}
         handleEvaluate={handleEvaluate}
         handleBack={handleBackToSuggestions}
-        onDelete={() => handleDeleteProblem(activeProblem.id)}
+        onUnlink={() => handleUnlinkProblem(activeProblem.id)}
         isDeleting={isDeleting}
       />
     );
@@ -77,19 +80,19 @@ export default function TopicPractice(props: TopicPracticeProps) {
   // Main list view: saved problems + suggestions
   return (
     <div className="p-6 space-y-8">
-      {/* Saved Problems Section */}
-      {savedProblems.length > 0 && (
+      {/* Linked Problems Section */}
+      {linkedProblems.length > 0 && (
         <section>
           <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 mb-3">
-            Your Practice Problems
+            Practice Problems
           </h3>
           <div className="grid gap-3">
-            {savedProblems.map((problem) => (
-              <SavedProblemCard
+            {linkedProblems.map((problem) => (
+              <LinkedProblemCard
                 key={problem.id}
                 problem={problem}
-                onOpen={openSavedProblem}
-                onDelete={handleDeleteProblem}
+                onOpen={openLinkedProblem}
+                onUnlink={handleUnlinkProblem}
                 isDeleting={isDeleting}
               />
             ))}
@@ -158,7 +161,7 @@ export default function TopicPractice(props: TopicPracticeProps) {
           </div>
         )}
 
-        {!isLoadingSuggestions && suggestions.length === 0 && savedProblems.length === 0 && (
+        {!isLoadingSuggestions && suggestions.length === 0 && linkedProblems.length === 0 && (
           <div className="py-8 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-3">
               Click &quot;Generate Suggestions&quot; to get AI-recommended practice problems for this topic.
@@ -172,24 +175,30 @@ export default function TopicPractice(props: TopicPracticeProps) {
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function SavedProblemCard({
+function LinkedProblemCard({
   problem,
   onOpen,
-  onDelete,
+  onUnlink,
   isDeleting,
 }: {
-  problem: GeneratedPracticeProblem;
-  onOpen: (p: GeneratedPracticeProblem) => void;
-  onDelete: (id: string) => void;
+  problem: LinkedPracticeProblem;
+  onOpen: (p: LinkedPracticeProblem) => void;
+  onUnlink: (id: string) => void;
   isDeleting: boolean;
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
 
   const difficultyColor = {
     easy: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
     medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
     hard: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   }[problem.difficulty];
+
+  const statusColor = {
+    "not-started": "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400",
+    attempted: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
+    solved: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  }[problem.status];
 
   return (
     <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
@@ -202,17 +211,9 @@ function SavedProblemCard({
             <span className={`text-xs font-medium px-2 py-0.5 rounded shrink-0 ${difficultyColor}`}>
               {problem.difficulty}
             </span>
-            {problem.lastScore !== undefined && (
-              <span className={`text-xs font-medium px-2 py-0.5 rounded shrink-0 ${
-                problem.lastScore >= 80
-                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  : problem.lastScore >= 60
-                    ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-              }`}>
-                Score: {problem.lastScore}/100
-              </span>
-            )}
+            <span className={`text-xs font-medium px-2 py-0.5 rounded shrink-0 ${statusColor}`}>
+              {problem.status === "not-started" ? "Not Started" : problem.status}
+            </span>
           </div>
           <div className="flex flex-wrap gap-1.5 mt-1">
             {problem.patterns.map((p) => (
@@ -224,23 +225,29 @@ function SavedProblemCard({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href={`/problems/${problem.id}`}
+            className="px-3 py-1.5 text-sm font-medium rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            View →
+          </Link>
           <button
             onClick={() => onOpen(problem)}
             className="px-3 py-1.5 text-sm font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
           >
             Practice →
           </button>
-          {confirmDelete ? (
+          {confirmUnlink ? (
             <div className="flex items-center gap-1">
               <button
-                onClick={() => { onDelete(problem.id); setConfirmDelete(false); }}
+                onClick={() => { onUnlink(problem.id); setConfirmUnlink(false); }}
                 disabled={isDeleting}
                 className="px-2 py-1 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
                 Confirm
               </button>
               <button
-                onClick={() => setConfirmDelete(false)}
+                onClick={() => setConfirmUnlink(false)}
                 className="px-2 py-1 text-xs font-medium rounded border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
               >
                 Cancel
@@ -248,12 +255,12 @@ function SavedProblemCard({
             </div>
           ) : (
             <button
-              onClick={() => setConfirmDelete(true)}
+              onClick={() => setConfirmUnlink(true)}
               className="p-1.5 rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-              title="Delete problem"
+              title="Unlink problem"
             >
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
           )}
@@ -337,10 +344,10 @@ function PracticeView({
   isEvaluating,
   handleEvaluate,
   handleBack,
-  onDelete,
+  onUnlink,
   isDeleting,
 }: {
-  problem: GeneratedPracticeProblem;
+  problem: LinkedPracticeProblem;
   code: string;
   setCode: (code: string) => void;
   executionResult: import("@/app/coding-interview/lib/types").ExecutionResult | null;
@@ -350,10 +357,10 @@ function PracticeView({
   isEvaluating: boolean;
   handleEvaluate: () => void;
   handleBack: () => void;
-  onDelete: () => void;
+  onUnlink: () => void;
   isDeleting: boolean;
 }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
 
   const allTestsPassed =
     executionResult !== null &&
@@ -389,22 +396,22 @@ function PracticeView({
           {problem.spaceComplexity && (
             <span className="text-xs text-zinc-500">Space: <code className="font-mono">{problem.spaceComplexity}</code></span>
           )}
-          {confirmDelete ? (
+          {confirmUnlink ? (
             <div className="flex items-center gap-1">
-              <button onClick={() => { onDelete(); setConfirmDelete(false); }} disabled={isDeleting}
+              <button onClick={() => { onUnlink(); setConfirmUnlink(false); }} disabled={isDeleting}
                 className="px-2 py-1 text-xs font-medium rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
-                Delete
+                Unlink
               </button>
-              <button onClick={() => setConfirmDelete(false)}
+              <button onClick={() => setConfirmUnlink(false)}
                 className="px-2 py-1 text-xs font-medium rounded border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400">
                 Cancel
               </button>
             </div>
           ) : (
-            <button onClick={() => setConfirmDelete(true)} title="Delete problem"
+            <button onClick={() => setConfirmUnlink(true)} title="Unlink problem"
               className="p-1.5 rounded text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
           )}

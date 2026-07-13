@@ -5,7 +5,9 @@
  * AI suggests problems based on topic content, users can generate full
  * problem descriptions, then code + evaluate solutions inline.
  *
- * Generated problems are persisted to `practice-problems.json` in the topic folder.
+ * Generated problems are created as standalone problems in the workspace
+ * and linked to the topic bidirectionally. They appear in both the topic's
+ * Practice tab and the main /problems list.
  */
 
 export interface SuggestedProblem {
@@ -21,13 +23,18 @@ export interface SuggestedProblem {
   generated: boolean;
 }
 
-export interface GeneratedPracticeProblem {
-  /** Unique ID for persisting */
+/**
+ * A linked practice problem — a standalone problem that has been linked
+ * to this topic, enriched with its description data for inline practice.
+ */
+export interface LinkedPracticeProblem {
+  /** Problem ID (slug) */
   id: string;
-  /** Matches the suggestion ID it was created from */
-  suggestionId: string;
   title: string;
   difficulty: "easy" | "medium" | "hard";
+  patterns: string[];
+  status: "not-started" | "attempted" | "solved";
+  /** From description.json */
   description: string;
   constraints: string[];
   examples: { input: string; expectedOutput: string; explanation?: string }[];
@@ -35,13 +42,6 @@ export interface GeneratedPracticeProblem {
   boilerplate: string;
   timeComplexity?: string;
   spaceComplexity?: string;
-  patterns: string[];
-  /** User's saved solution code */
-  savedSolution?: string;
-  /** Last evaluation score (0-100) */
-  lastScore?: number;
-  /** ISO date of creation */
-  createdAt: string;
 }
 
 export interface PracticeEvaluation {

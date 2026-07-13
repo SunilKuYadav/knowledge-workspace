@@ -21,6 +21,7 @@ export default function TopicTabs({
   tags,
   difficulty,
   semanticDescription,
+  linkedProblems,
 }: TopicTabsProps) {
   const {
     artifacts,
@@ -124,6 +125,7 @@ export default function TopicTabs({
           difficulty={difficulty}
           artifactContent={artifactContent}
           semanticDescription={semanticDescription}
+          linkedProblems={linkedProblems}
         />
       ) : artifactKeys.length === 0 ? (
         <div className="py-8 text-center">

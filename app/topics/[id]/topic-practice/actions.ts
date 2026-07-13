@@ -2,20 +2,25 @@
 
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { linkProblemToTopic, unlinkProblemFromTopic } from "@/app/actions/link-actions";
 import type {
   TopicPracticeData,
-  TopicPracticeProblem,
   TopicPracticeSuggestion,
 } from "@/repository";
+import type { ProblemDescription } from "@/types";
 
 /**
- * Loads persisted practice data (suggestions + problems) for a topic.
+ * Loads persisted practice data (suggestions only) for a topic.
+ * Problems are now standalone — fetched from the problems repository via links.
  */
-export async function loadPracticeProblems(
+export async function loadPracticeSuggestions(
   topicId: string,
-): Promise<TopicPracticeData | null> {
+): Promise<{ suggestions: TopicPracticeSuggestion[] } | null> {
   const repo = new FileTopicRepository(getWorkspacePath());
-  return repo.getPracticeProblems(topicId);
+  const data = await repo.getPracticeProblems(topicId);
+  if (!data) return null;
+  return { suggestions: data.suggestions };
 }
 
 /**
@@ -44,90 +49,142 @@ export async function saveSuggestions(
 }
 
 /**
- * Saves a newly generated practice problem to the topic's practice-problems.json.
+ * Creates a standalone problem from a generated practice problem,
+ * stores its description/test data, and links it to the topic.
+ * Returns the created problem's ID.
  */
-export async function savePracticeProblem(
+export async function createPracticeAsStandaloneProblem(
   topicId: string,
-  problem: TopicPracticeProblem,
-): Promise<{ success: boolean }> {
-  const repo = new FileTopicRepository(getWorkspacePath());
+  suggestionId: string,
+  problemData: {
+    title: string;
+    difficulty: "easy" | "medium" | "hard";
+    description: string;
+    constraints: string[];
+    examples: { input: string; expectedOutput: string; explanation?: string }[];
+    testCases: { input: string; expectedOutput: string }[];
+    boilerplate: string;
+    timeComplexity?: string;
+    spaceComplexity?: string;
+    patterns: string[];
+  },
+): Promise<{ success: boolean; problemId?: string; error?: string }> {
+  try {
+    const workspacePath = getWorkspacePath();
+    const problemRepo = new FileProblemRepository(workspacePath);
 
-  const existing = await repo.getPracticeProblems(topicId);
-  const data: TopicPracticeData = existing ?? {
-    topicId,
-    suggestions: [],
-    problems: [],
-    updatedAt: new Date().toISOString(),
-  };
+    // Create the standalone problem
+    const problem = await problemRepo.create({
+      title: problemData.title,
+      difficulty: problemData.difficulty,
+      companies: [],
+      patterns: problemData.patterns,
+      status: "not-started",
+      favorite: false,
+      relatedTopicIds: [topicId],
+      semanticDescription: {},
+    });
 
-  // Don't add duplicates
-  if (data.problems.some((p) => p.id === problem.id)) {
-    return { success: true };
+    // Save description.json with full test data + boilerplate
+    const now = new Date().toISOString();
+    const descriptionData: ProblemDescription = {
+      problemId: problem.id,
+      description: problemData.description,
+      constraints: problemData.constraints,
+      examples: problemData.examples.map((ex) => ({
+        input: ex.input,
+        expectedOutput: ex.expectedOutput,
+        explanation: ex.explanation,
+      })),
+      testCases: problemData.testCases.map((tc) => ({
+        input: tc.input,
+        expectedOutput: tc.expectedOutput,
+      })),
+      boilerplate: problemData.boilerplate,
+      timeComplexity: problemData.timeComplexity,
+      spaceComplexity: problemData.spaceComplexity,
+      generatedAt: now,
+      updatedAt: now,
+    };
+
+    await problemRepo.saveDescription(problem.id, descriptionData);
+
+    // Link problem to topic bidirectionally
+    await linkProblemToTopic(problem.id, topicId);
+
+    // Mark the corresponding suggestion as generated
+    const topicRepo = new FileTopicRepository(workspacePath);
+    const existing = await topicRepo.getPracticeProblems(topicId);
+    if (existing) {
+      existing.suggestions = existing.suggestions.map((s) =>
+        s.id === suggestionId ? { ...s, generated: true } : s,
+      );
+      existing.updatedAt = now;
+      await topicRepo.savePracticeProblems(topicId, existing);
+    }
+
+    return { success: true, problemId: problem.id };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to create problem",
+    };
   }
-
-  data.problems.push(problem);
-
-  // Mark the corresponding suggestion as generated
-  data.suggestions = data.suggestions.map((s) =>
-    s.id === problem.suggestionId ? { ...s, generated: true } : s,
-  );
-
-  data.updatedAt = new Date().toISOString();
-
-  await repo.savePracticeProblems(topicId, data);
-  return { success: true };
 }
 
 /**
- * Deletes a practice problem from the topic.
+ * Unlinks a practice problem from the topic and optionally deletes it.
+ * Also un-marks the corresponding suggestion.
  */
-export async function deletePracticeProblem(
+export async function unlinkPracticeProblem(
   topicId: string,
   problemId: string,
+  suggestionId?: string,
 ): Promise<{ success: boolean }> {
-  const repo = new FileTopicRepository(getWorkspacePath());
+  try {
+    // Unlink bidirectionally
+    await unlinkProblemFromTopic(problemId, topicId);
 
-  const existing = await repo.getPracticeProblems(topicId);
-  if (!existing) return { success: true };
+    // Un-mark the suggestion if we know which one it came from
+    if (suggestionId) {
+      const topicRepo = new FileTopicRepository(getWorkspacePath());
+      const existing = await topicRepo.getPracticeProblems(topicId);
+      if (existing) {
+        existing.suggestions = existing.suggestions.map((s) =>
+          s.id === suggestionId ? { ...s, generated: false } : s,
+        );
+        existing.updatedAt = new Date().toISOString();
+        await topicRepo.savePracticeProblems(topicId, existing);
+      }
+    }
 
-  // Find the suggestion ID before removing so we can un-mark it
-  const removedProblem = existing.problems.find((p) => p.id === problemId);
-  existing.problems = existing.problems.filter((p) => p.id !== problemId);
-
-  // Un-mark the suggestion as generated
-  if (removedProblem) {
-    existing.suggestions = existing.suggestions.map((s) =>
-      s.id === removedProblem.suggestionId ? { ...s, generated: false } : s,
-    );
+    return { success: true };
+  } catch {
+    return { success: false };
   }
-
-  existing.updatedAt = new Date().toISOString();
-
-  await repo.savePracticeProblems(topicId, existing);
-  return { success: true };
 }
 
 /**
- * Saves the user's solution and evaluation score for a practice problem.
+ * Saves the user's solution for a practice problem (as a standalone problem solution).
  */
 export async function savePracticeSolution(
-  topicId: string,
   problemId: string,
   solution: string,
   score: number,
 ): Promise<{ success: boolean }> {
-  const repo = new FileTopicRepository(getWorkspacePath());
+  try {
+    const workspacePath = getWorkspacePath();
+    const problemRepo = new FileProblemRepository(workspacePath);
 
-  const existing = await repo.getPracticeProblems(topicId);
-  if (!existing) return { success: false };
+    // Save the solution to the problem's solution.md
+    await problemRepo.saveSolution(problemId, solution);
 
-  existing.problems = existing.problems.map((p) =>
-    p.id === problemId
-      ? { ...p, savedSolution: solution, lastScore: score }
-      : p,
-  );
-  existing.updatedAt = new Date().toISOString();
+    // Update the problem status based on score
+    const newStatus = score >= 60 ? "solved" : "attempted";
+    await problemRepo.update(problemId, { status: newStatus });
 
-  await repo.savePracticeProblems(topicId, existing);
-  return { success: true };
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
 }
