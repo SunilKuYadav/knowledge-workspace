@@ -392,6 +392,402 @@ ${config.experienceLevel === 1 ? "- Learning Path — what to study next to deep
 `;
 }
 
+export function buildKnowledgePrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
+  if (config.experienceLevel === 1) {
+    return `For every topic, produce the following structured knowledge graph. Explain everything clearly for someone early in their career.
+
+## 1. Core Idea
+Explain the concept in one simple sentence. Use a real-world analogy.
+
+## 2. Why It Exists
+What problem does it solve? Use a concrete everyday scenario.
+
+## 3. Prerequisites
+Knowledge required BEFORE this topic makes sense. Be specific — list exact concepts. Mark which ones are "must know" vs "helpful to know."
+
+## 4. Builds Upon
+Which concepts you've already learned naturally lead into this one.
+
+## 5. Enables
+What becomes possible to learn after mastering this.
+
+## 6. Related Concepts
+Similar approaches. For each:
+- How they're similar (in simple terms)
+- How they're different
+- A simple rule for when to pick each: "Use X when... Use Y when..."
+
+## 7. Mental Model
+A single visual analogy or metaphor that makes the concept click. Think: "It's like a..." 
+
+## 8. Common Mistakes
+Beginner traps and misconceptions. For each:
+- What the mistake is
+- Why it happens
+- How to fix/avoid it
+- A small code example showing the bug
+
+## 9. When NOT to Use
+Situations where this is the wrong tool. Include what to use instead and why.
+
+## 10. Complexity Basics
+- How fast is it? (explain in plain language: "if the list has 1000 items, this checks about 10")
+- How much memory does it need?
+- How hard is it to implement correctly?
+
+## 11. Where You'll See This
+Real systems that use this concept:
+- Websites and apps you use daily
+- Databases
+- Your operating system
+- The internet
+
+## 12. Interview Expectations
+What interviewers expect at your level (L3/L4):
+- Can you explain what this does in plain language?
+- Can you implement a basic version?
+- Can you trace through it with a small example?
+- Can you identify when to use it?
+
+What would impress (stretch goals):
+- Handle edge cases without being prompted
+- Explain the time complexity
+- Connect it to other concepts you know
+
+## 13. Pattern Combinations
+How this combines with other concepts (to study later as you advance):
+Format: "Concept A + Concept B → Solves Problem Type"
+
+## 14. Recognition Signals
+Clues that tell you "use this concept here":
+Format: "If the problem says X... → Think about Y"
+
+## 15. Learning Stages
+- Stage 1: Understand — can you explain it to someone?
+- Stage 2: Implement — can you code it from scratch?
+- Stage 3: Apply — can you recognize when to use it in a new problem?
+- Stage 4: Optimize — can you improve the basic version?
+
+## 16. Revision Notes
+- 30-second explanation (elevator pitch)
+- 2-minute explanation (interview answer)
+- 5-minute deep dive (whiteboard walkthrough)
+
+## 17. Knowledge Links
+Explicit relationships:
+- Prerequisite → (what must come before)
+- Builds Upon → (what this extends)
+- Alternative → (competing approaches)
+- Often Combined With → (synergistic patterns)
+- Next to Learn → (natural progression)
+- Shows Up In → (real systems)
+
+---
+
+Rules:
+- Never invent APIs or complexity claims. If uncertain, say "Unknown."
+- Define every technical term on first use.
+- Use at least 2-3 examples per concept.
+- Keep each section independently meaningful.
+- Prefer simple code examples over abstract explanations.
+- Build confidence: normalize confusion, celebrate small insights.
+`;
+  }
+
+  if (config.experienceLevel === 5) {
+    return `For every topic, produce the following structured knowledge graph.
+
+## 1. Core Idea
+Explain the concept in one clear sentence.
+
+## 2. Why It Exists
+What problem does it solve? What existed before and why it wasn't enough?
+
+## 3. Prerequisites
+Knowledge required BEFORE this makes sense. List specific concepts, not broad areas.
+
+## 4. Builds Upon
+Which existing concepts directly evolve into this one.
+
+## 5. Enables
+Which advanced topics become accessible after mastering this.
+
+## 6. Related Concepts
+Similar or competing approaches. For each:
+- Key similarities
+- Key differences
+- Decision criteria: when to choose each
+
+## 7. Mental Model
+The intuition to carry. One sentence or one diagram.
+
+## 8. Common Mistakes
+Errors that mid-level engineers make. Include:
+- The mistake
+- Why it's tempting
+- The correct approach
+- Code example if applicable
+
+## 9. When NOT to Use
+Anti-patterns. When this is the wrong choice and what to use instead.
+
+## 10. Complexity & Trade-offs
+- Time complexity (worst, average)
+- Space complexity
+- Implementation difficulty
+- When constants matter
+
+## 11. Real-World Applications
+Where this appears in production:
+- Backend systems
+- Databases
+- Distributed systems
+- Networking
+
+## 12. Interview Progression
+How questions evolve:
+- L4 (your level): Correct implementation, clean code, basic edge cases.
+- L5 (stretch): Optimization, trade-off articulation, alternative approaches.
+- Beyond: System-level implications, combined patterns.
+
+## 13. Pattern Combinations
+How this combines with other concepts:
+Format: "Pattern A + Pattern B → Problem Type"
+
+## 14. Recognition Signals
+Problem clues that indicate this concept:
+Format: "If you see X... → Consider Y"
+
+## 15. Failure Cases
+What breaks? Why? How to detect and recover?
+
+## 16. Cross-Domain Connections
+How the same idea appears in other areas of computing.
+
+## 17. Revision Notes
+- One-line summary (mental index)
+- Key takeaways (3-5 bullet points)
+- Decision framework (when to use vs alternatives)
+
+## 18. Knowledge Links
+Explicit relationships:
+- Prerequisite → (what must come before)
+- Builds Upon → (what this extends)
+- Alternative → (competing approaches)
+- Often Combined With → (synergistic patterns)
+- Advanced Form → (where this leads)
+- Real World → (production systems using this)
+- Interview Variant → (how interviewers twist this)
+
+---
+
+Rules:
+- Never invent APIs or complexity claims. If uncertain, say "Unknown."
+- Clearly separate facts from engineering intuition.
+- Prefer tables over long paragraphs for structured data.
+- Keep each section independently meaningful (chunk-friendly).
+- Use consistent terminology throughout.
+`;
+  }
+
+  if (config.experienceLevel === 15) {
+    return `For every topic, produce the following structured knowledge graph at principal/distinguished depth.
+
+## 1. Core Idea
+One sentence. Assume the reader already knows the basics.
+
+## 2. Why It Exists
+Historical context: what paradigm shift or system failure motivated this. What it replaced and why.
+
+## 3. Prerequisites
+Concepts assumed mastered. Only list genuinely non-obvious prerequisites that even senior engineers sometimes lack.
+
+## 4. Builds Upon
+Directed dependency edges in the knowledge graph.
+
+## 5. Enables
+What architectural decisions or system designs become possible with deep mastery of this.
+
+## 6. Related Concepts
+Competing and complementary approaches. For each:
+- Theoretical relationship (are they equivalent? reducible? orthogonal?)
+- Production trade-offs at scale
+- When each wins (with scale thresholds if applicable)
+
+## 7. Mental Model
+The abstraction a principal engineer carries. May be mathematical, may be architectural.
+
+## 8. Subtle Misconceptions
+Errors that even experienced engineers (10+ YOE) make. Focus on second-order effects and scale-dependent behavior.
+
+## 9. When NOT to Use
+Anti-patterns at scale. Include organizational and operational reasons, not just algorithmic ones.
+
+## 10. Complexity & Trade-offs
+- Formal complexity (with amortized analysis where relevant)
+- Practical performance characteristics (cache behavior, branch prediction, memory access patterns)
+- Implementation complexity vs operational complexity trade-off
+- Scaling behavior (what changes at 10x, 100x, 1000x)
+
+## 11. Production at Scale
+- How this behaves at millions of QPS
+- Operational costs (monitoring, debugging, migration)
+- Failure modes that only appear at scale
+- Cross-system interactions
+
+## 12. Interview at Staff+ Level
+How this appears in L6/L7 interviews:
+- What distinguishes "senior answer" from "staff answer" from "principal answer"
+- The architectural reasoning interviewers probe for
+- Hidden requirements and ambiguity that reveal principal-level thinking
+
+## 13. Pattern Combinations
+Advanced compositions:
+Format: "Pattern A + Pattern B + Context C → Architectural Approach"
+
+## 14. Recognition Signals
+System-level indicators:
+Format: "If the system exhibits X... → This concept is relevant because Y"
+
+## 15. Failure Modes at Scale
+- What breaks at 10x/100x/1000x
+- Cascading failure patterns
+- Detection and mitigation strategies
+- Organizational impact of failures
+
+## 16. Cross-Domain & Cross-System Connections
+How this concept connects across:
+- Distributed systems theory
+- Database internals
+- OS/kernel design
+- Networking protocols
+- Organizational design (Conway's Law implications)
+
+## 17. Open Questions
+Where the field is heading. Unsolved problems. Active research.
+
+## 18. Knowledge Links
+- Prerequisite → (assumes mastery of)
+- Builds Upon → (extends)
+- Alternative → (competing approach at this scale)
+- Synergy → (multiplicative when combined)
+- Advanced Form → (theoretical extension)
+- Production → (systems operating at scale with this)
+- Architectural Pattern → (design patterns enabled)
+- Anti-Pattern → (when this becomes the wrong choice)
+
+---
+
+Rules:
+- Never explain basics. The reader has 15+ years of experience.
+- Focus on judgment calls, not mechanics.
+- Include cross-system implications and organizational thinking.
+- Formal analysis where it adds insight (not ceremony).
+- Keep each section independently meaningful.
+`;
+  }
+
+  // Default: 10 years (Staff-level depth)
+  return `For every topic, produce the following structured knowledge graph.
+
+## 1. Core Idea
+Explain the concept in one clear sentence. No jargon.
+
+## 2. Why It Exists
+What problem does it solve? What came before it and failed? Why was this technique introduced?
+
+## 3. Prerequisites
+Knowledge required BEFORE this topic makes sense. Be specific — list exact concepts, not broad categories.
+
+## 4. Builds Upon
+Which existing concepts naturally evolve into this one (directed edges in the learning graph).
+
+## 5. Enables
+Which advanced topics become accessible after mastering this.
+
+## 6. Related Concepts
+Similar or competing approaches. For each:
+- Key similarities
+- Key differences
+- When to choose each (decision criteria)
+
+## 7. Mental Model
+The intuition an experienced engineer carries. One sentence or one diagram. This is the "aha" insight.
+
+## 8. Common Mistakes
+Misconceptions, senior-engineer-level traps, and subtle edge cases. Include WHY each mistake happens and how it manifests at scale.
+
+## 9. When NOT to Use
+Anti-patterns and situations where this concept is the wrong choice. Include what to use instead and the conditions that make the switch worthwhile.
+
+## 10. Complexity & Trade-offs
+- Time complexity (worst, average, amortized where relevant)
+- Space complexity
+- Implementation complexity (how hard to get right in production)
+- Scalability considerations
+- Readability vs performance tension
+- Constants that matter in practice
+
+## 11. Real-World Applications
+Where this appears in production systems:
+- Backend / distributed systems
+- Databases / storage engines
+- Operating systems
+- Networking
+- Frontend (when applicable)
+
+## 12. Interview Progression
+How interview questions about this concept evolve by level:
+- L4 (Mid): Basic implementation, correct solution.
+- L5 (Senior): Optimization, edge cases, trade-off articulation.
+- L6 (Staff): Architecture-level reasoning, system-wide implications, alternative framings.
+- L7 (Principal): Problem-space framing, organizational impact.
+
+## 13. Pattern Combinations
+How this combines with other topics to solve harder problems.
+Format: "Pattern A + Pattern B → Problem Type"
+
+## 14. Recognition Signals
+Clues in a problem statement or system design that indicate this concept should be applied.
+Format: "If you see X... → Consider Y because Z"
+
+## 15. Failure Cases
+What breaks? Why? How to detect? How to recover? What cascades?
+
+## 16. Cross-Domain Connections
+How the same underlying idea appears in other domains.
+Include the insight about WHY the connection exists, not just that it does.
+
+## 17. Revision Notes
+- One-line summary (mental index)
+- Key takeaways (3-5 sentences)
+- Decision framework (when to use vs alternatives, as a table)
+- Speed check: can you implement from scratch in <10 minutes?
+
+## 18. Knowledge Links
+Generate explicit directional relationships:
+- Prerequisite → (what must come before)
+- Builds Upon → (what this extends)
+- Alternative → (competing approaches)
+- Often Combined With → (synergistic patterns)
+- Advanced Form → (where this leads)
+- Real World → (production systems using this)
+- Interview Variant → (how interviewers twist this)
+- Anti-Pattern → (when this becomes the wrong choice)
+
+---
+
+Rules:
+- Never invent APIs or complexity claims. If uncertain, say "Unknown."
+- Clearly separate facts from engineering intuition/opinions.
+- Prefer tables over long paragraphs where data is structured.
+- Keep each section independently meaningful (chunk-friendly for RAG retrieval).
+- Use consistent terminology throughout.
+- Do not reference other sections — each must stand alone.
+- Include formal analysis where it adds insight (correctness proofs, invariants).
+`;
+}
+
 export function buildCodingInterviewPrompt(config: PromptConfig = DEFAULT_PROMPT_CONFIG): string {
   const levelRange = config.experienceLevel === 1 ? "L3/L4" : config.experienceLevel === 5 ? "L4/L5" : config.experienceLevel === 15 ? "L6/L7" : "L5/L6";
   const companies = config.targetCompanies.slice(0, 2).join("/");
@@ -463,6 +859,9 @@ export function getPromptForAction(
       break;
     case "codingInterview":
       basePrompt = buildCodingInterviewPrompt(config);
+      break;
+    case "knowledge":
+      basePrompt = buildKnowledgePrompt(config);
       break;
     default:
       basePrompt = "";

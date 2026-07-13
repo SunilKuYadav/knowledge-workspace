@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<PromptActionKey, string> = {
   systemDesign: "System Design",
   revision: "Revision & Recall",
   codingInterview: "Coding Interview Module",
+  knowledge: "Knowledge Graph",
 };
 
 const ACTION_DESCRIPTIONS: Record<PromptActionKey, string> = {
@@ -31,6 +32,8 @@ const ACTION_DESCRIPTIONS: Record<PromptActionKey, string> = {
     "Optimizes content for long-term retention and interview recall.",
   codingInterview:
     "Calibrates the coding interview simulation difficulty and evaluation.",
+  knowledge:
+    "Structures topic knowledge into a connected graph with relationships, patterns, and interview progression.",
 };
 
 export default function PromptConfigPanel() {

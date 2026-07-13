@@ -29,6 +29,7 @@ export const PROMPT_ACTION_KEYS = [
   "systemDesign",
   "revision",
   "codingInterview",
+  "knowledge",
 ] as const;
 
 export type PromptActionKey = (typeof PROMPT_ACTION_KEYS)[number];
