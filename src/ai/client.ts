@@ -12,16 +12,47 @@
 import { logInput, logOutput, logError } from "./logger";
 import { addLogEntry, emitStreamChunk } from "./log-store";
 import { logger } from "../lib/logger";
+import type { ModelConfig } from "./config";
+
+/**
+ * Inference parameters that can be passed per-request.
+ * These map to the OpenAI chat completions API (with local extensions).
+ */
+export interface InferenceParams {
+  model?: string;
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  max_tokens?: number;
+  repeat_penalty?: number;
+  stream?: boolean;
+  /** LM Studio JIT TTL — auto-unload after N seconds of inactivity */
+  ttl?: number;
+  /** Context length for JIT loading — how much context to allocate */
+  context_length?: number;
+}
+
+/**
+ * Token usage stats from the last generate() call.
+ */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
 
 export interface AIClient {
   isAvailable(): Promise<boolean>;
-  generate(prompt: string, model?: string): AsyncGenerator<string>;
+  generate(prompt: string, params?: InferenceParams, signal?: AbortSignal): AsyncGenerator<string>;
+  /** Returns token usage from the last completed generate() call, or null if unavailable */
+  getLastUsage(): TokenUsage | null;
 }
 
 export interface AIClientOptions {
   baseUrl: string;
   apiKey?: string;
-  defaultModel?: string;
+  /** Default inference params applied to every request (can be overridden per-call) */
+  defaults?: InferenceParams;
 }
 
 /**
@@ -30,12 +61,17 @@ export interface AIClientOptions {
  * @param options - Configuration for the AI client
  * @param options.baseUrl - The API base URL (e.g., "http://127.0.0.1:1234/v1")
  * @param options.apiKey - Optional API key for authentication
- * @param options.defaultModel - Default model to use (defaults to "gpt-3.5-turbo")
+ * @param options.defaults - Default inference params (model, temperature, etc.)
  */
 export function createAIClient(options: AIClientOptions): AIClient {
-  const { baseUrl, apiKey, defaultModel = "gpt-3.5-turbo" } = options;
+  const { baseUrl, apiKey, defaults = {} } = options;
+  let lastUsage: TokenUsage | null = null;
 
   return {
+    getLastUsage(): TokenUsage | null {
+      return lastUsage;
+    },
+
     async isAvailable(): Promise<boolean> {
       try {
         const controller = new AbortController();
@@ -55,8 +91,17 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
     async *generate(
       prompt: string,
-      model: string = defaultModel,
+      params?: InferenceParams,
+      signal?: AbortSignal,
     ): AsyncGenerator<string> {
+      // Merge: defaults (from tier config) → per-call overrides
+      const merged: InferenceParams = { ...defaults, ...params };
+      const model = merged.model ?? "gpt-3.5-turbo";
+      const stream = merged.stream ?? true;
+
+      // Reset usage for this generation
+      lastUsage = null;
+
       logInput(prompt, model);
       let fullResponse = "";
 
@@ -68,14 +113,35 @@ export function createAIClient(options: AIClientOptions): AIClient {
           headers["Authorization"] = `Bearer ${apiKey}`;
         }
 
+        // Build the request body with all inference parameters
+        const body: Record<string, unknown> = {
+          model,
+          messages: [{ role: "user", content: prompt }],
+          stream,
+        };
+
+        // Request usage stats in streaming mode (OpenAI-compatible extension)
+        if (stream) {
+          body.stream_options = { include_usage: true };
+        }
+
+        // Only include params that are explicitly set (avoid sending undefined)
+        if (merged.temperature !== undefined) body.temperature = merged.temperature;
+        if (merged.top_p !== undefined) body.top_p = merged.top_p;
+        if (merged.max_tokens !== undefined) body.max_tokens = merged.max_tokens;
+        // Local inference server extensions (LM Studio, llama.cpp, Ollama)
+        if (merged.top_k !== undefined) body.top_k = merged.top_k;
+        if (merged.repeat_penalty !== undefined) body.repeat_penalty = merged.repeat_penalty;
+        // LM Studio JIT loading — TTL for auto-unload after idle period
+        if (merged.ttl !== undefined && merged.ttl > 0) body.ttl = merged.ttl;
+        // LM Studio JIT loading — context length to allocate on load
+        if (merged.context_length !== undefined && merged.context_length > 0) body.context_length = merged.context_length;
+
         const response = await fetch(`${baseUrl}/chat/completions`, {
           method: "POST",
           headers,
-          body: JSON.stringify({
-            model,
-            messages: [{ role: "user", content: prompt }],
-            stream: true,
-          }),
+          body: JSON.stringify(body),
+          signal,
         });
 
         if (!response.ok || !response.body) {
@@ -83,9 +149,35 @@ export function createAIClient(options: AIClientOptions): AIClient {
           return;
         }
 
+        // Non-streaming mode: read the full response at once
+        if (!stream) {
+          const data = (await response.json()) as {
+            choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
+            usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+          };
+          const message = data.choices?.[0]?.message;
+          const content = message?.content || message?.reasoning_content || "";
+          if (data.usage) {
+            lastUsage = {
+              promptTokens: data.usage.prompt_tokens ?? 0,
+              completionTokens: data.usage.completion_tokens ?? 0,
+              totalTokens: data.usage.total_tokens ?? 0,
+            };
+          }
+          if (content) {
+            fullResponse = content;
+            yield content;
+          }
+          logOutput(prompt, fullResponse);
+          addLogEntry(prompt, fullResponse, model);
+          return;
+        }
+
+        // Streaming mode: parse SSE
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let reasoningBuffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
@@ -102,6 +194,14 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
             const data = trimmed.slice(6);
             if (data === "[DONE]") {
+              // If the model only produced reasoning (e.g., Qwen3 hit max_tokens
+              // during thinking), yield the reasoning as fallback content.
+              if (!fullResponse && reasoningBuffer.trim()) {
+                const fallback = reasoningBuffer.trim();
+                fullResponse = fallback;
+                emitStreamChunk(prompt, fallback, model);
+                yield fallback;
+              }
               logOutput(prompt, fullResponse);
               addLogEntry(prompt, fullResponse, model);
               return;
@@ -109,13 +209,28 @@ export function createAIClient(options: AIClientOptions): AIClient {
 
             try {
               const parsed = JSON.parse(data) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string } }>;
+                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
-              const content = parsed.choices?.[0]?.delta?.content;
+              // Capture usage from the final chunk (when stream_options.include_usage is set)
+              if (parsed.usage) {
+                lastUsage = {
+                  promptTokens: parsed.usage.prompt_tokens ?? 0,
+                  completionTokens: parsed.usage.completion_tokens ?? 0,
+                  totalTokens: parsed.usage.total_tokens ?? 0,
+                };
+              }
+              const delta = parsed.choices?.[0]?.delta;
+              const content = delta?.content;
               if (content) {
                 fullResponse += content;
                 emitStreamChunk(prompt, content, model);
                 yield content;
+              }
+              // Accumulate reasoning in case content never arrives
+              const reasoning = delta?.reasoning_content;
+              if (reasoning) {
+                reasoningBuffer += reasoning;
               }
             } catch {
               // Skip malformed SSE lines
@@ -129,18 +244,39 @@ export function createAIClient(options: AIClientOptions): AIClient {
           if (trimmed.startsWith("data: ") && trimmed.slice(6) !== "[DONE]") {
             try {
               const parsed = JSON.parse(trimmed.slice(6)) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string } }>;
+                usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
               };
-              const content = parsed.choices?.[0]?.delta?.content;
+              if (parsed.usage) {
+                lastUsage = {
+                  promptTokens: parsed.usage.prompt_tokens ?? 0,
+                  completionTokens: parsed.usage.completion_tokens ?? 0,
+                  totalTokens: parsed.usage.total_tokens ?? 0,
+                };
+              }
+              const delta = parsed.choices?.[0]?.delta;
+              const content = delta?.content;
               if (content) {
                 fullResponse += content;
                 emitStreamChunk(prompt, content, model);
                 yield content;
               }
+              if (delta?.reasoning_content) {
+                reasoningBuffer += delta.reasoning_content;
+              }
             } catch {
               // Skip malformed trailing content
             }
           }
+        }
+
+        // Fallback: if stream ended without [DONE] and no content was produced,
+        // yield accumulated reasoning so the user sees something.
+        if (!fullResponse && reasoningBuffer.trim()) {
+          const fallback = reasoningBuffer.trim();
+          fullResponse = fallback;
+          emitStreamChunk(prompt, fallback, model);
+          yield fallback;
         }
 
         logOutput(prompt, fullResponse);
@@ -153,4 +289,19 @@ export function createAIClient(options: AIClientOptions): AIClient {
   };
 }
 
-
+/**
+ * Helper: convert a ModelConfig to InferenceParams for the client.
+ */
+export function modelConfigToParams(config: ModelConfig): InferenceParams {
+  return {
+    model: config.model,
+    temperature: config.temperature,
+    top_p: config.topP,
+    top_k: config.topK,
+    max_tokens: config.maxTokens,
+    repeat_penalty: config.repeatPenalty,
+    stream: config.stream,
+    ttl: config.ttl,
+    context_length: config.contextLength,
+  };
+}

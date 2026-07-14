@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import {
-  createAIClient,
+  getReadyClient,
   generateSummary,
   generateQuiz,
   generateFlashcards,
@@ -21,25 +21,40 @@ import {
   buildCustomGeneralPrompt,
   buildCustomItemPrompt,
 } from "@/ai";
+import { createAIClient } from "@/ai";
+import { loadPromptConfig } from "@/ai/prompts/loadConfig";
+import { composeWithConfig } from "@/ai/prompts/utils/compose";
+import { MARKDOWN_CONTEXT } from "@/ai/prompts/system";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+import { buildEvaluationActionPrompt } from "@/ai/prompts/builders/evaluation-actions";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { action, itemId, content, prompt, context, isGeneral } = body as {
+    const { action, itemId, content, prompt, context, isGeneral, evaluationContext } = body as {
       action: string;
       itemId: string;
       content?: string;
       prompt?: string;
       context?: "topic" | "problem";
       isGeneral?: boolean;
+      evaluationContext?: {
+        evaluation: {
+          overallScore: number;
+          feedback: string;
+          strengths: string[];
+          improvements: string[];
+          complexity: { time: string; space: string };
+          edgeCases?: string[];
+          alternativeApproaches?: string[];
+        };
+        code: string;
+        problemTitle: string;
+        patterns: string[];
+        difficulty: string;
+      };
     };
 
     if (!action || !itemId) {
@@ -49,11 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/route");
     const workspacePath = getWorkspacePath();
 
     // Custom prompt action — stream the response
@@ -65,24 +76,66 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Load user's prompt config for experience-calibrated prompts
+      const promptConfig = await loadPromptConfig();
       let fullPrompt: string;
 
       if (isGeneral) {
-        // General question — no item-specific context
-        fullPrompt = buildCustomGeneralPrompt(prompt);
+        // General question — use config-aware identity + teaching
+        fullPrompt = composeWithConfig({
+          actionKeys: ["identity", "teaching"],
+          extraModules: [MARKDOWN_CONTEXT],
+          task: `Answer the following question:\n\n${prompt}`,
+          config: promptConfig,
+        });
       } else {
         // Item-specific question — include context from the problem/topic
         const contextContent =
           content ||
           (await getItemContextByType(itemId, context || null, workspacePath));
-        fullPrompt = buildCustomItemPrompt(
-          prompt,
-          context || "topic/problem",
-          contextContent,
-        );
+        fullPrompt = composeWithConfig({
+          actionKeys: ["identity", "teaching"],
+          extraModules: [MARKDOWN_CONTEXT],
+          task: `The user is studying a ${context || "topic/problem"}. Here is the relevant context:\n\n${contextContent}\n\nUser question: ${prompt}`,
+          config: promptConfig,
+        });
       }
 
       const generator = client.generate(fullPrompt);
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            for await (const chunk of generator) {
+              controller.enqueue(new TextEncoder().encode(chunk));
+            }
+            controller.close();
+          } catch {
+            controller.close();
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Transfer-Encoding": "chunked",
+        },
+      });
+    }
+
+    // Evaluation-based actions — require evaluationContext
+    if (
+      (action === "improve-solution" ||
+        action === "eval-notes" ||
+        action === "eval-variation" ||
+        action === "eval-followup") &&
+      evaluationContext
+    ) {
+      const promptConfig = await loadPromptConfig();
+      const evalPrompt = buildEvaluationActionPrompt(action, evaluationContext, promptConfig);
+
+      const generator = client.generate(evalPrompt);
 
       const stream = new ReadableStream({
         async start(controller) {

@@ -69,6 +69,21 @@ export {
   buildGenerateDescriptionPrompt,
   buildGenerateNotePrompt,
   buildGenerateVariationPrompt,
+  buildGenerateTestCasesPrompt,
+  // Creation Assist Module
+  buildTopicCreationAssistPrompt,
+  buildProblemCreationAssistPrompt,
+  buildStudyPlanPrompt,
+  // Topic Problems Module
+  buildSuggestProblemsPrompt,
+  buildGenerateProblemFromTopicPrompt,
+  // Solution Evaluation Module
+  buildEvaluateSolutionPrompt,
+  // Test Validation Module
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+  // Evaluation Actions Module
+  buildEvaluationActionPrompt,
 } from "./builders";
 export type {
   GenerateProblemParams,
@@ -77,6 +92,18 @@ export type {
   GenerateDescriptionParams,
   GenerateNoteParams,
   GenerateVariationParams,
+  GenerateTestCasesParams,
+  TopicCreationAssistParams,
+  ProblemCreationAssistParams,
+  StudyPlanGenerationParams,
+  SuggestProblemsParams,
+  GenerateProblemFromTopicParams,
+  EvaluateSolutionParams,
+  TestResultInput,
+  ProblemTestValidationParams,
+  EvaluationActionContext,
+  EvaluationActionConfig,
+  EvaluationAction,
 } from "./builders";
 
 // ─── Schemas ───
@@ -92,9 +119,13 @@ export {
 } from "./schemas";
 
 // ─── Utils ───
-export { composePrompt } from "./utils/compose";
-export type { ComposeOptions } from "./utils/compose";
-export { section, field, metadata, joinBlocks } from "./utils/format";
+export { composePrompt, composeWithConfig } from "./utils/compose";
+export type { ComposeOptions, ComposeWithConfigOptions } from "./utils/compose";
+export { section, field, metadata, joinBlocks, formatSemanticContext } from "./utils/format";
+
+// ─── Config-Aware Prompts ───
+export { getPromptForAction } from "./config";
+export { loadPromptConfig } from "./loadConfig";
 
 // ─── Backward Compatibility ───
 // The old SYSTEM_CONTEXT and withContext are kept for gradual migration.

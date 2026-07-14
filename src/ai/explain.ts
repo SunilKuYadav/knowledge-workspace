@@ -66,7 +66,6 @@ export async function suggestSimilarProblems(
 
     const prompt = buildSimilarProblemsPrompt(
       problem.title,
-      problem.platform,
       problem.difficulty,
       problem.patterns.join(", "),
       problem.companies.join(", "),
@@ -102,7 +101,6 @@ export async function* generateInterviewPrep(
 
   const prompt = buildInterviewPrepPrompt(
     problem.title,
-    problem.platform,
     problem.difficulty,
     problem.patterns.join(", "),
   );

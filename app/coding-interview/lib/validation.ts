@@ -73,10 +73,10 @@ export function validateContext(
           error: 'Problem context requires a non-empty "title" string',
         };
       }
-      if (typeof ctx.category !== "string" || ctx.category.length === 0) {
+      if (typeof ctx.category !== "string") {
         return {
           valid: false,
-          error: 'Problem context requires a non-empty "category" string',
+          error: 'Problem context requires a "category" string',
         };
       }
       if (!Array.isArray(ctx.tags)) {

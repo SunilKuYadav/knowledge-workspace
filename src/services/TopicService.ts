@@ -1,5 +1,5 @@
 import type { Topic, FlashcardDeck, RevisionData, ArtifactType } from "@/types";
-import type { TopicRepository } from "@/repository";
+import type { TopicRepository, TopicPracticeData } from "@/repository";
 
 /**
  * Application service for Topic operations.
@@ -64,5 +64,19 @@ export class TopicService {
 
   async getRevision(id: string): Promise<RevisionData> {
     return this.repository.getRevision(id);
+  }
+
+  /**
+   * Reads persisted practice problems for a topic.
+   */
+  async getPracticeProblems(id: string): Promise<TopicPracticeData | null> {
+    return this.repository.getPracticeProblems(id);
+  }
+
+  /**
+   * Saves the full practice problems data for a topic.
+   */
+  async savePracticeProblems(id: string, data: TopicPracticeData): Promise<void> {
+    return this.repository.savePracticeProblems(id, data);
   }
 }

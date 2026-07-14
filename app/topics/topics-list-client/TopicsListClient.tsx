@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { TopicsListClientProps, DifficultyFilter, StatusFilter, CategoryFilter } from "./types";
 import { DIFFICULTY_COLORS, STATUS_COLORS } from "./constants";
 import { useTopicsListClient } from "./useTopicsListClient";
+import type { TopicSortField } from "./useTopicsListClient";
 
 export default function TopicsListClient({ topics }: TopicsListClientProps) {
   const {
@@ -15,13 +16,41 @@ export default function TopicsListClient({ topics }: TopicsListClientProps) {
     setStatus,
     category,
     setCategory,
+    sortField,
+    sortDirection,
+    toggleSort,
     filtered,
   } = useTopicsListClient(topics);
+
+  function SortButton({
+    field,
+    label,
+  }: {
+    field: TopicSortField;
+    label: string;
+  }) {
+    const isActive = sortField === field;
+    return (
+      <button
+        onClick={() => toggleSort(field)}
+        className={`px-2.5 py-1 text-xs font-medium rounded-md border transition-colors ${
+          isActive
+            ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400"
+            : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        }`}
+      >
+        {label}
+        {isActive && (
+          <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
+        )}
+      </button>
+    );
+  }
 
   return (
     <div>
       {/* Search and Filters */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+      <div className="mb-4 flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           value={search}
@@ -66,6 +95,18 @@ export default function TopicsListClient({ topics }: TopicsListClientProps) {
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
         </select>
+      </div>
+
+      {/* Sort Controls */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Sort by:
+        </span>
+        <SortButton field="title" label="Title" />
+        <SortButton field="difficulty" label="Difficulty" />
+        <SortButton field="confidence" label="Confidence" />
+        <SortButton field="updatedAt" label="Updated" />
+        <SortButton field="category" label="Category" />
       </div>
 
       {/* Results Count */}

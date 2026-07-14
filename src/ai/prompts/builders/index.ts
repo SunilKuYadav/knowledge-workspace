@@ -52,9 +52,82 @@ export {
   buildGenerateDescriptionPrompt,
   buildGenerateNotePrompt,
   buildGenerateVariationPrompt,
+  buildGenerateTestCasesPrompt,
 } from "./problem";
 export type {
   GenerateDescriptionParams,
   GenerateNoteParams,
   GenerateVariationParams,
+  GenerateTestCasesParams,
 } from "./problem";
+
+// ─── Creation Assist Module ─────────────────────────────────────────────────
+export {
+  buildTopicCreationAssistPrompt,
+  buildProblemCreationAssistPrompt,
+  buildStudyPlanPrompt,
+} from "./creation-assist";
+export type {
+  TopicCreationAssistParams,
+  ProblemCreationAssistParams,
+  StudyPlanGenerationParams,
+} from "./creation-assist";
+
+// ─── Assessment Module ──────────────────────────────────────────────────────
+export {
+  buildQuestionGenerationPrompt,
+  buildEvaluationPrompt as buildAssessmentEvaluationPrompt,
+  buildFeedbackReportPrompt,
+  buildContentUpdatePrompt as buildAssessmentContentUpdatePrompt,
+} from "./assessment";
+
+// ─── Merge Module ───────────────────────────────────────────────────────────
+export { buildMergePrompt } from "./merge";
+export type { MergePromptParams } from "./merge";
+
+// ─── Quick Create Module ────────────────────────────────────────────────────
+export { buildQuickCreateMetadataPrompt } from "./quick-create";
+export type {
+  QuickCreateMetadataParams,
+  PlanContext,
+} from "./quick-create";
+
+// ─── Learning Progress Module ───────────────────────────────────────────────
+export { buildLearningProgressPrompt } from "./learning-progress";
+export type {
+  LearningProgressParams,
+  ProgressAction,
+  CoverageStats,
+} from "./learning-progress";
+
+// ─── Topic Problems Module ──────────────────────────────────────────────────
+export {
+  buildSuggestProblemsPrompt,
+  buildGenerateProblemFromTopicPrompt,
+} from "./topic-problems";
+export type {
+  SuggestProblemsParams,
+  GenerateProblemFromTopicParams,
+} from "./topic-problems";
+
+// ─── Solution Evaluation Module ─────────────────────────────────────────────
+export { buildEvaluateSolutionPrompt } from "./solution-evaluation";
+export type {
+  EvaluateSolutionParams,
+  TestResultInput,
+} from "./solution-evaluation";
+
+// ─── Test Validation Module ─────────────────────────────────────────────────
+export {
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+} from "./test-validation";
+export type { ProblemTestValidationParams } from "./test-validation";
+
+// ─── Evaluation Actions Module ──────────────────────────────────────────────
+export { buildEvaluationActionPrompt } from "./evaluation-actions";
+export type {
+  EvaluationActionContext,
+  EvaluationActionConfig,
+  EvaluationAction,
+} from "./evaluation-actions";

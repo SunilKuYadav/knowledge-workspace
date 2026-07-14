@@ -32,6 +32,6 @@ Examples: Redis sorted sets, PostgreSQL B-tree indexes, Google's Bigtable, Cassa
 
 Rules:
 - Each example should be self-contained.
-- Include TypeScript code where applicable.
+- Use pseudocode for code examples (not TypeScript — that is reserved for problem solutions).
 - Use ASCII diagrams to show state changes or data flow.
 - Be concrete — use real numbers, real data, real variable names.`;

@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildEvaluatePrompt } from "@/ai/prompts";
 import type {
@@ -19,24 +19,32 @@ import type {
   EvaluationReport,
 } from "@/app/coding-interview/lib/types";
 
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
-
 interface EvaluateRequestBody {
   code: string;
   language: "javascript" | "typescript";
   problem: GeneratedProblem;
-  testResults: TestCaseResult[];
+  testResults: TestCaseResult[] | {
+    testResults: TestCaseResult[];
+    consoleOutput?: string;
+    executionTimeMs?: number;
+    memoryUsageMb?: number;
+    error?: unknown;
+  };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as EvaluateRequestBody;
-    const { code, language, problem, testResults } = body;
+    const { code, language, problem } = body;
 
-    if (!code || !language || !problem || !testResults) {
+    // The client sends an ExecutionResult object; extract the testResults array
+    const testResults: TestCaseResult[] = Array.isArray(body.testResults)
+      ? body.testResults
+      : Array.isArray((body.testResults as { testResults?: unknown })?.testResults)
+        ? (body.testResults as { testResults: TestCaseResult[] }).testResults
+        : [];
+
+    if (!code || !language || !problem || testResults.length === 0) {
       return NextResponse.json(
         {
           error:
@@ -46,11 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/coding-interview/evaluate");
 
     const prompt = buildEvaluatePrompt(code, language, problem, testResults);
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { SearchIndex, SearchDocument } from "./search-index";
-import { search, SearchOptions } from "./query";
-import { buildSearchDocuments, TopicContent, ProblemContent } from "./builder";
+import { SearchIndex, SearchDocument } from "../search-index";
+import { search, SearchOptions } from "../query";
+import { buildSearchDocuments, TopicContent, ProblemContent } from "../builder";
 import { Topic } from "@/types/Topic";
 import { Problem } from "@/types/Problem";
 import { Flashcard } from "@/types/Flashcard";
@@ -220,7 +220,6 @@ describe("buildSearchDocuments()", () => {
     const problem: Problem = {
       id: "two-sum",
       title: "Two Sum",
-      platform: "leetcode",
       difficulty: "easy",
       companies: ["Google", "Amazon"],
       patterns: ["hash-map"],
@@ -242,7 +241,7 @@ describe("buildSearchDocuments()", () => {
       title: "Two Sum",
       content: "Use a hash map for O(n) solution",
       tags: ["hash-map", "Google", "Amazon"],
-      path: "problems/leetcode/two-sum",
+      path: "problems/two-sum",
     });
   });
 
@@ -284,7 +283,6 @@ describe("buildSearchDocuments()", () => {
     const problem: Problem = {
       id: "bfs",
       title: "BFS Problem",
-      platform: "codeforces",
       difficulty: "medium",
       companies: [],
       patterns: ["bfs"],

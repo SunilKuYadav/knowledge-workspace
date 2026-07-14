@@ -7,13 +7,30 @@
 import type { RevisionData, RevisionEntry } from "@/types";
 import { computeNextReview } from "./scheduler";
 
+/** Initial interval for first-ever review: 7 days from first solve. */
+const INITIAL_INTERVAL_DAYS = 7;
+
+/**
+ * Check if a review date is on or after the scheduled nextReview date.
+ * Comparison is date-only (ignoring time).
+ */
+function isOnOrAfterReviewDate(reviewDate: string, nextReview: string): boolean {
+  const review = reviewDate.split("T")[0];
+  const scheduled = nextReview.split("T")[0];
+  return review >= scheduled;
+}
+
 /**
  * Add a revision entry to an existing RevisionData, returning a new RevisionData
  * with updated history, lastReviewed, nextReview, and confidence.
  *
- * The nextReview date is computed using the spaced repetition scheduler based on
- * the entry's confidence and the current interval (days between lastReviewed and
- * the current nextReview, or 1 if no previous review exists).
+ * Rules:
+ * - First review ever (problem just started): nextReview is set to exactly
+ *   7 days from the review date. No multiplier applied.
+ * - Subsequent reviews: only update nextReview if the practice happens on or after
+ *   the scheduled review date. If the user practices before the review date,
+ *   the entry is logged in history but nextReview remains unchanged.
+ * - Maximum interval is capped at 350 days (enforced by calculateInterval).
  *
  * @param current - The current RevisionData
  * @param entry - The new RevisionEntry to add
@@ -23,14 +40,35 @@ export function addRevisionEntry(
   current: RevisionData,
   entry: RevisionEntry,
 ): RevisionData {
-  // Determine previous interval
-  let previousInterval = 1;
-  if (current.lastReviewed) {
-    const last = new Date(current.lastReviewed);
-    const next = new Date(current.nextReview);
-    const diffMs = next.getTime() - last.getTime();
-    previousInterval = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+  // First-ever review — set fixed initial interval of 7 days (no multiplier)
+  if (!current.lastReviewed || current.history.length === 0) {
+    const reviewDateObj = new Date(entry.date);
+    reviewDateObj.setDate(reviewDateObj.getDate() + INITIAL_INTERVAL_DAYS);
+    const nextReview = reviewDateObj.toISOString().split("T")[0];
+
+    return {
+      ...current,
+      lastReviewed: entry.date,
+      nextReview,
+      confidence: entry.confidence,
+      history: [...current.history, entry],
+    };
   }
+
+  // Practicing before the scheduled review date — log it but don't reschedule
+  if (!isOnOrAfterReviewDate(entry.date, current.nextReview)) {
+    return {
+      ...current,
+      // Keep lastReviewed, nextReview, and confidence unchanged
+      history: [...current.history, entry],
+    };
+  }
+
+  // On or after review date — apply normal spaced repetition scheduling
+  const last = new Date(current.lastReviewed);
+  const next = new Date(current.nextReview);
+  const diffMs = next.getTime() - last.getTime();
+  const previousInterval = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
 
   const { nextReview } = computeNextReview({
     currentConfidence: entry.confidence,

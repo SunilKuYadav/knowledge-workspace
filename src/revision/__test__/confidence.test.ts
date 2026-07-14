@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calculateInterval } from "./confidence";
+import { calculateInterval } from "../confidence";
 
 describe("calculateInterval", () => {
   it("halves the interval for confidence 1", () => {

@@ -11,7 +11,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
+import type { AIClient } from "@/ai";
 import {
   buildReviewPrompt,
   buildEvaluationPrompt,
@@ -19,6 +20,8 @@ import {
   buildSessionSummaryPrompt,
   buildGenerateContentPrompt,
 } from "@/ai";
+import { getModelForRoute } from "@/ai";
+import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
@@ -26,7 +29,7 @@ import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 const DEFAULT_BASE_URL =
   process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
 const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+const MODEL = getModelForRoute("ai/review-session");
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,12 +59,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/review-session");
     const workspacePath = getWorkspacePath();
+    const promptConfig = await loadPromptConfig();
 
     if (action === "generate") {
       const content = await getItemContent(itemId, itemType, workspacePath);
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const prompt = buildReviewPrompt(content, itemType, confidence || 3);
+      const prompt = buildReviewPrompt(content, itemType, confidence || 3, promptConfig);
 
       // Try streaming generation first
       let fullResponse = "";
@@ -144,6 +144,7 @@ export async function POST(request: NextRequest) {
         questionType || "conceptual",
         content || "",
         itemType,
+        promptConfig,
       );
 
       let fullResponse = "";
@@ -173,6 +174,7 @@ export async function POST(request: NextRequest) {
         question,
         questionType || "conceptual",
         content || "",
+        promptConfig,
       );
 
       const stream = new ReadableStream({
@@ -217,6 +219,7 @@ export async function POST(request: NextRequest) {
         answers,
         content || "",
         itemType,
+        promptConfig,
       );
 
       let fullResponse = "";
@@ -260,6 +263,7 @@ export async function POST(request: NextRequest) {
         content || "",
         itemType,
         contentType,
+        promptConfig,
       );
 
       const stream = new ReadableStream({
@@ -352,7 +356,7 @@ async function getItemContent(
       problemRepo.getNotes(itemId),
       problemRepo.getSolution(itemId),
     ]);
-    return `Problem: ${problem.title}\nPlatform: ${problem.platform}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(", ")}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
+    return `Problem: ${problem.title}\nDifficulty: ${problem.difficulty}\nPatterns: ${problem.patterns.join(", ")}\n\nNotes:\n${notes}\n\nSolution:\n${solution}`.trim();
   }
 }
 

@@ -6,6 +6,8 @@
  * - Browser: NEXT_PUBLIC_AI_LOG_ENABLED=true|false (defaults to true)
  */
 
+import { logger } from "../lib/logger";
+
 const LOG_PREFIX = "[AIClient]";
 
 /**
@@ -29,13 +31,13 @@ export function logInput(prompt: string, model?: string): void {
       "color: #2196F3; font-weight: bold",
       "color: #666",
     );
-    console.log("%cTimestamp:", "font-weight: bold", timestamp);
-    console.log("%cModel:", "font-weight: bold", model ?? "unknown");
-    console.log("%cPrompt:", "font-weight: bold", prompt);
+    logger.info("%cTimestamp:", "font-weight: bold", timestamp);
+    logger.info("%cModel:", "font-weight: bold", model ?? "unknown");
+    logger.info("%cPrompt:", "font-weight: bold", prompt);
     console.groupEnd();
   } else {
     // Server environment
-    console.log(
+    logger.info(
       `${LOG_PREFIX} [INPUT] [${timestamp}] model=${model ?? "unknown"} prompt=${JSON.stringify(prompt)}`,
     );
   }
@@ -54,10 +56,10 @@ export function logOutput(prompt: string, fullResponse: string): void {
       "color: #4CAF50; font-weight: bold",
       "color: #666",
     );
-    console.log("%cTimestamp:", "font-weight: bold", timestamp);
-    console.log("%cPrompt:", "font-weight: bold", prompt);
-    console.log("%cResponse:", "font-weight: bold", fullResponse);
-    console.log(
+    logger.info("%cTimestamp:", "font-weight: bold", timestamp);
+    logger.info("%cPrompt:", "font-weight: bold", prompt);
+    logger.info("%cResponse:", "font-weight: bold", fullResponse);
+    logger.info(
       "%cResponse length:",
       "font-weight: bold",
       fullResponse.length,
@@ -66,7 +68,7 @@ export function logOutput(prompt: string, fullResponse: string): void {
     console.groupEnd();
   } else {
     // Server environment
-    console.log(
+    logger.info(
       `${LOG_PREFIX} [OUTPUT] [${timestamp}] prompt=${JSON.stringify(truncatedPrompt)} response=${JSON.stringify(fullResponse)}`,
     );
   }
@@ -123,9 +125,9 @@ export function installAIFetchLogger(): void {
       "color: #2196F3; font-weight: bold",
       "color: #666",
     );
-    console.log("%cAction:", "font-weight: bold", action);
-    if (userInput) console.log("%cUser input:", "font-weight: bold", userInput);
-    console.log("%cFull body:", "font-weight: bold", body);
+    logger.info("%cAction:", "font-weight: bold", action);
+    if (userInput) logger.info("%cUser input:", "font-weight: bold", userInput);
+    logger.info("%cFull body:", "font-weight: bold", body);
     console.groupEnd();
 
     return originalFetch.call(this, input, init);
@@ -142,7 +144,7 @@ export function installAIFetchLogger(): void {
       const data = JSON.parse(event.data);
 
       if (data.type === "connected") {
-        console.log(
+        logger.info(
           `%c${LOG_PREFIX} Live log stream connected — AI prompts & responses will appear in real-time`,
           "color: #9C27B0; font-weight: bold",
         );
@@ -160,12 +162,12 @@ export function installAIFetchLogger(): void {
               "color: #FF9800; font-weight: bold",
               "color: #666",
             );
-            console.log(
+            logger.info(
               "%c⬆ Prompt:",
               "color: #2196F3; font-weight: bold",
               currentStreamPrompt,
             );
-            console.log(
+            logger.info(
               "%c⬇ Response:",
               "color: #4CAF50; font-weight: bold",
               streamBuffer,
@@ -191,13 +193,13 @@ export function installAIFetchLogger(): void {
           "color: #2196F3",
           "color: #999",
         );
-        console.log(
+        logger.info(
           "%c⬆ Prompt sent to model:",
           "color: #2196F3; font-weight: bold",
         );
-        console.log(data.prompt);
-        console.log("%c⬇ Model response:", "color: #4CAF50; font-weight: bold");
-        console.log(data.response);
+        logger.info(data.prompt);
+        logger.info("%c⬇ Model response:", "color: #4CAF50; font-weight: bold");
+        logger.info(data.response);
         console.groupEnd();
       }
     } catch {

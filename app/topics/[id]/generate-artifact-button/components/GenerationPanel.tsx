@@ -7,6 +7,7 @@ import type { GenerationPanelProps } from "../types";
 
 export function GenerationPanel({
   generation,
+  batchProgress,
   panelRef,
   onCancel,
   onDismiss,
@@ -17,6 +18,12 @@ export function GenerationPanel({
     generation.artifact in ARTIFACT_LABELS
       ? ARTIFACT_LABELS[generation.artifact as ArtifactType]
       : generation.artifact;
+
+  const isBatch = batchProgress !== null;
+  const batchDone =
+    isBatch &&
+    !batchProgress.active &&
+    batchProgress.completed.length === batchProgress.total;
 
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -40,7 +47,38 @@ export function GenerationPanel({
                 />
               </span>
             )}
-            {generation.status === "done" && (
+            {generation.status === "done" && !isBatch && (
+              <svg
+                className="w-4 h-4 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m4.5 12.75 6 6 9-13.5"
+                />
+              </svg>
+            )}
+            {generation.status === "done" && isBatch && !batchDone && (
+              <span className="flex gap-1">
+                <span
+                  className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                />
+                <span
+                  className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                />
+                <span
+                  className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                />
+              </span>
+            )}
+            {batchDone && (
               <svg
                 className="w-4 h-4 text-green-500"
                 fill="none"
@@ -73,14 +111,25 @@ export function GenerationPanel({
             <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               {generation.status === "generating" &&
                 `Generating ${artifactLabel}…`}
-              {generation.status === "done" &&
+              {generation.status === "done" && !isBatch &&
                 `${artifactLabel} ready`}
+              {generation.status === "done" && isBatch && !batchDone &&
+                `${artifactLabel} ready — next up…`}
+              {batchDone && `All sections generated`}
               {generation.status === "error" && `Generation failed`}
             </span>
+
+            {/* Batch progress indicator */}
+            {isBatch && (
+              <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500 font-mono">
+                {batchProgress.completed.length}/{batchProgress.total}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {generation.status === "generating" && (
+            {(generation.status === "generating" ||
+              (isBatch && batchProgress.active)) && (
               <button
                 onClick={onCancel}
                 className="px-3 py-1.5 text-xs rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
@@ -88,8 +137,9 @@ export function GenerationPanel({
                 Cancel
               </button>
             )}
-            {(generation.status === "done" ||
-              generation.status === "error") && (
+            {((generation.status === "done" && !isBatch) ||
+              (generation.status === "error" && !isBatch) ||
+              (isBatch && !batchProgress.active)) && (
               <button
                 onClick={onDismiss}
                 className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded transition-colors"
@@ -112,6 +162,50 @@ export function GenerationPanel({
             )}
           </div>
         </div>
+
+        {/* Batch progress bar */}
+        {isBatch && (
+          <div className="px-5 py-2 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-indigo-500 rounded-full transition-all duration-500 ease-out"
+                  style={{
+                    width: `${(batchProgress.completed.length / batchProgress.total) * 100}%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                {batchProgress.completed.length} of {batchProgress.total} done
+              </span>
+            </div>
+            {batchProgress.completed.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {batchProgress.completed.map((a) => (
+                  <span
+                    key={a}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="m4.5 12.75 6 6 9-13.5"
+                      />
+                    </svg>
+                    {ARTIFACT_LABELS[a as ArtifactType] ?? a}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Panel body */}
         <div
@@ -136,7 +230,7 @@ export function GenerationPanel({
         </div>
 
         {/* Footer */}
-        {generation.status === "done" && (
+        {generation.status === "done" && !isBatch && (
           <div className="shrink-0 px-5 py-3 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-b-xl">
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Saved to{" "}
@@ -148,6 +242,14 @@ export function GenerationPanel({
                 {artifactLabel}
               </strong>{" "}
               tab is now available.
+            </p>
+          </div>
+        )}
+        {batchDone && (
+          <div className="shrink-0 px-5 py-3 border-t border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 rounded-b-xl">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              All {batchProgress.total} sections generated and saved. All tabs
+              are now available.
             </p>
           </div>
         )}

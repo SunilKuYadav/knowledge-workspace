@@ -10,6 +10,7 @@ import {
   ExitFullscreenIcon,
 } from "./components/Icons";
 import type { CodeEditorProps } from "./types";
+import { FullscreenLayout } from "./components/FullscreenLayout";
 
 export function CodeEditor(props: CodeEditorProps) {
   const {
@@ -25,13 +26,27 @@ export function CodeEditor(props: CodeEditorProps) {
     readOnly,
   } = useCodeEditor(props);
 
+  // Fullscreen mode with action buttons, test cases, and evaluation
+  if (isFullscreen) {
+    return (
+      <FullscreenLayout
+        editorRef={editorRef}
+        language={language}
+        readOnly={readOnly}
+        copyStatus={copyStatus}
+        formatError={formatError}
+        onCopy={handleCopy}
+        onReset={handleReset}
+        onFormat={handleFormat}
+        onExitFullscreen={handleFullscreenToggle}
+        fullscreenActions={props.fullscreenActions}
+        fullscreenPanelData={props.fullscreenPanelData}
+      />
+    );
+  }
+
   return (
-    <div
-      className={`flex flex-col border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden ${
-        isFullscreen ? "fixed inset-0 z-50 bg-white dark:bg-zinc-900" : ""
-      }`}
-      style={!isFullscreen ? { minHeight: "300px" } : undefined}
-    >
+    <div className="flex flex-col border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden h-full">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
         <div className="flex items-center gap-1">
@@ -98,10 +113,11 @@ export function CodeEditor(props: CodeEditorProps) {
             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded
               text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700
               transition-colors"
-            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            aria-label="Enter fullscreen (F11)"
+            title="Enter fullscreen (F11)"
           >
-            {isFullscreen ? <ExitFullscreenIcon /> : <FullscreenIcon />}
-            <span>{isFullscreen ? "Exit" : "Fullscreen"}</span>
+            <FullscreenIcon />
+            <span>Fullscreen</span>
           </button>
         </div>
       </div>
@@ -118,23 +134,8 @@ export function CodeEditor(props: CodeEditorProps) {
       {/* Editor container */}
       <div
         ref={editorRef}
-        className="flex-1 overflow-auto"
-        style={!isFullscreen ? { minHeight: "260px" } : undefined}
+        className="flex-1 overflow-auto min-h-0"
       />
-
-      {/* Fullscreen exit control */}
-      {isFullscreen && (
-        <button
-          type="button"
-          onClick={handleFullscreenToggle}
-          className="fixed top-4 right-4 z-[51] px-3 py-1.5 text-sm font-medium rounded-md
-            bg-zinc-800 text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-zinc-900
-            dark:hover:bg-zinc-300 shadow-lg transition-colors"
-          aria-label="Exit fullscreen"
-        >
-          ✕ Exit Fullscreen
-        </button>
-      )}
     </div>
   );
 }

@@ -24,7 +24,7 @@ How to instantly recognize when to use this in an interview problem.
 Format: "If you see X → think Y"
 
 # Templates
-The most commonly needed code snippet(s) in TypeScript, minimal and comment-free.
+The most commonly needed pseudocode snippet(s), minimal and comment-free.
 
 # Common pitfalls
 5–7 one-line reminders of the most common mistakes.

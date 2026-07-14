@@ -8,16 +8,11 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { buildGenerateDescriptionPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import type { ProblemDescription } from "@/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+import type { ProblemDescription, SemanticDescription } from "@/types";
 
 interface RequestBody {
   problemId: string;
@@ -26,6 +21,7 @@ interface RequestBody {
   patterns: string[];
   companies: string[];
   url?: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export async function POST(request: NextRequest) {
@@ -40,11 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/problem/generate-description");
 
     const available = await client.isAvailable();
     if (!available) {

@@ -21,6 +21,13 @@ export class FileRevisionRepository implements RevisionRepository {
   }
 
   /**
+   * Returns all revision items across the workspace.
+   */
+  async getAllItems(): Promise<RevisionData[]> {
+    return this.collectAllRevisionData();
+  }
+
+  /**
    * Scans all revision.json files across notes and problems directories,
    * then filters to items that are overdue or due today.
    *
@@ -108,17 +115,14 @@ export class FileRevisionRepository implements RevisionRepository {
       }
     }
 
-    // Scan problems/{platform}/{slug}/revision.json
-    for (const platform of WORKSPACE_STRUCTURE.problems) {
-      const platformPath = path.join(this.problemsPath, platform);
-      const slugDirs = await listDirectories(platformPath);
+    // Scan problems/{slug}/revision.json
+    const slugDirs = await listDirectories(this.problemsPath);
 
-      for (const slug of slugDirs) {
-        const revisionPath = path.join(platformPath, slug, "revision.json");
-        const data = await readJsonFile<RevisionData>(revisionPath);
-        if (data) {
-          items.push(data);
-        }
+    for (const slug of slugDirs) {
+      const revisionPath = path.join(this.problemsPath, slug, "revision.json");
+      const data = await readJsonFile<RevisionData>(revisionPath);
+      if (data) {
+        items.push(data);
       }
     }
 
@@ -128,7 +132,7 @@ export class FileRevisionRepository implements RevisionRepository {
   /**
    * Locates the revision.json path for a given item.
    * For topics, searches notes/{category}/{itemId}/revision.json.
-   * For problems, searches problems/{platform}/{itemId}/revision.json.
+   * For problems, searches problems/{itemId}/revision.json.
    *
    * Returns the full path to the revision.json (which may not yet exist),
    * or null if the item folder itself does not exist.
@@ -147,15 +151,13 @@ export class FileRevisionRepository implements RevisionRepository {
         }
       }
     } else {
-      for (const platform of WORKSPACE_STRUCTURE.problems) {
-        const itemPath = path.join(this.problemsPath, platform, itemId);
-        // Check if the problem folder exists by looking for problem.json
-        const problemJson = await readJsonFile(
-          path.join(itemPath, "problem.json"),
-        );
-        if (problemJson) {
-          return path.join(itemPath, "revision.json");
-        }
+      const itemPath = path.join(this.problemsPath, itemId);
+      // Check if the problem folder exists by looking for problem.json
+      const problemJson = await readJsonFile(
+        path.join(itemPath, "problem.json"),
+      );
+      if (problemJson) {
+        return path.join(itemPath, "revision.json");
       }
     }
 

@@ -236,12 +236,11 @@ An index is a data structure that improves the speed of data retrieval at the co
 
 async function seedProblems() {
   // --- Two Sum (LeetCode) ---
-  const tsDir = path.join(WORKSPACE_PATH, 'problems', 'leetcode', 'two-sum');
+  const tsDir = path.join(WORKSPACE_PATH, 'problems', 'two-sum');
   await ensureDir(tsDir);
   await writeJson(path.join(tsDir, 'problem.json'), {
     id: 'two-sum',
     title: 'Two Sum',
-    platform: 'leetcode',
     difficulty: 'easy',
     companies: ['Google', 'Amazon', 'Meta', 'Apple'],
     patterns: ['hash-map', 'two-pointers'],
@@ -309,12 +308,11 @@ function twoSum(nums: number[], target: number): number[] {
   });
 
   // --- LRU Cache (LeetCode) ---
-  const lruDir = path.join(WORKSPACE_PATH, 'problems', 'leetcode', 'lru-cache');
+  const lruDir = path.join(WORKSPACE_PATH, 'problems', 'lru-cache');
   await ensureDir(lruDir);
   await writeJson(path.join(lruDir, 'problem.json'), {
     id: 'lru-cache',
     title: 'LRU Cache',
-    platform: 'leetcode',
     difficulty: 'medium',
     companies: ['Amazon', 'Microsoft', 'Bloomberg'],
     patterns: ['hash-map', 'linked-list', 'design'],
@@ -372,12 +370,11 @@ class LRUCache:
   });
 
   // --- Maximum Subarray (LeetCode) ---
-  const msDir = path.join(WORKSPACE_PATH, 'problems', 'leetcode', 'maximum-subarray');
+  const msDir = path.join(WORKSPACE_PATH, 'problems', 'maximum-subarray');
   await ensureDir(msDir);
   await writeJson(path.join(msDir, 'problem.json'), {
     id: 'maximum-subarray',
     title: 'Maximum Subarray',
-    platform: 'leetcode',
     difficulty: 'medium',
     companies: ['Amazon', 'LinkedIn', 'Apple'],
     patterns: ['dynamic-programming', 'kadane'],
@@ -417,7 +414,7 @@ async function seedDirectories() {
   const dirs = [
     'notes/dsa', 'notes/system-design', 'notes/database',
     'notes/networking', 'notes/os', 'notes/oop',
-    'problems/leetcode', 'problems/codeforces', 'problems/gfg',
+    'problems',
     'templates', 'revision', 'flashcards', 'assets',
   ];
 

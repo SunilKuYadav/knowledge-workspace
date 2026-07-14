@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import path from "path";
 import { mkdtemp, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { FileProblemRepository } from "./FileProblemRepository";
+import { FileProblemRepository } from "../FileProblemRepository";
 import type { Problem } from "@/types";
 
 describe("FileProblemRepository", () => {
@@ -20,7 +20,6 @@ describe("FileProblemRepository", () => {
 
   const sampleProblemInput = {
     title: "Two Sum",
-    platform: "leetcode" as const,
     difficulty: "easy" as const,
     companies: ["Google", "Amazon"],
     patterns: ["hash-map", "two-pointers"],
@@ -35,12 +34,11 @@ describe("FileProblemRepository", () => {
 
       expect(problem.id).toBe("two-sum");
       expect(problem.title).toBe("Two Sum");
-      expect(problem.platform).toBe("leetcode");
       expect(problem.createdAt).toBeDefined();
       expect(problem.updatedAt).toBeDefined();
 
       // Verify files exist
-      const folderPath = path.join(tempDir, "problems", "leetcode", "two-sum");
+      const folderPath = path.join(tempDir, "problems", "two-sum");
       const problemJson = JSON.parse(
         await readFile(path.join(folderPath, "problem.json"), "utf-8"),
       );
@@ -79,18 +77,17 @@ describe("FileProblemRepository", () => {
       expect(problems).toEqual([]);
     });
 
-    it("returns all problems across platforms", async () => {
+    it("returns all problems", async () => {
       await repo.create(sampleProblemInput);
       await repo.create({
         ...sampleProblemInput,
         title: "Rating Change",
-        platform: "codeforces",
       });
 
       const problems = await repo.getAll();
       expect(problems).toHaveLength(2);
-      expect(problems.map((p) => p.platform)).toContain("leetcode");
-      expect(problems.map((p) => p.platform)).toContain("codeforces");
+      expect(problems.map((p) => p.id)).toContain("two-sum");
+      expect(problems.map((p) => p.id)).toContain("rating-change");
     });
   });
 

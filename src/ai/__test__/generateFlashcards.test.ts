@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { generateFlashcards } from "./generateFlashcards";
-import type { AIClient } from "./client";
+import { generateFlashcards } from "../generateFlashcards";
+import type { AIClient } from "../client";
 
 function createMockClient(responses: string[], available = true): AIClient {
   return {
@@ -11,6 +11,9 @@ function createMockClient(responses: string[], available = true): AIClient {
       for (const r of responses) {
         yield r;
       }
+    },
+    getLastUsage() {
+      return null;
     },
   };
 }
@@ -82,6 +85,9 @@ describe("generateFlashcards", () => {
       },
       async *generate() {
         throw new Error("fail");
+      },
+      getLastUsage() {
+        return null;
       },
     };
 

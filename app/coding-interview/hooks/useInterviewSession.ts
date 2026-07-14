@@ -3,8 +3,8 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useInterviewStore } from "../store/interviewStore";
 import { validateInterviewProps } from "../lib/validation";
-import { generateProblem } from "../lib/api";
-import type { InterviewModuleProps, InterviewPhase } from "../lib/types";
+import { generateProblem, validateTestCases } from "../lib/api";
+import type { InterviewModuleProps, InterviewPhase, GeneratedProblem } from "../lib/types";
 
 const MAX_RETRIES = 3;
 
@@ -19,8 +19,11 @@ interface UseInterviewSessionReturn {
   phase: InterviewPhase;
   error: string | null;
   needsPrompt: boolean;
+  isValidatingTestCases: boolean;
+  testCaseValidationResult: { isValid: boolean; correctionCount: number } | null;
   retry: () => void;
   startWithPrompt: (userPrompt: string) => void;
+  revalidateTestCases: () => void;
 }
 
 /**
@@ -28,6 +31,7 @@ interface UseInterviewSessionReturn {
  * Validates props on mount, generates problem, manages phase transitions.
  * If no context is provided for practice/interview/self-test sources, waits for user prompt.
  * Retries up to 3 times on generation failure.
+ * Auto-validates test cases after generation and applies corrections.
  */
 export function useInterviewSession(
   props: InterviewModuleProps,
@@ -40,8 +44,60 @@ export function useInterviewSession(
   const resumeTimer = useInterviewStore((s) => s.resumeTimer);
 
   const [needsPrompt, setNeedsPrompt] = useState(false);
+  const [isValidatingTestCases, setIsValidatingTestCases] = useState(false);
+  const [testCaseValidationResult, setTestCaseValidationResult] = useState<{
+    isValid: boolean;
+    correctionCount: number;
+  } | null>(null);
   const generatingRef = useRef(false);
   const userPromptRef = useRef<string | undefined>(undefined);
+
+  /**
+   * Validate and fix test cases for a generated problem.
+   * Applies corrections in-place and updates the store.
+   */
+  const doValidateTestCases = useCallback(async (problem: GeneratedProblem) => {
+    setIsValidatingTestCases(true);
+    setTestCaseValidationResult(null);
+
+    try {
+      const result = await validateTestCases(problem);
+
+      if (!result.isValid && result.corrections.length > 0) {
+        // Apply corrections — replace hiddenTestCases with validated ones
+        const correctedProblem: GeneratedProblem = {
+          ...problem,
+          hiddenTestCases: result.hiddenTestCases.map((tc) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
+        };
+
+        setProblem(correctedProblem);
+        setTestCaseValidationResult({
+          isValid: false,
+          correctionCount: result.corrections.length,
+        });
+      } else {
+        // Even if valid, update with the properly-formatted test cases
+        const correctedProblem: GeneratedProblem = {
+          ...problem,
+          hiddenTestCases: result.hiddenTestCases.map((tc) => ({
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+          })),
+        };
+        setProblem(correctedProblem);
+        setTestCaseValidationResult({ isValid: true, correctionCount: 0 });
+      }
+    } catch (err) {
+      console.error("[useInterviewSession] test case validation failed:", err);
+      // Non-blocking — don't fail the session if validation fails
+      setTestCaseValidationResult(null);
+    } finally {
+      setIsValidatingTestCases(false);
+    }
+  }, [setProblem]);
 
   const doGenerate = useCallback(async () => {
     // Prevent concurrent generation calls
@@ -86,7 +142,7 @@ export function useInterviewSession(
         const problem = await generateProblem({
           source: currentProps.source,
           context: currentProps.context,
-          language: currentProps.language || "javascript",
+          language: currentProps.language || "typescript",
           difficulty: currentProps.difficulty,
           userPrompt: userPromptRef.current,
         });
@@ -97,6 +153,9 @@ export function useInterviewSession(
         setPhase("coding");
         resumeTimer();
         generatingRef.current = false;
+
+        // Auto-validate test cases in the background (non-blocking)
+        doValidateTestCases(problem);
         return;
       } catch (err: unknown) {
         console.error(
@@ -180,5 +239,15 @@ export function useInterviewSession(
     doGenerate();
   }, [doGenerate]);
 
-  return { phase, error, needsPrompt, retry, startWithPrompt };
+  /**
+   * Manually trigger test case revalidation.
+   */
+  const revalidateTestCases = useCallback(() => {
+    const problem = useInterviewStore.getState().problem;
+    if (problem && !isValidatingTestCases) {
+      doValidateTestCases(problem);
+    }
+  }, [doValidateTestCases, isValidatingTestCases]);
+
+  return { phase, error, needsPrompt, isValidatingTestCases, testCaseValidationResult, retry, startWithPrompt, revalidateTestCases };
 }

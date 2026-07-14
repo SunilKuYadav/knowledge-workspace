@@ -9,25 +9,23 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { buildArtifactPrompt } from "@/src/ai/prompts";
+import { loadPromptConfig } from "@/src/ai/prompts/loadConfig";
 import { ArtifactSchema } from "@/types";
+import type { SemanticDescription } from "@/types";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { topicId, artifact, topic, category } = body as {
+    const { topicId, artifact, topic, category, semanticDescription } = body as {
       topicId: string;
       artifact: string;
       topic: string;
       category: string;
+      semanticDescription?: SemanticDescription;
     };
 
     if (!topicId || !artifact || !topic || !category) {
@@ -46,11 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/generate-artifact");
 
     const available = await client.isAvailable();
     if (!available) {
@@ -60,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildArtifactPrompt(topic, category, parsed.data);
+    const prompt = buildArtifactPrompt(topic, category, parsed.data, semanticDescription, await loadPromptConfig());
     const workspacePath = getWorkspacePath();
     const repo = new FileTopicRepository(workspacePath);
 

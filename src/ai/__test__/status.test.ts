@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getAIStatus, startHealthCheck, stopHealthCheck } from "./status";
+import { getAIStatus, startHealthCheck, stopHealthCheck } from "../status";
 
 describe("AI status module", () => {
   beforeEach(() => {

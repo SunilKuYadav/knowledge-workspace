@@ -17,6 +17,7 @@ import {
   type ReactNode,
 } from "react";
 import { installAIFetchLogger } from "@/src/ai/logger";
+import { installAIQueueInterceptor } from "@/src/ai/queue-interceptor";
 
 interface AIStatusContextValue {
   available: boolean;
@@ -26,12 +27,15 @@ const AIStatusContext = createContext<AIStatusContextValue>({
   available: false,
 });
 
-const HEALTH_CHECK_INTERVAL_MS = 30_000;
+const HEALTH_CHECK_INTERVAL_MS = 90_000;
 
 export function AIProvider({ children }: { children: ReactNode }) {
   const [available, setAvailable] = useState(false);
 
   useEffect(() => {
+    // Install queue interceptor FIRST — it tracks all AI calls in the store.
+    // The logger wraps on top, so both see the same calls.
+    installAIQueueInterceptor();
     // Install fetch logger for all AI API calls in the browser
     installAIFetchLogger();
   }, []);

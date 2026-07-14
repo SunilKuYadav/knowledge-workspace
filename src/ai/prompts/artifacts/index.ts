@@ -32,6 +32,8 @@ export {
   CHEATSHEET_ARTIFACT_PROMPT,
 };
 
+export { getArtifactLevelGuidance } from "./level-guidance";
+
 /**
  * Lookup map from artifact type to its generation prompt.
  * Used by buildArtifactPrompt() and the master generation builder.

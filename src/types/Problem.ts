@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SemanticDescriptionSchema } from "./SemanticDescription";
 
 /**
  * How frequently a problem appears in real interviews.
@@ -34,7 +35,6 @@ export type Complexity = z.infer<typeof ComplexitySchema>;
 export const ProblemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  platform: z.enum(["leetcode", "codeforces", "gfg"]),
   difficulty: z.enum(["easy", "medium", "hard"]),
   companies: z.array(z.string()),
   patterns: z.array(z.string()),
@@ -65,9 +65,21 @@ export const ProblemSchema = z.object({
    * Space complexity of the user's best solution.
    */
   spaceComplexity: ComplexitySchema.optional(),
+  /**
+   * Topic IDs that are related to this problem.
+   * Powers "study these topics before attempting" and
+   * "you've mastered these topics, try these problems" flows.
+   */
+  relatedTopicIds: z.array(z.string()).optional(),
+  /**
+   * Per-item semantic context for AI generation.
+   * Captures learning intent, target depth, focus areas, and known concepts
+   * so AI-generated content (notes, solutions, patterns) is tailored to this problem.
+   */
+  semanticDescription: SemanticDescriptionSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
 
-/** A coding problem with platform, difficulty, companies, patterns, and solve tracking. */
+/** A coding problem with difficulty, companies, patterns, and solve tracking. */
 export type Problem = z.infer<typeof ProblemSchema>;

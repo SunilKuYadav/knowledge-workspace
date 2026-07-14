@@ -174,3 +174,28 @@ export async function requestScore(
     sessionSummary: SessionSummary;
   }>(response, endpoint);
 }
+
+/* ─── Test Case Validation ───────────────────────────────── */
+
+export interface ValidateTestCasesResponse {
+  hiddenTestCases: Array<{ input: unknown; expectedOutput: unknown }>;
+  corrections: Array<{
+    index: number;
+    original: { input: unknown; expectedOutput: unknown };
+    corrected: { input: unknown; expectedOutput: unknown };
+    reason: string;
+  }>;
+  isValid: boolean;
+}
+
+/**
+ * Validate and fix hidden test cases for the generated problem.
+ * POST /api/ai/coding-interview/validate-test-cases
+ */
+export async function validateTestCases(
+  problem: GeneratedProblem,
+): Promise<ValidateTestCasesResponse> {
+  const endpoint = "/api/ai/coding-interview/validate-test-cases";
+  const response = await fetchWithTimeout(endpoint, { problem });
+  return handleResponse<ValidateTestCasesResponse>(response, endpoint);
+}

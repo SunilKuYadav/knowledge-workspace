@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { generateQuiz } from "./generateQuiz";
-import type { AIClient } from "./client";
+import { generateQuiz } from "../generateQuiz";
+import type { AIClient } from "../client";
 
 function createMockClient(responses: string[], available = true): AIClient {
   return {
@@ -11,6 +11,9 @@ function createMockClient(responses: string[], available = true): AIClient {
       for (const r of responses) {
         yield r;
       }
+    },
+    getLastUsage() {
+      return null;
     },
   };
 }
@@ -115,6 +118,9 @@ describe("generateQuiz", () => {
       },
       async *generate() {
         throw new Error("Stream failed");
+      },
+      getLastUsage() {
+        return null;
       },
     };
 

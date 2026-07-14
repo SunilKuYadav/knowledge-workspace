@@ -4,14 +4,17 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { saveAIContent } from "../ai-actions";
 import { useAIStatus } from "@/src/providers/AIProvider";
+import { useProblemEvaluation } from "@/src/providers/ProblemEvaluationProvider";
 import { logInput, logOutput, logError } from "@/src/ai/logger";
 
 import type { ActionConfig } from "./types";
 import {
   TOPIC_ACTIONS,
   PROBLEM_ACTIONS,
+  EVALUATION_ACTIONS,
   TOPIC_PROMPT_HELPERS,
   PROBLEM_PROMPT_HELPERS,
+  EVALUATION_PROMPT_HELPERS,
 } from "./constants";
 import { detectGeneralQuestion } from "./utils";
 import { useAIChatStore } from "./chatStore";
@@ -31,6 +34,10 @@ export function useAISidebar({
 }: UseAISidebarParams) {
   const { available: contextAvailable } = useAIStatus();
   const available = availableProp ?? contextAvailable;
+
+  // Problem evaluation context (only available for problems)
+  const evaluationCtx = useProblemEvaluation();
+  const hasEvaluation = context === "problem" && evaluationCtx.evaluation !== null;
 
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -64,8 +71,13 @@ export function useAISidebar({
   }, [context, itemId, itemTitle, getOrCreateSession]);
 
   const actions = context === "topic" ? TOPIC_ACTIONS : PROBLEM_ACTIONS;
+  const evaluationActions = hasEvaluation ? EVALUATION_ACTIONS : [];
   const promptHelpers =
-    context === "topic" ? TOPIC_PROMPT_HELPERS : PROBLEM_PROMPT_HELPERS;
+    context === "topic"
+      ? TOPIC_PROMPT_HELPERS
+      : hasEvaluation
+        ? [...EVALUATION_PROMPT_HELPERS, ...PROBLEM_PROMPT_HELPERS]
+        : PROBLEM_PROMPT_HELPERS;
 
   const router = useRouter();
 
@@ -144,7 +156,23 @@ export function useAISidebar({
       addMessage(currentSession.id, "assistant", "");
 
       try {
-        const requestBody = { action: actionConfig.action, itemId, context };
+        // Build request — evaluation actions include evaluation context
+        const isEvalAction = EVALUATION_ACTIONS.some((a) => a.id === actionConfig.id);
+        const requestBody = isEvalAction && evaluationCtx.evaluation
+          ? {
+              action: actionConfig.action,
+              itemId,
+              context,
+              evaluationContext: {
+                evaluation: evaluationCtx.evaluation,
+                code: evaluationCtx.evaluatedCode,
+                problemTitle: evaluationCtx.problemTitle,
+                patterns: evaluationCtx.problemPatterns,
+                difficulty: evaluationCtx.problemDifficulty,
+              },
+            }
+          : { action: actionConfig.action, itemId, context };
+
         logInput(JSON.stringify(requestBody), actionConfig.action);
 
         const response = await fetch("/api/ai", {
@@ -194,6 +222,7 @@ export function useAISidebar({
       itemId,
       context,
       itemTitle,
+      evaluationCtx,
       getOrCreateSession,
       addMessage,
       updateLastAssistantMessage,
@@ -208,6 +237,22 @@ export function useAISidebar({
     if (!lastAssistant) return;
 
     setSaveStatus("saving");
+
+    // If this is an evaluation action with a save target, save back to workspace
+    if (activeAction.saveTarget && evaluationCtx) {
+      if (activeAction.saveTarget === "notes" && evaluationCtx.onSaveNotes) {
+        evaluationCtx.onSaveNotes(lastAssistant.content);
+        setSaveStatus("saved");
+        return;
+      }
+      if (activeAction.saveTarget === "solution" && evaluationCtx.onSaveSolution) {
+        evaluationCtx.onSaveSolution(lastAssistant.content);
+        setSaveStatus("saved");
+        return;
+      }
+    }
+
+    // Default: save to file
     const result = await saveAIContent(
       itemId,
       context,
@@ -220,7 +265,7 @@ export function useAISidebar({
     } else {
       setSaveStatus("error");
     }
-  }, [activeAction, messages, itemId, context]);
+  }, [activeAction, messages, itemId, context, evaluationCtx]);
 
   const handleOpenInEditor = useCallback(async () => {
     if (!activeAction) return;
@@ -353,6 +398,8 @@ export function useAISidebar({
     showHelpers,
     width,
     actions,
+    evaluationActions,
+    hasEvaluation,
     promptHelpers,
     messages,
 

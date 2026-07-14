@@ -48,6 +48,41 @@ export const PROBLEM_ACTIONS: ActionConfig[] = [
   },
 ];
 
+/** Actions shown after an AI evaluation is available */
+export const EVALUATION_ACTIONS: ActionConfig[] = [
+  {
+    id: "improve-solution",
+    label: "✨ Improve Solution",
+    action: "improve-solution",
+    streaming: true,
+    filename: "ai-improved-solution.md",
+    saveTarget: "solution",
+  },
+  {
+    id: "eval-notes",
+    label: "📝 Notes from Feedback",
+    action: "eval-notes",
+    streaming: true,
+    filename: "ai-eval-notes.md",
+    saveTarget: "notes",
+  },
+  {
+    id: "eval-variation",
+    label: "🔀 Solution Variation",
+    action: "eval-variation",
+    streaming: true,
+    filename: "ai-eval-variation.md",
+    saveTarget: "solution",
+  },
+  {
+    id: "eval-followup",
+    label: "💬 Follow-up Suggestions",
+    action: "eval-followup",
+    streaming: true,
+    filename: "ai-eval-followup.md",
+  },
+];
+
 export const TOPIC_PROMPT_HELPERS: PromptHelper[] = [
   {
     label: "Explain concept",
@@ -83,5 +118,25 @@ export const PROBLEM_PROMPT_HELPERS: PromptHelper[] = [
   {
     label: "Alternative solutions",
     prompt: "What are alternative approaches to solve this problem?",
+  },
+];
+
+/** Prompt helpers shown when evaluation data is available */
+export const EVALUATION_PROMPT_HELPERS: PromptHelper[] = [
+  {
+    label: "How to fix weaknesses?",
+    prompt: "Based on the evaluation feedback, how can I fix the weaknesses in my solution?",
+  },
+  {
+    label: "Optimize further",
+    prompt: "How can I optimize my current solution based on the evaluation?",
+  },
+  {
+    label: "Explain improvement areas",
+    prompt: "Explain each improvement area from the evaluation in detail with code examples",
+  },
+  {
+    label: "Handle edge cases",
+    prompt: "Show me how to handle the edge cases mentioned in the evaluation",
   },
 ];

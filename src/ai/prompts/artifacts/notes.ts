@@ -1,44 +1,64 @@
 /**
  * Artifact prompt: notes.md
  *
- * Deep study notes from beginner to advanced, explaining WHY before HOW.
+ * Deep study notes from fundamentals to staff-level depth, explaining WHY before HOW.
  */
-export const NOTES_ARTIFACT_PROMPT = `Generate detailed study notes for this topic.
+export const NOTES_ARTIFACT_PROMPT = `Generate deep study notes for this topic, calibrated for senior/staff-level (10+ YOE) engineering roles at Google, Meta, Microsoft.
 
 Include ALL of the following sections:
 
-# Core concepts
-The foundational ideas that everything else builds on.
+# Core Concept
+One-paragraph essence. If a staff engineer were explaining this in an elevator, this is what they'd say.
 
-# Internal working
-How it works under the hood — memory layout, data structures, algorithms involved.
+# Why This Exists
+Historical context: what problem does this solve? What came before it and why it failed. This is what separates senior engineers — they understand the "why" behind every tool.
 
-# Step-by-step explanation
-Walk through the core operation step by step, numbered.
+# Internal Working
+Under-the-hood implementation: memory layout, data structures, algorithms. Include OS-level or hardware considerations where relevant (cache lines, NUMA, GC interaction).
 
-# Time complexity
-A table of all relevant operations with best / average / worst case.
+# Step-by-Step Walkthrough
+A concrete operation traced step by step, numbered. Include state before and after each step.
 
-# Space complexity
-Memory usage analysis.
+# Complexity Analysis
+| Operation | Best | Average | Worst | Amortized |
+Include explanation of WHY each complexity is what it is — not just the answer, but the proof sketch or reasoning.
 
-# Important properties & invariants
-Rules that are always true about this structure or algorithm.
+# Space Complexity
+Memory usage analysis: stack vs heap, auxiliary space, in-place implications.
 
-# Code examples
-Two or three examples in TypeScript demonstrating the key operations.
+# Important Properties & Invariants
+Rules that are ALWAYS true. These are what you prove correct in an interview.
+
+# Edge Cases
+Exhaustive list including: empty input, single element, duplicates, max constraints, integer overflow, negative numbers, circular references. Include the correct behavior for each.
+
+# Code Examples
+Two or three examples in pseudocode demonstrating the key operations.
+Use clear, language-agnostic pseudocode (not JavaScript/TypeScript — those are reserved for problem solutions).
 Include inline comments explaining non-obvious steps.
 
-# ASCII diagrams
-At least one diagram showing the internal structure or a key operation.
+# ASCII Diagrams
+At least one diagram showing internal structure or a key operation. Use text art.
 
-# Production considerations
-Pitfalls, limitations, and things that matter at scale.
+# Production Considerations
+- Scale limits: where does this break? What's the practical upper bound?
+- Memory pressure: how does this behave under GC? Are there allocation patterns to avoid?
+- Concurrency: thread-safety, lock-free alternatives.
+- Monitoring: what metrics to track in production.
 
-# Best practices
-Bullet list of what senior engineers always do/avoid with this topic.
+# Common Senior Mistakes
+Mistakes that even experienced engineers make in interviews and production:
+- Subtle off-by-one errors.
+- Overlooked edge cases.
+- Misunderstood complexity (amortized vs worst-case).
+- Incorrect mental models.
+
+# Interview Bar
+What a Google/Meta L5 answer looks like vs L6. Specifically what needs to be demonstrated on this topic.
 
 Rules:
 - Explain WHY before HOW.
-- Teach from beginner to advanced — build up complexity gradually.
-- All code in TypeScript unless the concept is language-independent.`;
+- Go deeper than any textbook or LeetCode editorial.
+- Use pseudocode for all code examples (not TypeScript — that is reserved for coding problem solutions).
+- Include at least one counterintuitive insight that separates senior engineers from juniors.`;
+

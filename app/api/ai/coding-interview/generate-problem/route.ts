@@ -8,19 +8,16 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildProblemGenerationPrompt } from "@/ai/prompts";
+import { loadPromptConfig } from "@/ai/prompts/loadConfig";
+import { getPromptForAction } from "@/ai/prompts/config";
 import type {
   InterviewSource,
   InterviewContext,
   GeneratedProblem,
 } from "@/app/coding-interview/lib/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 interface GenerateProblemRequest {
   source: InterviewSource;
@@ -161,12 +158,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/coding-interview/generate-problem");
     const prompt = buildProblemGenerationPrompt(body);
+
+    // Prepend experience-calibrated coding interview context
+    const promptConfig = await loadPromptConfig();
+    const codingInterviewContext = getPromptForAction("codingInterview", promptConfig);
+    const fullPrompt = codingInterviewContext + "\n\n" + prompt;
 
     // Use AbortController for 30s timeout
     const controller = new AbortController();
@@ -175,7 +173,7 @@ export async function POST(request: NextRequest) {
     let fullResponse = "";
 
     try {
-      const generator = client.generate(prompt);
+      const generator = client.generate(fullPrompt);
 
       for await (const chunk of generator) {
         if (controller.signal.aborted) {
@@ -203,6 +201,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Problem generation timed out after 30 seconds" },
         { status: 504 },
+      );
+    }
+
+    // If the AI returned nothing, the model likely isn't loaded or errored
+    if (!fullResponse.trim()) {
+      console.error("[generate-problem] AI returned empty response. Model may not be loaded or LM Studio returned an error.");
+      return NextResponse.json(
+        { error: "AI returned an empty response. Check that the model is loaded in LM Studio." },
+        { status: 502 },
       );
     }
 
@@ -237,9 +244,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(parsed as GeneratedProblem);
-  } catch {
+  } catch (err) {
+    console.error("[generate-problem] Unhandled error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${err instanceof Error ? err.message : String(err)}` },
       { status: 500 },
     );
   }

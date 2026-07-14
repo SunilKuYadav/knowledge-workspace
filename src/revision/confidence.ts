@@ -9,6 +9,7 @@
  *   confidence 5 → 5x   (5x interval — mastered)
  *
  * Minimum interval is always 1 day.
+ * Maximum interval is capped at 350 days.
  * Default previousInterval (for first review) is 1 day.
  */
 
@@ -22,12 +23,15 @@ const INTERVAL_MULTIPLIERS: Record<Confidence, number> = {
   5: 5,
 };
 
+/** Maximum interval cap in days */
+const MAX_INTERVAL_DAYS = 350;
+
 /**
  * Calculate the next review interval in days based on confidence and previous interval.
  *
  * @param confidence - User's confidence level (1-5)
  * @param previousInterval - Days since last review (defaults to 1 for first review)
- * @returns The new interval in days (minimum 1)
+ * @returns The new interval in days (minimum 1, maximum 350)
  */
 export function calculateInterval(
   confidence: Confidence,
@@ -36,5 +40,5 @@ export function calculateInterval(
   const interval = previousInterval <= 0 ? 1 : previousInterval;
   const multiplier = INTERVAL_MULTIPLIERS[confidence];
   const newInterval = Math.round(interval * multiplier);
-  return Math.max(1, newInterval);
+  return Math.min(MAX_INTERVAL_DAYS, Math.max(1, newInterval));
 }

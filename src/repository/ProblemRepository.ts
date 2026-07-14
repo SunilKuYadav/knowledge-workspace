@@ -11,6 +11,9 @@ export interface ProblemRepository extends Repository<Problem> {
   saveNotes(id: string, content: string): Promise<void>;
   getSolution(id: string): Promise<string>;
   saveSolution(id: string, content: string): Promise<void>;
+  overwriteSolution(id: string, content: string): Promise<void>;
+  getDraft(id: string): Promise<string>;
+  saveDraft(id: string, content: string): Promise<void>;
   getRevision(id: string): Promise<RevisionData>;
   /** Reads description.json — returns null if not yet generated. */
   getDescription(id: string): Promise<ProblemDescription | null>;

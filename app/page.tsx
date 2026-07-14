@@ -20,10 +20,11 @@ export default async function Dashboard() {
     new FileRevisionRepository(workspacePath),
   );
 
-  const [topics, problems, dueItems] = await Promise.all([
+  const [topics, problems, dueItems, allRevisionItems] = await Promise.all([
     topicService.getAllTopics(),
     problemService.getAllProblems(),
     revisionService.getDueItems(),
+    revisionService.getAllItems(),
   ]);
 
   const currentDate = new Date().toISOString().split("T")[0];
@@ -49,11 +50,22 @@ export default async function Dashboard() {
       (topicsByConfidence[topic.confidence] || 0) + 1;
   }
 
-  // Study streak: count of items reviewed today (simplified)
+  // Study streak: count of items reviewed today from ALL revision items (not just due)
   const today = new Date().toISOString().split("T")[0];
-  const reviewedToday = dueItems.filter(
+  const reviewedToday = allRevisionItems.filter(
     (item) => item.lastReviewed && item.lastReviewed.split("T")[0] === today,
   ).length;
+
+  // Not started: topics and problems that don't have any revision data
+  const revisionItemIds = new Set(
+    allRevisionItems.map((item) => item.itemId),
+  );
+  const notStartedTopics = topics.filter(
+    (topic) => !revisionItemIds.has(topic.id),
+  );
+  const notStartedProblems = problems.filter(
+    (problem) => !revisionItemIds.has(problem.id),
+  );
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 p-6 md:p-10">
@@ -66,17 +78,37 @@ export default async function Dashboard() {
             Your learning dashboard
           </p>
         </div>
-        <Link
-          href="/create"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          + Create
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/duplicates"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            🔍 Duplicates
+          </Link>
+          <Link
+            href="/progress"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            📊 Progress
+          </Link>
+          <Link
+            href="/settings"
+            className="rounded-md border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            ⚙ Prompts
+          </Link>
+          <Link
+            href="/create"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            + Create
+          </Link>
+        </div>
       </header>
 
       {/* Summary Stats */}
       <section aria-label="Summary statistics" className="mb-10">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Total Topics" value={topics.length} href="/topics" />
           <StatCard
             label="Total Problems"
@@ -89,6 +121,10 @@ export default async function Dashboard() {
             href="/revision"
           />
           <StatCard label="Reviewed Today" value={reviewedToday} />
+          <StatCard
+            label="Not Started"
+            value={notStartedTopics.length + notStartedProblems.length}
+          />
         </div>
       </section>
 
@@ -108,6 +144,63 @@ export default async function Dashboard() {
                 key={`${item.itemType}-${item.itemId}`}
                 item={item}
               />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Not Started */}
+      <section aria-label="Items not started" className="mb-10">
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
+          Not Started
+        </h2>
+        {notStartedTopics.length === 0 && notStartedProblems.length === 0 ? (
+          <p className="text-zinc-500 dark:text-zinc-400">
+            All items have been started. Keep it up!
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {notStartedTopics.map((topic) => (
+              <li
+                key={`topic-${topic.id}`}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <Link
+                    href={`/topics/${topic.id}`}
+                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {topic.title}
+                  </Link>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    topic · {topic.category}
+                  </p>
+                </div>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                  Not reviewed
+                </span>
+              </li>
+            ))}
+            {notStartedProblems.map((problem) => (
+              <li
+                key={`problem-${problem.id}`}
+                className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <Link
+                    href={`/problems/${problem.id}`}
+                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {problem.title}
+                  </Link>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    problem · {problem.difficulty}
+                  </p>
+                </div>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
+                  Not reviewed
+                </span>
+              </li>
             ))}
           </ul>
         )}

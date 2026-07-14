@@ -1,3 +1,3 @@
 export { composePrompt } from "./compose";
 export type { ComposeOptions } from "./compose";
-export { section, field, metadata, joinBlocks } from "./format";
+export { section, field, metadata, joinBlocks, formatSemanticContext } from "./format";

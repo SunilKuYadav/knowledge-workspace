@@ -34,14 +34,14 @@ export function buildEnhancePromptForProblem(text: string): string {
 
 Given the user's rough input, generate an enhanced version that is:
 - More specific about the problem details
-- Includes platform, difficulty, companies, and patterns if they can be inferred
-- Includes a problem URL format if the platform is known
+- Includes difficulty, companies, and patterns if they can be inferred
+- Includes a problem URL if it can be inferred
 - Keeps the user's original intent intact
 
 User's input: "${text}"
 
 Return ONLY a single enhanced prompt string (no JSON, no explanation, no quotes around it). The enhanced prompt should read naturally, like:
-"Two Sum from LeetCode, easy difficulty, frequently asked at Google and Amazon, uses hash map and two-pointers patterns, URL: https://leetcode.com/problems/two-sum"
+"Two Sum, easy difficulty, frequently asked at Google and Amazon, uses hash map and two-pointers patterns, URL: https://leetcode.com/problems/two-sum"
 
 Keep it concise but detailed enough to extract structured data from.`,
   });

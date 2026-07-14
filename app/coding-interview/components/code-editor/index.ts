@@ -1,2 +1,2 @@
 export { CodeEditor } from "./CodeEditor";
-export type { CodeEditorProps, CopyStatus } from "./types";
+export type { CodeEditorProps, CopyStatus, FullscreenActions, FullscreenPanelData } from "./types";

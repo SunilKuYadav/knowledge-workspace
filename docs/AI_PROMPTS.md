@@ -9,23 +9,82 @@ All prompts are centralized in `src/ai/prompts/`.
 
 ```
 src/ai/prompts/
-├── system/          # Composable personality/behavior modules
+├── system/          # Composable personality/behavior modules (static defaults)
 ├── builders/        # Feature-specific prompt builders (functions)
 ├── artifacts/       # Topic artifact generation instructions
-├── schemas/         # JSON output schema instructions
+├── schemas/        # JSON output schema instructions
 ├── utils/           # Composition & formatting helpers
+├── config.ts        # Experience-level-aware dynamic prompt generators
+├── loadConfig.ts    # Server-side config loader from workspace
 └── index.ts         # Public API re-exports
 ```
 
-Prompts are built using `composePrompt()` which joins selected system modules
-with a task-specific instruction block.
+Prompts are built using either:
+- `composePrompt()` — joins static system modules with a task instruction (legacy)
+- `composeWithConfig()` — joins experience-calibrated modules with a task instruction (preferred)
+
+---
+
+## Prompt Configuration System
+
+The prompt system is **user-configurable** via `/settings` (UI) or the config file at
+`~/knowledge-workspace/.config/prompt-config.json`.
+
+### Experience Levels
+
+| Level | Target | Teaching Depth |
+|-------|--------|----------------|
+| **1 year (default)** | Junior/Mid (L3/L4) | Step-by-step explanations, visual analogies, building blocks |
+| 5 years | Senior (L4/L5) | Clear foundations, practical examples, pattern recognition |
+| 10 years | Staff (L5/L6) | First principles, formal analysis, production depth |
+| 15 years | Principal (L6/L7) | Architectural thinking, skip fundamentals, organizational impact |
+
+### Config Schema (`PromptConfig`)
+
+```typescript
+{
+  experienceLevel: 1 | 5 | 10 | 15,        // Default: 1
+  targetRole: string,                    // Default: "Junior/Mid Engineer (L3/L4)"
+  targetCompanies: string[],             // Default: ["Google", "Meta", "Microsoft", "Amazon", "Apple"]
+  overrides: {                           // Per-action customization (optional)
+    [actionKey]: {
+      append?: string,                   // Additional instructions appended to generated prompt
+      replace?: string,                  // Completely replaces the generated prompt
+    }
+  }
+}
+```
+
+### Configurable Prompt Actions
+
+| Action Key | Config Function | Affected By |
+|------------|----------------|-------------|
+| `identity` | `buildIdentityPrompt(config)` | Experience level, target role, companies |
+| `teaching` | `buildTeachingPrompt(config)` | Experience level (changes entire teaching framework) |
+| `interview` | `buildInterviewPrompt(config)` | Experience level, companies (changes evaluation bar) |
+| `dsa` | `buildDSAPrompt(config)` | Experience level, companies |
+| `systemDesign` | `buildSystemDesignPrompt(config)` | Experience level, companies |
+| `revision` | `buildRevisionPrompt(config)` | Experience level |
+| `codingInterview` | `buildCodingInterviewPrompt(config)` | Experience level, companies |
+
+### APIs
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/settings/prompt-config` | GET | Read current config (or defaults) |
+| `/api/settings/prompt-config` | PUT | Save updated config |
+| `/api/settings/prompt-preview` | POST | Preview final prompts for a given config |
 
 ---
 
 ## System Context Modules
 
 Reusable building blocks that define the AI persona and behavior.
-Each module is prepended to the prompt via `composePrompt({ modules: [...], task })`.
+These are the **static defaults** — when the prompt config system is active,
+experience-calibrated versions are generated dynamically by `config.ts`.
+
+Each module is prepended to the prompt via `composePrompt({ modules: [...], task })`
+or dynamically via `composeWithConfig({ actionKeys: [...], task, config })`.
 
 | Module | File | Purpose |
 |--------|------|---------|
@@ -114,6 +173,33 @@ Each module is prepended to the prompt via `composePrompt({ modules: [...], task
 | `buildGenerateDescriptionPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-description` | Generate full problem description with test cases |
 | `buildGenerateNotePrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-note` | Generate "key things to remember" note from solution |
 | `buildGenerateVariationPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-variation` | Generate a problem variation testing same patterns |
+| `buildGenerateTestCasesPrompt(params)` | `builders/problem.ts` | `/api/ai/problem/generate-test-cases` | Generate comprehensive categorized test suite |
+
+### Topic Problem Generation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildSuggestProblemsPrompt(params, level, role)` | `builders/topic-problems.ts` | `/api/ai/topic/suggest-problems` | Suggest 5-8 coding problems for a topic |
+| `buildGenerateProblemFromTopicPrompt(params, level)` | `builders/topic-problems.ts` | `/api/ai/topic/generate-problem` | Generate a complete problem from topic metadata |
+
+### Solution Evaluation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildEvaluateSolutionPrompt(params, level, role)` | `builders/solution-evaluation.ts` | `/api/ai/problem/evaluate-solution` | Evaluate submitted code with experience-calibrated scoring |
+
+### Test Validation
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildProblemTestValidationPrompt(params)` | `builders/test-validation.ts` | `/api/ai/problem/validate-test-cases` | Validate test case correctness for problem descriptions |
+| `buildCodingInterviewTestValidationPrompt(problem)` | `builders/test-validation.ts` | `/api/ai/coding-interview/validate-test-cases` | Validate hidden test cases for coding interview problems |
+
+### Evaluation Actions (AI Sidebar)
+
+| Builder | File | Used By | Purpose |
+|---------|------|---------|---------|
+| `buildEvaluationActionPrompt(action, ctx, config)` | `builders/evaluation-actions.ts` | `/api/ai` (sidebar) | Post-evaluation actions: improve solution, generate notes, alternative approach, follow-up suggestions |
 
 ---
 
@@ -156,7 +242,10 @@ Embedded in prompts to enforce structured output format.
 
 | Function | File | Purpose |
 |----------|------|---------|
-| `composePrompt({ modules, task })` | `utils/compose.ts` | Join system modules + task into final prompt string |
+| `composePrompt({ modules, task })` | `utils/compose.ts` | Join static system modules + task into final prompt string |
+| `composeWithConfig({ actionKeys, extraModules?, task, config })` | `utils/compose.ts` | Join experience-calibrated modules + task (preferred) |
+| `getPromptForAction(actionKey, config)` | `config.ts` | Get final prompt text for an action with overrides applied |
+| `loadPromptConfig()` | `loadConfig.ts` | Server-side: load user config from workspace (cached 5s) |
 | `section(label, content)` | `utils/format.ts` | Wrap content with `## label` header |
 | `field(key, value)` | `utils/format.ts` | Format a `key: value` line |
 | `metadata(fields)` | `utils/format.ts` | Format array of key-value pairs |
@@ -169,26 +258,64 @@ Embedded in prompts to enforce structured output format.
 ```typescript
 import {
   composePrompt,
+  composeWithConfig,
+  loadPromptConfig,
+  getPromptForAction,
   IDENTITY_CONTEXT,
   TEACHING_CONTEXT,
   MARKDOWN_CONTEXT,
   buildArtifactPrompt,
   buildProblemGenerationPrompt,
+  buildSuggestProblemsPrompt,
+  buildEvaluateSolutionPrompt,
+  buildEvaluationActionPrompt,
+  buildProblemTestValidationPrompt,
+  buildCodingInterviewTestValidationPrompt,
+  buildGenerateProblemFromTopicPrompt,
 } from "@/ai/prompts";
 
-// Compose a custom prompt
+// ─── Legacy: Static module composition ───
 const prompt = composePrompt({
   modules: [IDENTITY_CONTEXT, TEACHING_CONTEXT, MARKDOWN_CONTEXT],
   task: "Explain binary search trees.",
 });
 
-// Use a builder
+// ─── Preferred: Config-aware composition ───
+const config = await loadPromptConfig(); // loads from workspace or defaults (1 YOE)
+
+const configPrompt = composeWithConfig({
+  actionKeys: ["identity", "teaching"],
+  extraModules: [MARKDOWN_CONTEXT],
+  task: "Explain binary search trees.",
+  config,
+});
+
+// ─── Get a single action's final prompt ───
+const interviewPrompt = getPromptForAction("interview", config);
+
+// ─── Builders ───
 const artifactPrompt = buildArtifactPrompt("Binary Search", "dsa", "notes");
 
-// Coding interview problem generation
 const problemPrompt = buildProblemGenerationPrompt({
   source: "practice",
   difficulty: "medium",
   language: "typescript",
 });
+
+// ─── Topic problem suggestions (experience-calibrated) ───
+const suggestPrompt = buildSuggestProblemsPrompt(
+  { topicId: "...", topicTitle: "Binary Search", category: "dsa", tags: ["binary-search"], difficulty: "medium", artifactContent: "..." },
+  config.experienceLevel,
+  config.targetRole,
+);
+
+// ─── Solution evaluation (experience-calibrated) ───
+const evalPrompt = buildEvaluateSolutionPrompt(
+  { code: "...", problemId: "...", title: "Two Sum", description: "...", difficulty: "easy", patterns: ["hash-map"], constraints: ["..."], testResults: [] },
+  config.experienceLevel,
+  config.targetRole,
+);
+
+// ─── Evaluation follow-up actions ───
+const followUpPrompt = buildEvaluationActionPrompt("eval-followup", evaluationContext, config);
 ```

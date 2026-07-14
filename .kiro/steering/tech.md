@@ -10,11 +10,12 @@
 
 | Library | Purpose |
 |---------|---------|
-| Zod | Schema validation and type inference |
+| Zod 4 | Schema validation and type inference |
 | Zustand | Client-side state management |
 | MiniSearch | Full-text search indexing |
-| CodeMirror 6 | Code editor (coding interview module) |
+| CodeMirror 6 | Code editor (coding interview + self-test modules) |
 | react-markdown + remark-gfm + rehype-highlight | Markdown rendering |
+| highlight.js | Syntax highlighting |
 | gray-matter | Frontmatter parsing |
 | uuid | ID generation |
 | sucrase | In-browser JS/TS transpilation (code execution) |
@@ -28,6 +29,10 @@
 
 - **OpenAI** via AI Studio (OpenAI-compatible API)
 - Model: configurable via `OPENAI_MODEL` env var (default: gpt-4o)
+- **Prompt Config**: User-configurable experience level (1/5/10/15 YOE) stored in `~/knowledge-workspace/.config/prompt-config.json`
+  - Managed via `/settings` UI or `PUT /api/settings/prompt-config`
+  - All prompts adapt dynamically via `src/ai/prompts/config.ts`
+  - Default: 1 year experience (Junior/Mid L3/L4)
 
 ## Common Commands
 
@@ -57,10 +62,18 @@
 |-------|-------------|
 | `@/*` | `./*` (project root) |
 | `@/types` | `./src/types` |
+| `@/types/*` | `./src/types/*` |
 | `@/repository` | `./src/repository` |
+| `@/repository/*` | `./src/repository/*` |
 | `@/filesystem` | `./src/filesystem` |
+| `@/filesystem/*` | `./src/filesystem/*` |
 | `@/parser` | `./src/parser` |
+| `@/parser/*` | `./src/parser/*` |
 | `@/search` | `./src/search` |
+| `@/search/*` | `./src/search/*` |
 | `@/revision` | `./src/revision` |
+| `@/revision/*` | `./src/revision/*` |
 | `@/ai` | `./src/ai` |
+| `@/ai/*` | `./src/ai/*` |
 | `@/git` | `./src/git` |
+| `@/git/*` | `./src/git/*` |

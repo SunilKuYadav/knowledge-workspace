@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildScorePrompt } from "@/ai/prompts";
 import {
@@ -27,11 +27,6 @@ import type {
   SessionSummary,
   DimensionScore,
 } from "@/app/coding-interview/lib/types";
-
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
 
 interface ScoreRequestBody {
   evaluation: EvaluationReport;
@@ -63,11 +58,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const client = await getReadyClient("ai/coding-interview/score");
 
     // Calculate penalties using pure functions
     const penalties = calculatePenalty(

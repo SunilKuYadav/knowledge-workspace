@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { categorizeRevisionItem, getDueItems, sortByPriority } from "./spaced";
+import { categorizeRevisionItem, getDueItems, sortByPriority } from "../spaced";
 import type { RevisionData } from "@/types";
 
 describe("categorizeRevisionItem", () => {

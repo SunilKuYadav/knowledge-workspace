@@ -3,8 +3,8 @@ import {
   explainConcept,
   suggestSimilarProblems,
   generateInterviewPrep,
-} from "./explain";
-import type { AIClient } from "./client";
+} from "../explain";
+import type { AIClient } from "../client";
 import type { Problem } from "@/types";
 
 function createMockClient(responses: string[], available = true): AIClient {
@@ -17,13 +17,15 @@ function createMockClient(responses: string[], available = true): AIClient {
         yield r;
       }
     },
+    getLastUsage() {
+      return null;
+    },
   };
 }
 
 const mockProblem: Problem = {
   id: "two-sum",
   title: "Two Sum",
-  platform: "leetcode",
   difficulty: "easy",
   companies: ["Google", "Amazon"],
   patterns: ["hash-map", "two-pointers"],

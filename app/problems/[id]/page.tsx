@@ -2,10 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
+import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { ProblemService } from "@/src/services/ProblemService";
+import { TopicService } from "@/src/services/TopicService";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import AISidebar from "@/src/components/AISidebar";
+import LinkTopicButton from "@/src/components/LinkTopicButton";
+import { ProblemEvaluationProvider } from "@/src/providers/ProblemEvaluationProvider";
 import ProblemWorkspace from "./problem-workspace";
 
 export default async function ProblemDetailPage({
@@ -19,16 +23,26 @@ export default async function ProblemDetailPage({
   const problemService = new ProblemService(
     new FileProblemRepository(workspacePath),
   );
+  const topicService = new TopicService(new FileTopicRepository(workspacePath));
 
   const problem = await problemService.getProblemById(id);
   if (!problem) notFound();
 
-  const [notes, solution, revision, description] = await Promise.all([
+  const [notes, solution, draft, revision, description, allTopics] = await Promise.all([
     problemService.getNotes(id),
     problemService.getSolution(id),
+    problemService.getDraft(id),
     problemService.getRevision(id),
     problemService.getDescription(id),
+    topicService.getAllTopics(),
   ]);
+
+  const linkedTopicIds = problem.relatedTopicIds ?? [];
+  const topicSummaries = allTopics.map((t) => ({
+    id: t.id,
+    title: t.title,
+    category: t.category,
+  }));
 
   const difficultyColor = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -36,12 +50,6 @@ export default async function ProblemDetailPage({
       "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
     hard: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   }[problem.difficulty];
-
-  const platformLabel = {
-    leetcode: "LeetCode",
-    codeforces: "Codeforces",
-    gfg: "GFG",
-  }[problem.platform];
 
   const statusColor = {
     "not-started":
@@ -74,9 +82,6 @@ export default async function ProblemDetailPage({
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-xs font-medium px-2 py-0.5 rounded bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
-                {platformLabel}
-              </span>
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${difficultyColor}`}>
                 {problem.difficulty}
               </span>
@@ -96,9 +101,20 @@ export default async function ProblemDetailPage({
               source="problem"
               id={id}
               title={problem.title}
-              category={problem.patterns[0] || ""}
+              category={problem.patterns[0] || description?.category || ""}
               tags={problem.patterns}
               difficulty={problem.difficulty}
+              problemStatus={problem.status}
+              variations={
+                description?.variations?.map((v) => ({
+                  id: v.id,
+                  title: v.title,
+                  difficulty: v.difficulty,
+                  category: v.category,
+                  tags: v.tags,
+                  status: v.status || "not-started",
+                })) || []
+              }
             />
             {problem.url && (
               <a
@@ -132,22 +148,65 @@ export default async function ProblemDetailPage({
             </span>
           ))}
         </div>
+
+        {/* Related Topics */}
+        <div className="mt-3">
+          <LinkTopicButton
+            problemId={id}
+            linkedTopicIds={linkedTopicIds}
+            allTopics={topicSummaries}
+          />
+        </div>
+        {/* Semantic Description */}
+        {problem.semanticDescription && (
+          <div className="mt-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-xs">🎯</span>
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                AI Context
+              </span>
+            </div>
+            {problem.semanticDescription.intent && (
+              <p className="text-xs text-zinc-700 dark:text-zinc-300">
+                {problem.semanticDescription.intent}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-1 mt-1">
+              {problem.semanticDescription.targetLevel && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  {problem.semanticDescription.targetLevel}
+                </span>
+              )}
+              {problem.semanticDescription.focus?.map((f) => (
+                <span
+                  key={f}
+                  className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                >
+                  {f}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Workspace + AI Sidebar (fills remaining space) */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        <div className="flex-1 min-w-0">
-          <ProblemWorkspace
-            problem={problem}
-            description={description}
-            initialNotes={notes}
-            initialSolution={solution}
-            revision={revision}
-          />
-        </div>
+        <ProblemEvaluationProvider>
+          <div className="flex-1 min-w-0">
+            <ProblemWorkspace
+              problem={problem}
+              description={description}
+              initialNotes={notes}
+              initialSolution={solution}
+              initialDraft={draft}
+              revision={revision}
+            />
+          </div>
 
-        {/* AI Sidebar — right panel */}
-        <AISidebar context="problem" itemId={id} itemTitle={problem.title} />
+          {/* AI Sidebar — right panel */}
+          <AISidebar context="problem" itemId={id} itemTitle={problem.title} />
+        </ProblemEvaluationProvider>
       </div>
     </div>
   );

@@ -16,10 +16,9 @@ import {
   indentOnInput,
   bracketMatching,
   syntaxHighlighting,
-  defaultHighlightStyle,
 } from "@codemirror/language";
 import { formatCode } from "../../services/formatService";
-import { darkTheme, lightTheme } from "./constants";
+import { darkTheme, lightTheme, darkHighlightStyle } from "./constants";
 import type { CodeEditorProps, CopyStatus } from "./types";
 
 export function useCodeEditor({
@@ -45,6 +44,23 @@ export function useCodeEditor({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+
+  // Toggle fullscreen with F11 key, exit with Escape
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "F11") {
+        e.preventDefault();
+        setIsFullscreen((prev) => !prev);
+      }
+      if (e.key === "Escape" && isFullscreen) {
+        e.preventDefault();
+        setIsFullscreen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
 
   // Subscribe to dark mode changes
   useEffect(() => {
@@ -79,7 +95,7 @@ export function useCodeEditor({
         bracketMatching(),
         closeBrackets(),
         indentOnInput(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        syntaxHighlighting(darkHighlightStyle),
         langExtension,
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, indentWithTab]),
         isDark ? darkTheme : lightTheme,
@@ -102,7 +118,7 @@ export function useCodeEditor({
     };
     // We intentionally re-create the editor when theme or language changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDark, langExtension, readOnly]);
+  }, [isDark, langExtension, readOnly, isFullscreen]);
 
   // Sync external value changes into the editor
   useEffect(() => {

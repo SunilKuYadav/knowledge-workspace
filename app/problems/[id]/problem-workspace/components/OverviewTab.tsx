@@ -68,7 +68,6 @@ export function OverviewTab({
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-          <InfoRow label="Platform" value={problem.platform.toUpperCase()} />
           <InfoRow label="Difficulty" value={problem.difficulty} />
           <InfoRow
             label="Frequency"

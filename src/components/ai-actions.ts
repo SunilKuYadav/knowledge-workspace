@@ -11,8 +11,7 @@ import { promises as fs } from "fs";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import { GitService } from "@/src/git/service";
-import { generateCommitMessage } from "@/src/git/commit";
+
 
 /**
  * Saves AI-generated content to the appropriate file in the workspace.
@@ -57,24 +56,17 @@ export async function saveAIContent(
       const problemDir = path.join(
         workspacePath,
         "problems",
-        problem.platform,
         itemId,
       );
       const filePath = path.join(problemDir, filename);
       relativeFilePath = path.join(
         "problems",
-        problem.platform,
         itemId,
         filename,
       );
       await fs.mkdir(problemDir, { recursive: true });
       await fs.writeFile(filePath, content, "utf-8");
     }
-
-    // Git auto-commit after successful write (never blocks save - Requirement 8.4)
-    const gitService = new GitService(workspacePath);
-    const commitMessage = generateCommitMessage("create", relativeFilePath);
-    await gitService.commitFile(relativeFilePath, commitMessage);
 
     return { success: true, path: relativeFilePath };
   } catch (err) {

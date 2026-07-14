@@ -124,9 +124,31 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     // First, try to create the function to catch syntax errors
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     let userFunction: Function;
+
+    // Extract all top-level function names from the code to find the user's function
+    const declaredFnNames: string[] = [];
+    const fnDeclRegex = /(?:^|\n)\s*(?:export\s+)?function\s+([a-zA-Z_$]\w*)/g;
+    let fnMatch;
+    while ((fnMatch = fnDeclRegex.exec(jsCode)) !== null) {
+      declaredFnNames.push(fnMatch[1]);
+    }
+    // Also check for const/let/var arrow functions: const foo = (...) =>
+    const arrowFnRegex = /(?:^|\n)\s*(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_$]\w*)\s*=/g;
+    while ((fnMatch = arrowFnRegex.exec(jsCode)) !== null) {
+      declaredFnNames.push(fnMatch[1]);
+    }
+
+    // Build a return statement that finds the user's function
+    const fnLookup = declaredFnNames.length > 0
+      ? declaredFnNames.map((n) => `if (typeof ${n} === "function") return ${n};`).join("\n")
+      : "";
+
     try {
       userFunction = new Function(
-        jsCode + '\nreturn typeof solution === "function" ? solution : null;',
+        jsCode +
+          '\nif (typeof solution === "function") return solution;\n' +
+          fnLookup +
+          "\nreturn null;",
       )();
     } catch (syntaxError) {
       const err = syntaxError as Error;
@@ -149,7 +171,7 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
       return;
     }
 
-    // If no function named 'solution' was found, try to extract it differently
+    // If no function was found, try to extract it differently
     if (!userFunction) {
       try {
         // Try wrapping the code and looking for the exported function
@@ -162,7 +184,7 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
           response.error = {
             type: "runtime",
             message:
-              'No "solution" function found in submitted code. Define a function named "solution".',
+              'No executable function found in submitted code. Define a function (e.g., "function solution(...) { }").',
           };
           response.executionTimeMs =
             Math.round((performance.now() - startTime) * 100) / 100;

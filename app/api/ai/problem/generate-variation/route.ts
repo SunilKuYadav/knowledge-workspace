@@ -3,23 +3,21 @@
  *
  * Generates a variation of an existing problem. Returns full problem
  * definition that can be saved and practiced independently.
+ * Max 3 variations per problem. Supports "upgrade" mode to replace an existing variation.
  *
- * Body: { problemId, title, description, difficulty, patterns[] }
+ * Body: { problemId, title, description, difficulty, patterns[], upgradeVariationId? }
  * Returns: { variation: ProblemVariation }
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createAIClient } from "@/ai";
+import { getReadyClient } from "@/ai";
 import { buildGenerateVariationPrompt } from "@/ai/prompts";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
-import type { ProblemDescription, ProblemVariation } from "@/types";
+import type { ProblemDescription, ProblemVariation, SemanticDescription } from "@/types";
 import { v4 as uuid } from "uuid";
 
-const DEFAULT_BASE_URL =
-  process.env.OPENAI_BASE_URL || "http://127.0.0.1:1234/v1";
-const API_KEY = process.env.OPENAI_API_KEY || "";
-const MODEL = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+const MAX_VARIATIONS = 3;
 
 interface RequestBody {
   problemId: string;
@@ -27,6 +25,9 @@ interface RequestBody {
   description: string;
   difficulty: string;
   patterns: string[];
+  semanticDescription?: SemanticDescription;
+  /** If set, replaces this variation (upgrade mode) */
+  upgradeVariationId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -41,11 +42,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = createAIClient({
-      baseUrl: DEFAULT_BASE_URL,
-      apiKey: API_KEY,
-      defaultModel: MODEL,
-    });
+    const workspacePath = getWorkspacePath();
+    const repo = new FileProblemRepository(workspacePath);
+    const existing = await repo.getDescription(body.problemId);
+
+    const currentVariations = existing?.variations || [];
+
+    // Enforce max 3 variations (unless upgrading an existing one)
+    if (!body.upgradeVariationId && currentVariations.length >= MAX_VARIATIONS) {
+      return NextResponse.json(
+        { error: `Maximum of ${MAX_VARIATIONS} variations reached. Use upgrade to improve an existing variation.` },
+        { status: 400 },
+      );
+    }
+
+    // Build existing variations context for the prompt
+    const existingForPrompt = currentVariations.map((v) => ({
+      title: v.title,
+      description: v.description,
+      difficulty: v.difficulty,
+    }));
+
+    // If upgrading, find the target variation
+    let upgradeTarget: { title: string; description: string; difficulty: string } | undefined;
+    if (body.upgradeVariationId) {
+      const target = currentVariations.find((v) => v.id === body.upgradeVariationId);
+      if (!target) {
+        return NextResponse.json(
+          { error: "Variation to upgrade not found" },
+          { status: 404 },
+        );
+      }
+      upgradeTarget = {
+        title: target.title,
+        description: target.description,
+        difficulty: target.difficulty,
+      };
+    }
+
+    const client = await getReadyClient("ai/problem/generate-variation");
 
     const available = await client.isAvailable();
     if (!available) {
@@ -55,7 +90,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = buildGenerateVariationPrompt(body);
+    const prompt = buildGenerateVariationPrompt({
+      ...body,
+      existingVariations: existingForPrompt,
+      upgradeTarget,
+    });
 
     // Streaming mode
     if (streamMode) {
@@ -73,20 +112,27 @@ export async function POST(request: NextRequest) {
 
             const variation = parseAndBuildVariation(raw, body);
             if (variation) {
-              // Persist
-              const workspacePath = getWorkspacePath();
-              const repo = new FileProblemRepository(workspacePath);
-              const existing = await repo.getDescription(body.problemId);
-              if (existing) {
+              // Persist — either replace (upgrade) or append
+              const freshDesc = await repo.getDescription(body.problemId);
+              if (freshDesc) {
+                let updatedVariations: ProblemVariation[];
+                if (body.upgradeVariationId) {
+                  // Replace the target variation, clear its practice data
+                  updatedVariations = freshDesc.variations?.map((v) =>
+                    v.id === body.upgradeVariationId ? variation : v,
+                  ) || [variation];
+                } else {
+                  updatedVariations = [...(freshDesc.variations || []), variation];
+                }
                 const updatedDescription: ProblemDescription = {
-                  ...existing,
-                  variations: [...(existing.variations || []), variation],
+                  ...freshDesc,
+                  variations: updatedVariations,
                   updatedAt: new Date().toISOString(),
                 };
                 await repo.saveDescription(body.problemId, updatedDescription);
               }
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ type: "done", variation })}\n\n`),
+                encoder.encode(`data: ${JSON.stringify({ type: "done", variation, upgradedId: body.upgradeVariationId || null })}\n\n`),
               );
             } else {
               controller.enqueue(
@@ -112,7 +158,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Non-streaming mode (original behavior)
+    // Non-streaming mode
     let raw = "";
     for await (const chunk of client.generate(prompt)) {
       raw += chunk;
@@ -126,21 +172,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Append to description.json variations array
-    const workspacePath = getWorkspacePath();
-    const repo = new FileProblemRepository(workspacePath);
-    const existing = await repo.getDescription(body.problemId);
-
+    // Persist
     if (existing) {
+      let updatedVariations: ProblemVariation[];
+      if (body.upgradeVariationId) {
+        updatedVariations = existing.variations?.map((v) =>
+          v.id === body.upgradeVariationId ? variation : v,
+        ) || [variation];
+      } else {
+        updatedVariations = [...(existing.variations || []), variation];
+      }
       const updatedDescription: ProblemDescription = {
         ...existing,
-        variations: [...(existing.variations || []), variation],
+        variations: updatedVariations,
         updatedAt: new Date().toISOString(),
       };
       await repo.saveDescription(body.problemId, updatedDescription);
     }
 
-    return NextResponse.json({ variation });
+    return NextResponse.json({ variation, upgradedId: body.upgradeVariationId || null });
   } catch {
     return NextResponse.json(
       { error: "Internal server error" },

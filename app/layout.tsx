@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AIProvider } from "@/src/providers/AIProvider";
+import { AIQueueIndicator } from "@/src/components/ai-queue-indicator";
+import QuickChat from "@/src/components/QuickChat";
 import "./globals.css";
 import ServerLogConsole from "@/src/components/dev/ServerLogConsole";
 
@@ -31,7 +33,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ServerLogConsole />
-        <AIProvider>{children}</AIProvider>
+        <AIProvider>
+          {children}
+          <AIQueueIndicator />
+          <QuickChat />
+        </AIProvider>
       </body>
     </html>
   );

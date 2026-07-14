@@ -2,12 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getWorkspacePath } from "@/src/lib/constants";
 import { FileTopicRepository } from "@/src/filesystem/FileTopicRepository";
+import { FileProblemRepository } from "@/src/filesystem/FileProblemRepository";
 import { TopicService } from "@/src/services/TopicService";
+import { ProblemService } from "@/src/services/ProblemService";
 import TopicTabs from "./topic-tabs";
 import AISidebar from "@/src/components/AISidebar";
 import RateConfidenceButton from "@/src/components/RateConfidenceButton";
 import SelfTestButton from "@/src/components/SelfTestButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
+import LinkProblemButton from "@/src/components/LinkProblemButton";
+import MarkInProgressButton from "@/app/self-test/components/mark-in-progress-button/MarkInProgressButton";
 
 export default async function TopicDetailPage({
   params,
@@ -18,17 +22,79 @@ export default async function TopicDetailPage({
 
   const workspacePath = getWorkspacePath();
   const topicService = new TopicService(new FileTopicRepository(workspacePath));
+  const problemService = new ProblemService(
+    new FileProblemRepository(workspacePath),
+  );
 
   const topic = await topicService.getTopicById(id);
   if (!topic) {
     notFound();
   }
 
-  const [artifacts, flashcards, revision] = await Promise.all([
+  const [artifacts, flashcards, revision, allProblems, practiceData] = await Promise.all([
     topicService.getArtifacts(id),
     topicService.getFlashcards(id),
     topicService.getRevision(id),
+    problemService.getAllProblems(),
+    topicService.getPracticeProblems(id),
   ]);
+
+  const linkedProblemIds = topic.relatedProblemIds ?? [];
+  const problemSummaries = allProblems.map((p) => ({
+    id: p.id,
+    title: p.title,
+    difficulty: p.difficulty,
+  }));
+
+  // Build linked practice problems with description data for inline practice
+  const linkedProblemsForPractice = await Promise.all(
+    linkedProblemIds.map(async (problemId) => {
+      const problem = allProblems.find((p) => p.id === problemId);
+      if (!problem) return null;
+      const description = await problemService.getDescription(problemId);
+      if (!description) {
+        // Problem exists but has no description data — can't practice inline
+        return null;
+      }
+      return {
+        id: problem.id,
+        title: problem.title,
+        difficulty: problem.difficulty,
+        patterns: problem.patterns,
+        status: problem.status,
+        description: description.description,
+        constraints: description.constraints,
+        examples: description.examples.map((ex) => ({
+          input: ex.input,
+          expectedOutput: ex.expectedOutput,
+          explanation: ex.explanation,
+        })),
+        testCases: description.testCases.map((tc) => ({
+          input: tc.input,
+          expectedOutput: tc.expectedOutput,
+        })),
+        boilerplate: description.boilerplate || "// Write your solution\n",
+        timeComplexity: description.timeComplexity,
+        spaceComplexity: description.spaceComplexity,
+      };
+    }),
+  );
+  const linkedProblems = linkedProblemsForPractice.filter(
+    (p): p is NonNullable<typeof p> => p !== null,
+  );
+
+  // Collect practice problem titles + suggestion titles for interview exclusion
+  const avoidProblems: string[] = [];
+  if (practiceData) {
+    for (const p of practiceData.problems) {
+      avoidProblems.push(p.title);
+    }
+    for (const s of practiceData.suggestions) {
+      if (!avoidProblems.includes(s.title)) {
+        avoidProblems.push(s.title);
+      }
+    }
+  }
 
   const difficultyColor: Record<string, string> = {
     easy: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
@@ -93,14 +159,55 @@ export default async function TopicDetailPage({
                   ))}
                 </div>
               )}
+              {/* Related Problems */}
+              <div className="mt-4">
+                <LinkProblemButton
+                  topicId={id}
+                  linkedProblemIds={linkedProblemIds}
+                  allProblems={problemSummaries}
+                />
+              </div>
+              {/* Semantic Description */}
+              {topic.semanticDescription && (
+                <div className="mt-4 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-xs">🎯</span>
+                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                      AI Context
+                    </span>
+                  </div>
+                  {topic.semanticDescription.intent && (
+                    <p className="text-xs text-zinc-700 dark:text-zinc-300">
+                      {topic.semanticDescription.intent}
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {topic.semanticDescription.targetLevel && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                        {topic.semanticDescription.targetLevel}
+                      </span>
+                    )}
+                    {topic.semanticDescription.focus?.map((f) => (
+                      <span
+                        key={f}
+                        className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-3 shrink-0">
+              <MarkInProgressButton topicId={id} status={topic.status} />
               <CodingInterviewButton
                 source="topic"
                 id={id}
                 title={topic.title}
                 concepts={topic.tags}
                 difficulty={topic.difficulty as "easy" | "medium" | "hard"}
+                avoidProblems={avoidProblems}
               />
               <SelfTestButton
                 itemId={id}
@@ -119,6 +226,10 @@ export default async function TopicDetailPage({
             topicId={topic.id}
             topicTitle={topic.title}
             topicCategory={topic.category}
+            tags={topic.tags}
+            difficulty={topic.difficulty}
+            semanticDescription={topic.semanticDescription}
+            linkedProblems={linkedProblems}
           />
         </section>
 

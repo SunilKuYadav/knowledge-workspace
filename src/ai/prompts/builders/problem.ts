@@ -7,6 +7,9 @@
  * - app/api/ai/problem/generate-variation/route.ts
  */
 
+import { formatSemanticContext } from "../utils/format";
+import type { SemanticDescription } from "@/types";
+
 // ─── Generate Description ───────────────────────────────────────────────────
 
 export interface GenerateDescriptionParams {
@@ -16,11 +19,14 @@ export interface GenerateDescriptionParams {
   patterns: string[];
   companies: string[];
   url?: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export function buildGenerateDescriptionPrompt(
   params: GenerateDescriptionParams,
 ): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
   return `You are a senior software engineer and coding interview expert.
 
 Generate a complete problem description for the following LeetCode-style coding problem.
@@ -31,6 +37,7 @@ Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
 Companies: ${params.companies.join(", ") || "Not specified"}
 ${params.url ? `Original URL: ${params.url}` : ""}
+${semanticContext ? `\n${semanticContext}\n` : ""}
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no commentary):
 {
@@ -72,6 +79,19 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no comme
   "boilerplate": "function twoSum(nums: number[], target: number): number[] {\\n  // Your code here\\n}"
 }
 
+CRITICAL: Test case format rules (examples, edgeCases, testCases):
+- "input" must match the boilerplate function signature using named parameters.
+  For a function like \`isValid(s: string)\`, use: "input": "s = \\"()\\""
+  For a function like \`twoSum(nums: number[], target: number)\`, use: "input": "nums = [2,7,11,15], target = 9"
+- "expectedOutput" must be a valid JSON literal representing the return value:
+  - Booleans: "true" or "false" (not "True", "False")
+  - Numbers: "42", "3.14"
+  - Arrays: "[0,1]", "[[1,2],[3,4]]"
+  - Strings: "\\"hello\\""  (JSON-escaped string)
+  - null: "null"
+- Do NOT wrap string inputs in extra quotes. For a string parameter, use: s = \\"()\\" not s = "()"
+- Do NOT include variable assignment syntax in expectedOutput. Just the value.
+
 Requirements:
 - description: comprehensive, interview-quality problem statement in Markdown
 - category: a single primary category (e.g., Arrays, Trees, Dynamic Programming)
@@ -97,9 +117,12 @@ export interface GenerateNoteParams {
   title: string;
   patterns: string[];
   difficulty: string;
+  semanticDescription?: SemanticDescription;
 }
 
 export function buildGenerateNotePrompt(params: GenerateNoteParams): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
   return `You are a Staff Software Engineer helping a developer build their personal knowledge base.
 
 The developer has just solved a coding problem. Based on their solution, generate a concise "Key Things to Remember" note they can save.
@@ -107,7 +130,7 @@ The developer has just solved a coding problem. Based on their solution, generat
 Problem: ${params.title}
 Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
-
+${semanticContext ? `\n${semanticContext}\n` : ""}
 Solution:
 \`\`\`typescript
 ${params.solution}
@@ -142,11 +165,126 @@ export interface GenerateVariationParams {
   description: string;
   difficulty: string;
   patterns: string[];
+  semanticDescription?: SemanticDescription;
+  /** Existing variations to avoid generating duplicates */
+  existingVariations?: { title: string; description: string; difficulty: string }[];
+  /** When upgrading, the specific variation to replace */
+  upgradeTarget?: { title: string; description: string; difficulty: string };
+}
+
+// ─── Generate Test Cases ────────────────────────────────────────────────────
+
+export interface GenerateTestCasesParams {
+  title: string;
+  description: string;
+  difficulty: string;
+  patterns: string[];
+  constraints: string[];
+  inputFormat?: string;
+  outputFormat?: string;
+  boilerplate?: string;
+  existingTestCases?: { input: string; expectedOutput: string }[];
+  semanticDescription?: SemanticDescription;
+}
+
+export function buildGenerateTestCasesPrompt(
+  params: GenerateTestCasesParams,
+): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
+  const existingSection = params.existingTestCases?.length
+    ? `\nExisting Test Cases (do NOT duplicate these):\n${params.existingTestCases.slice(0, 10).map((tc, i) => `  ${i + 1}. Input: ${tc.input} → Expected: ${tc.expectedOutput}`).join("\n")}\n`
+    : "";
+
+  return `You are a senior software engineer and testing expert.
+
+Generate a COMPREHENSIVE test suite covering ALL possible cases for this coding problem.
+The goal is to ensure any correct solution passes all tests, and any buggy solution fails at least one test.
+
+Problem: ${params.title}
+Difficulty: ${params.difficulty}
+Patterns: ${params.patterns.join(", ")}
+${semanticContext ? `\n${semanticContext}\n` : ""}
+Description:
+${params.description.slice(0, 2000)}
+
+Constraints: ${params.constraints.join("; ")}
+${params.inputFormat ? `Input Format: ${params.inputFormat}` : ""}
+${params.outputFormat ? `Output Format: ${params.outputFormat}` : ""}
+${params.boilerplate ? `Function Signature:\n\`\`\`typescript\n${params.boilerplate}\n\`\`\`` : ""}
+${existingSection}
+Return ONLY a valid JSON object with categorized test cases:
+{
+  "categories": [
+    {
+      "name": "Basic Cases",
+      "description": "Simple inputs that verify the core logic works",
+      "testCases": [
+        { "input": "...", "expectedOutput": "...", "explanation": "Tests basic functionality" }
+      ]
+    },
+    {
+      "name": "Edge Cases",
+      "description": "Boundary conditions and special inputs",
+      "testCases": [
+        { "input": "...", "expectedOutput": "...", "explanation": "Tests empty input" }
+      ]
+    },
+    {
+      "name": "Large Inputs",
+      "description": "Performance-relevant inputs near constraint limits",
+      "testCases": [
+        { "input": "...", "expectedOutput": "...", "explanation": "Tests O(n) vs O(n²) performance" }
+      ]
+    },
+    {
+      "name": "Corner Cases",
+      "description": "Unusual but valid inputs that often trip up solutions",
+      "testCases": [
+        { "input": "...", "expectedOutput": "...", "explanation": "Tests duplicate elements" }
+      ]
+    }
+  ]
+}
+
+CRITICAL: Test case format rules:
+- "input" must match the function signature using named parameters.
+  For \`isValid(s: string)\`, use: "input": "s = \\"()\\""
+  For \`twoSum(nums: number[], target: number)\`, use: "input": "nums = [2,7,11,15], target = 9"
+- "expectedOutput" must be a valid JSON literal (the return value):
+  - Booleans: "true" or "false"
+  - Numbers: "42"
+  - Arrays: "[0,1]"
+  - Strings: "\\"hello\\""
+  - null: "null"
+
+Requirements:
+- Generate 15-30 total test cases across all categories
+- Categories must include at minimum: Basic Cases, Edge Cases, Large Inputs, Corner Cases
+- You may add additional categories like: "Negative Cases", "Duplicate Handling", "Boundary Values", "Sorted/Unsorted Inputs", etc.
+- Each test case MUST have a correct expectedOutput
+- Each test case MUST have an explanation of what it's testing
+- Cover ALL constraint boundaries (min/max values, empty inputs, single elements)
+- Include at least 2 performance-stress cases (near constraint limits)
+- Include at least 3 edge cases (empty, single element, all same, already sorted, etc.)
+- Do NOT repeat any existing test cases listed above
+
+Respond with ONLY the JSON. No markdown fences, no extra text.`;
 }
 
 export function buildGenerateVariationPrompt(
   params: GenerateVariationParams,
 ): string {
+  const semanticContext = formatSemanticContext(params.semanticDescription);
+
+  const existingSection = params.existingVariations?.length
+    ? `\nAlready Generated Variations (DO NOT repeat these — create something distinctly different):\n${params.existingVariations.map((v, i) => `${i + 1}. "${v.title}" (${v.difficulty}) — ${v.description.slice(0, 200)}`).join("\n")}\n`
+    : "";
+
+  const upgradeSection = params.upgradeTarget
+    ? `\nYou are UPGRADING this existing variation to be better and more challenging:\nTitle: ${params.upgradeTarget.title}\nDifficulty: ${params.upgradeTarget.difficulty}\nDescription: ${params.upgradeTarget.description.slice(0, 500)}\n\nMake it harder, more nuanced, or test a deeper aspect of the same pattern. Keep the core idea but significantly improve the quality.\n`
+    : "";
+
   return `You are a senior software engineer creating coding problem variations for interview prep.
 The output must be compatible with a timed coding interview module.
 
@@ -155,16 +293,16 @@ Based on this original problem, generate a VARIATION — a different problem tha
 Original Problem: ${params.title}
 Difficulty: ${params.difficulty}
 Patterns: ${params.patterns.join(", ")}
-
+${semanticContext ? `\n${semanticContext}\n` : ""}
 Original Description:
 ${params.description.slice(0, 1500)}
-
+${existingSection}${upgradeSection}
 Generate a variation. The variation should:
 - Test the same pattern(s) but with a different scenario or constraint
 - Be a standalone problem (someone could solve it without seeing the original)
 - Have a different difficulty level if appropriate (can be easier or harder)
 - Include enough detail to be used directly in a coding interview session
-
+${params.existingVariations?.length ? "- Be COMPLETELY DIFFERENT from the existing variations listed above\n" : ""}
 Return ONLY a valid JSON object:
 {
   "title": "Variation title",

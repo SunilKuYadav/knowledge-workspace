@@ -13,6 +13,8 @@ export interface ActionConfig {
   filename: string;
   /** Whether this is a general question not tied to the current item */
   isGeneral?: boolean;
+  /** Whether this action should trigger a save-back to workspace */
+  saveTarget?: "notes" | "solution";
 }
 
 export interface PromptHelper {
