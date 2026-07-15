@@ -40,6 +40,8 @@ export interface LinkedPracticeProblem {
   examples: { input: string; expectedOutput: string; explanation?: string }[];
   testCases: { input: string; expectedOutput: string }[];
   boilerplate: string;
+  /** Hidden harness code prepended at execution time */
+  harness?: string;
   timeComplexity?: string;
   spaceComplexity?: string;
 }

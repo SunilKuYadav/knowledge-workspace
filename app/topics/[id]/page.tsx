@@ -74,6 +74,7 @@ export default async function TopicDetailPage({
           expectedOutput: tc.expectedOutput,
         })),
         boilerplate: description.boilerplate || "// Write your solution\n",
+        harness: description.harness,
         timeComplexity: description.timeComplexity,
         spaceComplexity: description.spaceComplexity,
       };

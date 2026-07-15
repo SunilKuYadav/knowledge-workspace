@@ -89,7 +89,7 @@ export const MODEL_CONFIG: Record<ModelTier, ModelConfig> = {
 
     repeatPenalty: 1.05,
 
-    maxTokens: 4_096,
+    maxTokens: 5_120,
 
     stream: true,
 
@@ -110,7 +110,7 @@ export const MODEL_CONFIG: Record<ModelTier, ModelConfig> = {
 
     repeatPenalty: 1.02,
 
-    maxTokens: 5_144,
+    maxTokens: 6_144,
 
     stream: true,
 

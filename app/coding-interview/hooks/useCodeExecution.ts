@@ -21,6 +21,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
   const [isExecuting, setIsExecuting] = useState(false);
 
   const code = useInterviewStore((s) => s.code);
+  const harness = useInterviewStore((s) => s.harness);
   const problem = useInterviewStore((s) => s.problem);
   const language = useInterviewStore((s) => s.language);
   const setPhase = useInterviewStore((s) => s.setPhase);
@@ -48,7 +49,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
       }));
 
       const result = await executeCode({
-        code,
+        code: harness ? harness + "\n" + code : code,
         language,
         testCases,
         timeout: EXECUTION_TIMEOUT,
@@ -74,7 +75,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
     } finally {
       setIsExecuting(false);
     }
-  }, [code, problem, language, isExecuting]);
+  }, [code, harness, problem, language, isExecuting]);
 
   /**
    * Submit code for AI evaluation.
@@ -101,7 +102,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
       }));
 
       const execResult = await executeCode({
-        code,
+        code: harness ? harness + "\n" + code : code,
         language,
         testCases,
         timeout: EXECUTION_TIMEOUT,
@@ -128,6 +129,7 @@ export function useCodeExecution(): UseCodeExecutionReturn {
     }
   }, [
     code,
+    harness,
     problem,
     language,
     isExecuting,

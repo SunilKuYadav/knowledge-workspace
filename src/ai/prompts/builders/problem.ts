@@ -76,13 +76,17 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no comme
   "timeComplexity": "O(n)",
   "spaceComplexity": "O(n)",
   "companyTags": ["string array - 1 to 5 companies known to ask this or similar questions"],
-  "boilerplate": "function twoSum(nums: number[], target: number): number[] {\\n  // Your code here\\n}"
+  "boilerplate": "function twoSum(nums: number[], target: number): number[] {\\n  // Your code here\\n}",
+  "harness": "string (optional) - hidden helper code with class definitions + __deserialize + __serialize. Only for data structure problems."
 }
 
 CRITICAL: Test case format rules (examples, edgeCases, testCases):
 - "input" must match the boilerplate function signature using named parameters.
   For a function like \`isValid(s: string)\`, use: "input": "s = \\"()\\""
   For a function like \`twoSum(nums: number[], target: number)\`, use: "input": "nums = [2,7,11,15], target = 9"
+  For data structure problems, use simple JSON representations:
+  For \`reverseList(head: ListNode | null)\`, use: "input": "head = [1,2,3,4,5]"
+  For \`inorderTraversal(root: TreeNode | null)\`, use: "input": "root = [1,null,2,3]"
 - "expectedOutput" must be a valid JSON literal representing the return value:
   - Booleans: "true" or "false" (not "True", "False")
   - Numbers: "42", "3.14"
@@ -92,6 +96,91 @@ CRITICAL: Test case format rules (examples, edgeCases, testCases):
 - Do NOT wrap string inputs in extra quotes. For a string parameter, use: s = \\"()\\" not s = "()"
 - Do NOT include variable assignment syntax in expectedOutput. Just the value.
 
+DATA STRUCTURE BOILERPLATE — HARNESS CONVENTION:
+If the problem involves ANY custom data structure (linked lists, binary trees, n-ary trees, graphs, tries, heaps, doubly-linked lists, etc.), the boilerplate MUST include:
+1. Class definitions for the data structures
+2. A \`__deserialize(input)\` function that converts the raw JSON test input array into the arguments the solution function expects
+3. A \`__serialize(output)\` function that converts the solution's return value back to plain JSON for comparison
+
+The execution engine calls these automatically:
+- \`__deserialize(testCase.input)\` → returns array of args to spread into the solution function
+- solution(...args) → raw output
+- \`__serialize(rawOutput)\` → plain JSON value compared with expectedOutput via deep equality
+
+EXAMPLE — Linked List problem boilerplate:
+\`\`\`
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val = 0, next: ListNode | null = null) { this.val = val; this.next = next; }
+}
+
+function __deserialize(input: [number[]]): [ListNode | null] {
+  const arr = input[0];
+  if (!arr || arr.length === 0) return [null];
+  const head = new ListNode(arr[0]);
+  let cur = head;
+  for (let i = 1; i < arr.length; i++) { cur.next = new ListNode(arr[i]); cur = cur.next; }
+  return [head];
+}
+
+function __serialize(output: ListNode | null): number[] {
+  const result: number[] = [];
+  let cur = output;
+  while (cur) { result.push(cur.val); cur = cur.next; }
+  return result;
+}
+
+function reverseList(head: ListNode | null): ListNode | null {
+  // Your code here
+}
+\`\`\`
+Test cases use: "input": "head = [1,2,3,4,5]", "expectedOutput": "[5,4,3,2,1]"
+
+EXAMPLE — Binary Tree problem boilerplate:
+\`\`\`
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) { this.val = val; this.left = left; this.right = right; }
+}
+
+function __deserialize(input: [(number | null)[]]): [TreeNode | null] {
+  const arr = input[0];
+  if (!arr || arr.length === 0 || arr[0] === null) return [null];
+  const root = new TreeNode(arr[0]);
+  const queue: TreeNode[] = [root];
+  let i = 1;
+  while (queue.length > 0 && i < arr.length) {
+    const node = queue.shift()!;
+    if (i < arr.length && arr[i] !== null) { node.left = new TreeNode(arr[i] as number); queue.push(node.left); }
+    i++;
+    if (i < arr.length && arr[i] !== null) { node.right = new TreeNode(arr[i] as number); queue.push(node.right); }
+    i++;
+  }
+  return [root];
+}
+
+function __serialize(output: number[]): number[] {
+  return output; // Already plain array from inorder traversal
+}
+
+function inorderTraversal(root: TreeNode | null): number[] {
+  // Your code here
+}
+\`\`\`
+Test cases use level-order BFS arrays: "input": "root = [1,null,2,3]", "expectedOutput": "[1,3,2]"
+
+For ANY other data structure (n-ary tree, graph adjacency list, trie, doubly-linked list, etc.),
+follow the same pattern: define classes + __deserialize + __serialize.
+The __deserialize function receives the raw test case input (as parsed from the "input" string)
+and must return an array of arguments to pass to the solution function.
+The __serialize function receives the solution's return value and must return a plain JSON value
+(number, string, boolean, array, or object with no circular references) for comparison.
+
+IMPORTANT: If the problem needs EXTRA CONSTRUCTION METADATA beyond the data structure values (e.g., cycle position for cycle detection, random pointer indices, parent node references), the __deserialize tuple type MUST include those extra parameters and test case inputs MUST provide them as named params. Example: __deserialize(input: [number[], number]) for [values, cyclePos], with test case: "input": "head = [3,2,0,-4], pos = 1".
+
 Requirements:
 - description: comprehensive, interview-quality problem statement in Markdown
 - category: a single primary category (e.g., Arrays, Trees, Dynamic Programming)
@@ -99,12 +188,21 @@ Requirements:
 - constraints: realistic input constraints (3-6 items)
 - inputFormat: clear description of function parameters
 - outputFormat: clear description of expected return value
-- examples: 2-3 worked examples with step-by-step explanations
+- examples: 2-3 worked examples with step-by-step explanations. Each explanation MUST include:
+  1. An ASCII visual diagram showing the data structure state (for trees, linked lists, graphs, matrices, etc.)
+  2. A step-by-step walkthrough of how the algorithm processes the input
+  Example explanation for a tree problem:
+  "The tree structure is:\\n      1\\n     / \\\\\\n    2   3\\n   / \\\\\\n  4   5\\n\\nInorder traversal visits: left(4) → root(2) → right(5) → root(1) → right(3)\\nResult: [4,2,5,1,3]"
+  Example explanation for a linked list problem:
+  "The linked list is: 1 → 2 → 3 → 4 → 5\\n\\nAfter reversing: 5 → 4 → 3 → 2 → 1\\nResult: [5,4,3,2,1]"
+  For array/string problems, show the state changes at each key step.
+  Use \\n for newlines within the explanation string.
 - edgeCases: at least 2 edge cases with description, input, and expectedOutput
 - testCases: 5-8 hidden test cases covering normal and edge scenarios
 - timeComplexity / spaceComplexity: the expected optimal solution complexity in Big-O
 - companyTags: 1-5 companies that ask this or similar questions
-- boilerplate: TypeScript function signature with a TODO comment
+- boilerplate: ONLY the solution function signature with TODO comment (do NOT include class definitions or helpers here)
+- harness: (only for data structure problems) class definitions + __deserialize + __serialize functions. Hidden from user, prepended at execution time.
 - The problem must be solvable within 45 minutes in an interview setting
 
 Respond with ONLY the JSON. No markdown fences, no extra text.`;
@@ -251,12 +349,19 @@ CRITICAL: Test case format rules:
 - "input" must match the function signature using named parameters.
   For \`isValid(s: string)\`, use: "input": "s = \\"()\\""
   For \`twoSum(nums: number[], target: number)\`, use: "input": "nums = [2,7,11,15], target = 9"
-- "expectedOutput" must be a valid JSON literal (the return value):
+- For data structure problems, use the JSON representation that the boilerplate's __deserialize function expects.
+  For \`reverseList(head: ListNode | null)\`, use: "input": "head = [1,2,3,4,5]"
+  For \`inorderTraversal(root: TreeNode | null)\`, use: "input": "root = [1,null,2,3]" (level-order BFS)
+  For graph problems with adjacency list: "input": "graph = [[1,2],[0,3],[0],[1]]"
+- "expectedOutput" must be a valid JSON literal (the return value after __serialize):
   - Booleans: "true" or "false"
   - Numbers: "42"
   - Arrays: "[0,1]"
   - Strings: "\\"hello\\""
   - null: "null"
+- When computing expectedOutput for tree problems, remember the input is level-order BFS:
+  [3,1,4,null,2] → tree with root=3, left=1, right=4, 1.right=2.
+  Always build the tree level-by-level from the array, then trace the algorithm.
 
 Requirements:
 - Generate 15-30 total test cases across all categories
@@ -324,7 +429,8 @@ Return ONLY a valid JSON object:
   ],
   "timeComplexity": "O(...)",
   "spaceComplexity": "O(...)",
-  "boilerplate": "TypeScript function signature with TODO comment",
+  "boilerplate": "TypeScript solution function signature with TODO comment",
+  "harness": "string (optional) - hidden class definitions + __deserialize + __serialize for data structure problems",
   "hint": "A one-line hint about the approach"
 }
 
@@ -334,13 +440,31 @@ Requirements:
 - tags: at least 2 items
 - constraints: 2-5 realistic constraints
 - inputFormat / outputFormat: clear descriptions
-- samples: at least 2 items with input, output, and explanation
+- samples: at least 2 items with input, output, and explanation. Explanations MUST include ASCII visual diagrams for data structure problems (trees, linked lists, graphs) and step-by-step walkthroughs. Use \\n for newlines.
 - edgeCases: at least 2 items
 - testCases: at least 5 items covering various scenarios
 - timeComplexity / spaceComplexity: valid Big-O notation
-- boilerplate: valid TypeScript code with a clear function signature
+- boilerplate: ONLY the solution function signature (no class definitions or helpers)
+- harness: (only for data structure problems) hidden code with class definitions + __deserialize + __serialize
 - The variation must genuinely be different from the original (not just renaming variables)
 - The problem must be solvable within 45 minutes
+
+DATA STRUCTURE BOILERPLATE — HARNESS CONVENTION:
+If the problem involves ANY custom data structure, the boilerplate MUST include:
+1. Class definitions
+2. A \`__deserialize(input)\` function: converts raw JSON test input into solution function arguments
+3. A \`__serialize(output)\` function: converts solution's return value back to plain JSON for comparison
+
+The execution engine calls: __deserialize(input) → solution(...args) → __serialize(output) → deepEqual(result, expectedOutput)
+
+Example for linked list: include ListNode class + __deserialize that builds linked list from array + __serialize that converts linked list back to array.
+Example for tree: include TreeNode class + __deserialize that builds tree from level-order BFS array + __serialize for the output format.
+This pattern works for ANY data structure (graphs, tries, heaps, n-ary trees, etc.).
+
+For test cases, use simple JSON arrays as inputs that __deserialize will convert:
+- Linked list: "head = [1,2,3,4,5]"
+- Tree (level-order BFS): "root = [3,1,4,null,2]"
+- Graph adjacency: "graph = [[1,2],[0,3],[0],[1]]"
 
 Respond with ONLY the JSON. No markdown fences.`;
 }

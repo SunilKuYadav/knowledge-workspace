@@ -11,7 +11,7 @@ export const CONTEXT_PROFILE = {
   /** Short-form generation — flashcards, summaries */
   MEDIUM: 8_192,
   /** Standard generation — notes, artifacts, assessments */
-  LARGE: 8_192,
+  LARGE: 16_384,
   /** Extended context — repository review, large code analysis */
   XL: 32_768,
 } as const;

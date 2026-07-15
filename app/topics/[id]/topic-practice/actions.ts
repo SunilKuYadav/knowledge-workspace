@@ -64,6 +64,7 @@ export async function createPracticeAsStandaloneProblem(
     examples: { input: string; expectedOutput: string; explanation?: string }[];
     testCases: { input: string; expectedOutput: string }[];
     boilerplate: string;
+    harness?: string;
     timeComplexity?: string;
     spaceComplexity?: string;
     patterns: string[];
@@ -101,6 +102,7 @@ export async function createPracticeAsStandaloneProblem(
         expectedOutput: tc.expectedOutput,
       })),
       boilerplate: problemData.boilerplate,
+      harness: problemData.harness,
       timeComplexity: problemData.timeComplexity,
       spaceComplexity: problemData.spaceComplexity,
       generatedAt: now,

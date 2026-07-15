@@ -13,6 +13,7 @@ import { AI_TIMEOUT } from "@/app/coding-interview/lib/constants";
 import { buildProblemGenerationPrompt } from "@/ai/prompts";
 import { loadPromptConfig } from "@/ai/prompts/loadConfig";
 import { getPromptForAction } from "@/ai/prompts/config";
+import { validateTestCasesAgainstHarness, buildHarnessContextForPrompt } from "@/src/ai/harness-validator";
 import type {
   InterviewSource,
   InterviewContext,
@@ -243,7 +244,59 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(parsed as GeneratedProblem);
+    // Validate and fix hiddenTestCases against harness if present
+    const problem = parsed as GeneratedProblem;
+    if (problem.harness && problem.hiddenTestCases) {
+      const validation = validateTestCasesAgainstHarness(
+        problem.harness,
+        problem.hiddenTestCases,
+        "structured",
+      );
+
+      if (!validation.valid) {
+        // Do a targeted fix-up pass
+        const harnessContext = buildHarnessContextForPrompt(problem.harness);
+        const fixPrompt = `Fix these hiddenTestCases to match the __deserialize input contract.
+
+${harnessContext}
+
+Problem: ${problem.title}
+Boilerplate: ${problem.boilerplate}
+
+Current hiddenTestCases:
+${JSON.stringify(problem.hiddenTestCases, null, 2)}
+
+Issues:
+${validation.issues.map((i) => `- Case ${i.index}: ${i.message}`).join("\n")}
+
+Return ONLY a JSON array of fixed test cases: [{ "input": [...], "expectedOutput": ... }]
+Each "input" must be a JSON array matching the __deserialize tuple type.`;
+
+        try {
+          let fixRaw = "";
+          const fixClient = await getReadyClient("ai/coding-interview/fix-test-cases");
+          for await (const chunk of fixClient.generate(fixPrompt)) {
+            fixRaw += chunk;
+          }
+          let fixJson = fixRaw.trim();
+          const fenceMatch = fixJson.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+          if (fenceMatch) fixJson = fenceMatch[1].trim();
+          const firstBracket = fixJson.indexOf("[");
+          const lastBracket = fixJson.lastIndexOf("]");
+          if (firstBracket !== -1 && lastBracket > firstBracket) {
+            fixJson = fixJson.slice(firstBracket, lastBracket + 1);
+          }
+          const fixedCases = JSON.parse(fixJson) as Array<{ input: unknown; expectedOutput: unknown }>;
+          if (Array.isArray(fixedCases) && fixedCases.length >= 5) {
+            problem.hiddenTestCases = fixedCases;
+          }
+        } catch {
+          console.warn("[generate-problem] Harness fix-up pass failed, using original test cases");
+        }
+      }
+    }
+
+    return NextResponse.json(problem);
   } catch (err) {
     console.error("[generate-problem] Unhandled error:", err instanceof Error ? err.message : String(err));
     return NextResponse.json(

@@ -140,18 +140,35 @@ Return ONLY a valid JSON object with this exact structure:
     { "input": "test input", "expectedOutput": "expected output" }
   ],
   "boilerplate": "function solutionName(params: types): returnType {\\n  // Your solution here\\n}",
+  "harness": "string (optional) - hidden class definitions + __deserialize + __serialize for data structure problems",
   "timeComplexity": "O(...)",
   "spaceComplexity": "O(...)",
   "patterns": ${JSON.stringify(params.patterns)}
 }
 
 Requirements:
-- Provide 2-3 examples with clear explanations
+- Provide 2-3 examples with clear explanations. Explanations MUST include ASCII visual diagrams for data structure problems (trees, linked lists, graphs) and step-by-step algorithm walkthroughs. Use \\n for newlines in explanation strings.
 - Provide 5-8 test cases covering edge cases, typical cases, and boundary conditions
 - The boilerplate should be TypeScript with proper types
 - Input/output formats should be parseable (use JSON-like format for arrays/objects)
 - Constraints should be specific (e.g., "1 <= nums.length <= 10^5")
 - Description should be clear, complete, and unambiguous
+
+DATA STRUCTURE BOILERPLATE — HARNESS CONVENTION:
+If the problem involves ANY custom data structure (linked lists, trees, graphs, tries, etc.), the boilerplate MUST include:
+1. Class definitions for the data structures
+2. A \`__deserialize(input)\` function: converts raw JSON test input into solution function arguments
+3. A \`__serialize(output)\` function: converts solution's return value back to plain JSON for comparison
+
+The execution engine calls: __deserialize(input) → solution(...args) → __serialize(output) → compare with expectedOutput.
+If __deserialize/__serialize are NOT defined (simple array/string problems), input is spread directly.
+
+This pattern works for ANY data structure — the AI provides correct conversion logic per problem.
+
+Test cases should use simple JSON representations:
+- Linked list: "head = [1,2,3,4,5]"
+- Tree (level-order BFS): "root = [3,1,4,null,2]"
+- Graph adjacency: "graph = [[1,2],[0,3],[0],[1]]"
 
 Respond with ONLY the JSON.`;
 }

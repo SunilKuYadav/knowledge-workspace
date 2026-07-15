@@ -34,6 +34,8 @@ export interface PracticePanelProps {
   handleRunSingleTestCase: (testCaseIndex: number) => void;
   handleValidateTestCases: () => void;
   handleApplyTestCaseCorrections: () => void;
+  handleRegenerateHarness: () => void;
+  isRegeneratingHarness: boolean;
   validationResults: {
     index: number;
     input: string;
@@ -79,6 +81,8 @@ export function PracticePanel({
   handleRunSingleTestCase,
   handleValidateTestCases,
   handleApplyTestCaseCorrections,
+  handleRegenerateHarness,
+  isRegeneratingHarness,
   validationResults,
   isValidating,
   handleGenerateNote,
@@ -466,6 +470,24 @@ export function PracticePanel({
                 )}
               </div>
               <div className="flex items-center gap-2">
+                <button
+                  onClick={handleRegenerateHarness}
+                  disabled={isRegeneratingHarness || !desc}
+                  className="px-3 py-1.5 text-xs font-medium rounded-md border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/50 hover:bg-purple-100 dark:hover:bg-purple-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                  title="Regenerate harness code (hidden helpers for data structure conversion)"
+                >
+                  {isRegeneratingHarness ? (
+                    <>
+                      <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Fixing...
+                    </>
+                  ) : (
+                    <>🔧 Fix Harness</>
+                  )}
+                </button>
                 <button
                   onClick={handleValidateTestCases}
                   disabled={isValidating || !desc}

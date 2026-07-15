@@ -51,6 +51,7 @@ describe("persistence — property-based tests", () => {
     problem: fc.constant(null),
     code: fc.string({ maxLength: 200 }),
     boilerplate: fc.string({ maxLength: 100 }),
+    harness: fc.string({ maxLength: 200 }),
     elapsedSeconds: fc.integer({ min: 0, max: 10800 }),
     timerRunning: fc.boolean(),
     lastExecutionResult: fc.constant(null),

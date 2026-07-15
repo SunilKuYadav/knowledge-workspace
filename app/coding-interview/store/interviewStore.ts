@@ -79,6 +79,7 @@ export const defaultInterviewState: InterviewState = {
   // Editor
   code: "",
   boilerplate: "",
+  harness: "",
 
   // Timer
   elapsedSeconds: 0,
@@ -153,6 +154,7 @@ export const useInterviewStore = create<InterviewStore>()(
         problem,
         boilerplate: problem.boilerplate,
         code: problem.boilerplate,
+        harness: problem.harness || "",
       }),
 
     tickTimer: () =>

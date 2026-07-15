@@ -18,6 +18,7 @@ export interface ProblemTestValidationParams {
   inputFormat?: string;
   outputFormat?: string;
   boilerplate?: string;
+  harness?: string;
   testCases: { input: string; expectedOutput: string }[];
   variationId?: string;
 }
@@ -42,6 +43,7 @@ Constraints: ${params.constraints.join("; ")}
 ${params.inputFormat ? `Input Format: ${params.inputFormat}` : ""}
 ${params.outputFormat ? `Output Format: ${params.outputFormat}` : ""}
 ${params.boilerplate ? `Function Signature:\n\`\`\`typescript\n${params.boilerplate}\n\`\`\`` : ""}
+${params.harness ? `\nExecution Harness (hidden code that converts inputs/outputs):\n\`\`\`typescript\n${params.harness}\n\`\`\`\nIMPORTANT: When validating, consider how __deserialize converts the input and __serialize converts the output. The expectedOutput should match what __serialize returns after running the correct algorithm.` : ""}
 
 Test Cases to Validate:
 ${casesStr}
@@ -107,14 +109,20 @@ ${testCasesStr}
    - If the function is \`subarraySum(nums: number[], k: number)\`, input must be like [[1,2,3], 3]
    - If the function is \`twoSum(nums: number[], target: number)\`, input must be like [[2,7,11,15], 9]
    - If the function is \`isValid(s: string)\`, input must be like ["(())"]
+   - For data structure problems: input is what __deserialize receives
+     - Linked list: input like [[1,2,3,4,5]] (array wrapped in outer array)
+     - Tree: input like [[1,null,2,3]] (level-order BFS array wrapped)
+     - Graph: input like [[[1,2],[0,3],[0],[1]]] (adjacency list wrapped)
    - NEVER use string representations like "nums = [1,2,3]" or "1 2 3\\n4"
-2. Each "expectedOutput" MUST be the actual JSON return value of the function when called with those inputs.
+2. Each "expectedOutput" MUST be the actual JSON return value (after __serialize if it exists).
    - Numbers: 4 (not "4")
    - Booleans: true (not "true")
    - Arrays: [0,1] (not "[0,1]")
    - Strings: "hello"
    - null: null
 3. Manually trace through a correct optimal algorithm to verify each expected output is correct.
+   - For tree problems: build tree from level-order BFS array, then trace algorithm.
+     [3,1,4,null,2] → root=3, left=1, right=4, 1.right=2. DO NOT confuse with BST insertion.
 4. Fix any test case where:
    - The input format is wrong (not a JSON array of arguments)
    - The expected output is incorrect

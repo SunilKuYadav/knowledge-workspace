@@ -28,6 +28,7 @@ interface RequestBody {
   inputFormat?: string;
   outputFormat?: string;
   boilerplate?: string;
+  harness?: string;
   testCases: TestCaseEntry[];
   /** If validating a variation's test cases */
   variationId?: string;

@@ -117,6 +117,7 @@ function parseProblemResponse(raw: string, body: RequestBody): Record<string, un
       timeComplexity: String(parsed.timeComplexity || parsed.time_complexity || defaults.timeComplexity),
       spaceComplexity: String(parsed.spaceComplexity || parsed.space_complexity || defaults.spaceComplexity),
       patterns: Array.isArray(parsed.patterns) ? parsed.patterns.map(String) : defaults.patterns,
+      harness: parsed.harness ? String(parsed.harness) : undefined,
     };
   } catch {
     return defaults;

@@ -564,6 +564,15 @@ Write in clean Markdown. Be concise but thorough.`,
         hiddenTestCases = desc.testCases;
       }
 
+      // Get harness code (hidden helpers for data structure conversion)
+      let harness = "";
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        harness = variation?.harness || "";
+      } else {
+        harness = desc.harness || "";
+      }
+
       const testCases = [
         ...examples.map((ex) => ({
           input: parseTestCaseInput(ex.input),
@@ -575,7 +584,7 @@ Write in clean Markdown. Be concise but thorough.`,
         })),
       ];
       const result = await executeCode({
-        code,
+        code: harness ? harness + "\n" + code : code,
         language: "typescript",
         testCases,
         timeout: EXECUTION_TIMEOUT,
@@ -632,6 +641,15 @@ Write in clean Markdown. Be concise but thorough.`,
       const allRawCases = [...examples, ...hiddenTestCases];
       if (testCaseIndex < 0 || testCaseIndex >= allRawCases.length) return;
 
+      // Get harness code
+      let harness = "";
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        harness = variation?.harness || "";
+      } else {
+        harness = desc.harness || "";
+      }
+
       const targetCase = allRawCases[testCaseIndex];
       const testCases = [{
         input: parseTestCaseInput(targetCase.input),
@@ -639,7 +657,7 @@ Write in clean Markdown. Be concise but thorough.`,
       }];
 
       const result = await executeCode({
-        code,
+        code: harness ? harness + "\n" + code : code,
         language: "typescript",
         testCases,
         timeout: EXECUTION_TIMEOUT,
@@ -734,6 +752,9 @@ Write in clean Markdown. Be concise but thorough.`,
           inputFormat,
           outputFormat,
           boilerplate,
+          harness: practiceTarget.type === "variation" && practiceTarget.variationId
+            ? desc.variations?.find((v) => v.id === practiceTarget.variationId)?.harness
+            : desc.harness,
           testCases,
         }),
       });
@@ -780,6 +801,86 @@ Write in clean Markdown. Be concise but thorough.`,
       // Silent failure
     }
   }, [validationResults, desc, problem.id, practiceTarget]);
+
+  // ─── Regenerate Harness ─────────────────────────────────────────────────────
+  const [isRegeneratingHarness, setIsRegeneratingHarness] = useState(false);
+
+  const handleRegenerateHarness = useCallback(async () => {
+    if (!desc || isRegeneratingHarness) return;
+    setIsRegeneratingHarness(true);
+
+    try {
+      let title: string;
+      let description: string;
+      let constraints: string[];
+      let boilerplate: string;
+      let inputFormat: string | undefined;
+      let outputFormat: string | undefined;
+      let examples: { input: string; expectedOutput: string }[];
+      let variationId: string | undefined;
+
+      if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+        const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+        if (!variation) { setIsRegeneratingHarness(false); return; }
+        title = variation.title;
+        description = variation.description;
+        constraints = variation.constraints || [];
+        boilerplate = variation.boilerplate || "";
+        inputFormat = variation.inputFormat;
+        outputFormat = variation.outputFormat;
+        examples = (variation.samples || []).map((s) => ({ input: s.input, expectedOutput: s.output }));
+        variationId = variation.id;
+      } else {
+        title = problem.title;
+        description = desc.description;
+        constraints = desc.constraints;
+        boilerplate = desc.boilerplate || "";
+        inputFormat = desc.inputFormat;
+        outputFormat = desc.outputFormat;
+        examples = desc.examples;
+      }
+
+      const res = await fetch("/api/ai/problem/regenerate-harness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          problemId: problem.id,
+          variationId,
+          title,
+          description,
+          constraints,
+          boilerplate,
+          inputFormat,
+          outputFormat,
+          examples,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Harness generation failed");
+      const data = await res.json();
+
+      if (data.harness) {
+        // Update local desc state with new harness
+        setDesc((prev) => {
+          if (!prev) return prev;
+          if (variationId && prev.variations) {
+            return {
+              ...prev,
+              variations: prev.variations.map((v) =>
+                v.id === variationId ? { ...v, harness: data.harness } : v
+              ),
+              updatedAt: new Date().toISOString(),
+            };
+          }
+          return { ...prev, harness: data.harness, updatedAt: new Date().toISOString() };
+        });
+      }
+    } catch {
+      // Silent failure
+    } finally {
+      setIsRegeneratingHarness(false);
+    }
+  }, [desc, problem, practiceTarget, isRegeneratingHarness]);
 
   // Get hint/suggestion when stuck — acts like an interviewer giving hints
 
@@ -900,6 +1001,15 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
       // First run the code to get test results if we haven't already
       let testResults = executionResult?.testResults ?? [];
       if (testResults.length === 0) {
+        // Get harness code
+        let harness = "";
+        if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+          const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+          harness = variation?.harness || "";
+        } else {
+          harness = desc.harness || "";
+        }
+
         const testCases = [
           ...examples.map((ex) => ({
             input: parseTestCaseInput(ex.input),
@@ -911,7 +1021,7 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
           })),
         ];
         const execResult = await executeCode({
-          code,
+          code: harness ? harness + "\n" + code : code,
           language: "typescript",
           testCases,
           timeout: EXECUTION_TIMEOUT,
@@ -1219,6 +1329,17 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     setTestSuiteRunResults(null);
 
     try {
+      // Get harness code
+      let harness = "";
+      if (desc) {
+        if (practiceTarget.type === "variation" && practiceTarget.variationId) {
+          const variation = desc.variations?.find((v) => v.id === practiceTarget.variationId);
+          harness = variation?.harness || "";
+        } else {
+          harness = desc.harness || "";
+        }
+      }
+
       // Flatten all test cases across categories
       const allTestCases = testSuite.categories.flatMap((cat) =>
         cat.testCases.map((tc) => ({
@@ -1228,7 +1349,7 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
       );
 
       const result = await executeCode({
-        code,
+        code: harness ? harness + "\n" + code : code,
         language: "typescript",
         testCases: allTestCases,
         timeout: EXECUTION_TIMEOUT,
@@ -1240,7 +1361,7 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     } finally {
       setTestSuiteRunning(false);
     }
-  }, [testSuite, testSuiteRunning, code]);
+  }, [testSuite, testSuiteRunning, code, desc, practiceTarget]);
 
   return {
     activeTab,
@@ -1275,6 +1396,8 @@ Keep it conversational and encouraging like a real interviewer would. Use 2-4 sh
     handleRunSingleTestCase,
     handleValidateTestCases,
     handleApplyTestCaseCorrections,
+    handleRegenerateHarness,
+    isRegeneratingHarness,
     validationResults,
     isValidating,
     evaluation,

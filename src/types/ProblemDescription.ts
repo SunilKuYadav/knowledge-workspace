@@ -70,6 +70,8 @@ export const ProblemVariationSchema = z.object({
   timeComplexity: z.string().optional(),
   spaceComplexity: z.string().optional(),
   boilerplate: z.string().optional(),
+  /** Hidden harness code prepended at execution time */
+  harness: z.string().optional(),
   hint: z.string().optional(),
   createdAt: z.string(),
   /** ID of the problem this was created from, for linking. */
@@ -141,6 +143,8 @@ export const ProblemDescriptionSchema = z.object({
   companyTags: z.array(z.string()).optional(),
   /** Starter / boilerplate code */
   boilerplate: z.string().optional(),
+  /** Hidden harness code (class defs, __deserialize, __serialize) prepended at execution time */
+  harness: z.string().optional(),
   /** Variations generated from this problem */
   variations: z.array(ProblemVariationSchema).optional(),
   /** IDs of problems linked as similar */

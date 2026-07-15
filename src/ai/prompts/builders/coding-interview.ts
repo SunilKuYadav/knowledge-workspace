@@ -203,32 +203,122 @@ Generate a complete coding interview problem and respond with ONLY a valid JSON 
   "expectedTimeComplexity": "string - Big-O notation e.g., O(n log n)",
   "expectedSpaceComplexity": "string - Big-O notation e.g., O(n)",
   "companyTags": ["string array - 1 to 5 companies that ask similar questions"],
-  "boilerplate": "string - starter code in ${language} with function signature and TODO comment"
+  "boilerplate": "string - ONLY the solution function signature with TODO comment that the user writes their code in",
+  "harness": "string (optional) - hidden helper code: class definitions + __deserialize + __serialize functions. Only include if the problem uses custom data structures. This code is prepended at execution time but NOT shown to the user."
 }
 
 Requirements:
 - tags: at least 2 items
-- samples: at least 2 items, each with input, output, and explanation
+- samples: at least 2 items, each with input, output, and explanation. Each explanation MUST include:
+  1. An ASCII visual diagram showing the data structure (for trees, linked lists, graphs, etc.)
+  2. A step-by-step walkthrough of the algorithm
+  Example: "The tree:\\n      3\\n     / \\\\\\n    1   4\\n     \\\\\\n      2\\n\\nInorder: left(1) → right(2) → root(3) → right(4) = [1,2,3,4]"
+  For array/string problems, show state changes at key steps. Use \\n for newlines.
 - edgeCases: at least 2 items
 - hiddenTestCases: at least 5 items covering various scenarios
 - companyTags: between 1 and 5 items
 - expectedTimeComplexity and expectedSpaceComplexity must be valid Big-O notation
+- boilerplate: ONLY the function signature the user implements (e.g., "function reverseList(head: ListNode | null): ListNode | null {\\n  // TODO: Implement solution\\n}"). Do NOT include class definitions or helper functions here.
+- harness: (only for data structure problems) All supporting code: class definitions, __deserialize, __serialize. This is hidden from the user but runs before their code.
 - boilerplate must be valid ${language} code with a clear function signature
 - The problem must have at least one valid solution implementable within 45 minutes
 
-CRITICAL TEST CASE FORMAT RULES:
-The execution engine calls the user's function by spreading the "input" array as arguments.
-For example, if the boilerplate is \`function subarraySum(nums: number[], k: number)\`:
-- "input" MUST be a JSON array of the function arguments: [[1,2,1,2,1], 3]
-- "expectedOutput" MUST be the JSON return value: 4
+DATA STRUCTURE BOILERPLATE — HARNESS CONVENTION:
+If the problem involves ANY custom data structure (linked lists, binary trees, n-ary trees, graphs, tries, heaps, doubly-linked lists, etc.), the boilerplate MUST include:
+1. Class definitions for the data structures
+2. A \`__deserialize(input)\` function that converts the raw JSON test input array into the arguments the solution function expects
+3. A \`__serialize(output)\` function that converts the solution's return value back to plain JSON for comparison
 
-More examples:
+The execution engine does: __deserialize(testCase.input) → solution(...args) → __serialize(rawOutput) → deepEqual(result, expectedOutput)
+If __deserialize/__serialize are NOT defined (simple problems like arrays/strings), input is spread directly as args.
+
+EXAMPLE — Linked List boilerplate:
+\`\`\`
+// harness (hidden from user):
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val = 0, next: ListNode | null = null) { this.val = val; this.next = next; }
+}
+
+function __deserialize(input: [number[]]): [ListNode | null] {
+  const arr = input[0];
+  if (!arr || arr.length === 0) return [null];
+  const head = new ListNode(arr[0]);
+  let cur = head;
+  for (let i = 1; i < arr.length; i++) { cur.next = new ListNode(arr[i]); cur = cur.next; }
+  return [head];
+}
+
+function __serialize(output: ListNode | null): number[] {
+  const result: number[] = [];
+  let cur = output;
+  while (cur) { result.push(cur.val); cur = cur.next; }
+  return result;
+}
+
+// boilerplate (shown to user):
+function reverseList(head: ListNode | null): ListNode | null {
+  // TODO: Implement solution
+}
+\`\`\`
+In the JSON response:
+- "boilerplate": "function reverseList(head: ListNode | null): ListNode | null {\\n  // TODO: Implement solution\\n}"
+- "harness": "class ListNode {\\n  val: number;\\n  next: ListNode | null;\\n  constructor(val = 0, next: ListNode | null = null) { this.val = val; this.next = next; }\\n}\\n\\nfunction __deserialize(input: [number[]]): [ListNode | null] {\\n  const arr = input[0];\\n  if (!arr || arr.length === 0) return [null];\\n  const head = new ListNode(arr[0]);\\n  let cur = head;\\n  for (let i = 1; i < arr.length; i++) { cur.next = new ListNode(arr[i]); cur = cur.next; }\\n  return [head];\\n}\\n\\nfunction __serialize(output: ListNode | null): number[] {\\n  const result: number[] = [];\\n  let cur = output;\\n  while (cur) { result.push(cur.val); cur = cur.next; }\\n  return result;\\n}"
+
+EXAMPLE — Binary Tree boilerplate:
+\`\`\`
+// harness (hidden from user):
+class TreeNode {
+  val: number;
+  left: TreeNode | null;
+  right: TreeNode | null;
+  constructor(val = 0, left: TreeNode | null = null, right: TreeNode | null = null) { this.val = val; this.left = left; this.right = right; }
+}
+
+function __deserialize(input: [(number | null)[]]): [TreeNode | null] {
+  const arr = input[0];
+  if (!arr || arr.length === 0 || arr[0] === null) return [null];
+  const root = new TreeNode(arr[0]);
+  const queue: TreeNode[] = [root];
+  let i = 1;
+  while (queue.length > 0 && i < arr.length) {
+    const node = queue.shift()!;
+    if (i < arr.length && arr[i] !== null) { node.left = new TreeNode(arr[i] as number); queue.push(node.left); }
+    i++;
+    if (i < arr.length && arr[i] !== null) { node.right = new TreeNode(arr[i] as number); queue.push(node.right); }
+    i++;
+  }
+  return [root];
+}
+
+function __serialize(output: number[]): number[] {
+  return output;
+}
+
+// boilerplate (shown to user):
+function inorderTraversal(root: TreeNode | null): number[] {
+  // TODO: Implement solution
+}
+\`\`\`
+In the JSON response:
+- "boilerplate": "function inorderTraversal(root: TreeNode | null): number[] {\\n  // TODO: Implement solution\\n}"
+- "harness": contains TreeNode class + __deserialize + __serialize
+
+This pattern works for ANY data structure. For graph problems, __deserialize builds the adjacency list/matrix. For n-ary trees, it builds the tree from the serialized format. The AI provides the correct conversion logic per problem.
+
+IMPORTANT: If the problem needs EXTRA CONSTRUCTION METADATA beyond the data structure values (e.g., cycle position for cycle detection, random pointer indices, parent node references), the __deserialize tuple type MUST include those extra parameters and hiddenTestCases inputs MUST provide them. Example: input type [number[], number] for [values, cyclePos], with test case input [[3,2,0,-4], 1].
+
+CRITICAL TEST CASE FORMAT RULES:
+The execution engine calls __deserialize(testCase.input) if it exists, otherwise spreads input as args.
+- "input" MUST be a JSON array of the function arguments: [[1,2,1,2,1], 3]
+- "expectedOutput" MUST be the JSON return value (after __serialize): 4
+
+More examples (for problems WITHOUT data structures):
 - For \`function twoSum(nums: number[], target: number)\`:
   input: [[2,7,11,15], 9], expectedOutput: [0,1]
 - For \`function isValid(s: string)\`:
   input: ["(())"], expectedOutput: true
-- For \`function maxProfit(prices: number[])\`:
-  input: [[7,1,5,3,6,4]], expectedOutput: 5
 
 DO NOT use string representations like "nums = [1,2,3], k = 3" or "1 2 1 2 1\\n3".
 

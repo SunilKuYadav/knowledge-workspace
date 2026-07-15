@@ -2,6 +2,10 @@
 
 import type { Problem, ProblemDescription, RevisionData } from "@/types";
 
+function formatDate(date: string | number | Date): string {
+  return new Date(date).toLocaleDateString("en-US");
+}
+
 interface OverviewTabProps {
   problem: Problem;
   description: ProblemDescription | null;
@@ -54,7 +58,7 @@ export function OverviewTab({
           label="Last Solved"
           value={
             problem.lastSolved
-              ? new Date(problem.lastSolved).toLocaleDateString()
+              ? formatDate(problem.lastSolved)
               : "Never"
           }
           color="text-zinc-700 dark:text-zinc-300"
@@ -179,7 +183,7 @@ export function OverviewTab({
             </p>
             <p className="font-medium text-zinc-900 dark:text-zinc-100 mt-0.5">
               {revision.lastReviewed
-                ? new Date(revision.lastReviewed).toLocaleDateString()
+                ? formatDate(revision.lastReviewed)
                 : "Never"}
             </p>
           </div>
@@ -188,7 +192,7 @@ export function OverviewTab({
               Next Review
             </p>
             <p className="font-medium text-zinc-900 dark:text-zinc-100 mt-0.5">
-              {new Date(revision.nextReview).toLocaleDateString()}
+              {formatDate(revision.nextReview)}
             </p>
           </div>
           <div>
@@ -221,7 +225,7 @@ export function OverviewTab({
                   <div
                     key={entry.id}
                     className="flex flex-col items-center gap-0.5"
-                    title={`${new Date(entry.date).toLocaleDateString()} — ${entry.confidence}/5`}
+                    title={`${formatDate(entry.date)} — ${entry.confidence}/5`}
                   >
                     <div
                       className={`w-6 rounded-sm ${barColor}`}
@@ -247,7 +251,7 @@ export function OverviewTab({
                     className="flex items-center justify-between text-sm border-l-2 border-zinc-200 dark:border-zinc-700 pl-3"
                   >
                     <span className="text-zinc-700 dark:text-zinc-300">
-                      {new Date(entry.date).toLocaleDateString()}
+                      {formatDate(entry.date)}
                       {entry.notes && (
                         <span className="text-zinc-400 ml-2 text-xs">
                           — {entry.notes}
@@ -272,8 +276,8 @@ export function OverviewTab({
 
       {/* Timestamps */}
       <div className="flex gap-6 text-xs text-zinc-400 dark:text-zinc-500">
-        <span>Created: {new Date(problem.createdAt).toLocaleDateString()}</span>
-        <span>Updated: {new Date(problem.updatedAt).toLocaleDateString()}</span>
+        <span>Created: {formatDate(problem.createdAt)}</span>
+        <span>Updated: {formatDate(problem.updatedAt)}</span>
       </div>
     </div>
   );

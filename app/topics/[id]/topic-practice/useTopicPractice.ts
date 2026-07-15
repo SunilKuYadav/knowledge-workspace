@@ -152,6 +152,7 @@ export function useTopicPractice({
         examples: (data.problem.examples || []) as { input: string; expectedOutput: string; explanation?: string }[],
         testCases: (data.problem.testCases || []) as { input: string; expectedOutput: string }[],
         boilerplate: (data.problem.boilerplate || "// Write your solution\n") as string,
+        harness: data.problem.harness as string | undefined,
         timeComplexity: data.problem.timeComplexity as string | undefined,
         spaceComplexity: data.problem.spaceComplexity as string | undefined,
         patterns: (data.problem.patterns || suggestion.patterns) as string[],
@@ -180,6 +181,7 @@ export function useTopicPractice({
         examples: problemData.examples,
         testCases: problemData.testCases,
         boilerplate: problemData.boilerplate,
+        harness: problemData.harness,
         timeComplexity: problemData.timeComplexity,
         spaceComplexity: problemData.spaceComplexity,
       };
@@ -293,7 +295,7 @@ export function useTopicPractice({
       ];
 
       const result = await executeCode({
-        code,
+        code: activeProblem.harness ? activeProblem.harness + "\n" + code : code,
         language: "typescript",
         testCases,
         timeout: EXECUTION_TIMEOUT,
@@ -332,7 +334,7 @@ export function useTopicPractice({
         ];
 
         const execResult = await executeCode({
-          code,
+          code: activeProblem.harness ? activeProblem.harness + "\n" + code : code,
           language: "typescript",
           testCases,
           timeout: EXECUTION_TIMEOUT,

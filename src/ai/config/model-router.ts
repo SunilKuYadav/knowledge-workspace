@@ -27,6 +27,8 @@ const ROUTE_TO_TIER: Record<string, ModelTier> = {
   "ai/problem/generate-note": "teaching",
   "ai/problem/generate-variation": "teaching",
   "ai/problem/generate-test-cases": "teaching",
+  "ai/topic/suggest-problems": "teaching",
+  "ai/topic/generate-problem": "teaching",
   "ai/assessment/generate": "teaching",
   "ai/assessment/evaluate": "teaching",
   "ai/assessment/feedback": "teaching",

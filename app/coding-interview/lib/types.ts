@@ -104,6 +104,8 @@ export interface GeneratedProblem {
   expectedSpaceComplexity: string; // Big-O
   companyTags: string[]; // 1-5
   boilerplate: string;
+  /** Hidden harness code (class definitions, __deserialize, __serialize) prepended at execution time but not shown in editor */
+  harness?: string;
 }
 
 /* ─── Evaluation Model ───────────────────────────────────── */
@@ -223,6 +225,8 @@ export interface InterviewState {
   // Editor
   code: string;
   boilerplate: string;
+  /** Hidden harness code prepended during execution only */
+  harness: string;
 
   // Timer
   elapsedSeconds: number;

@@ -4,12 +4,25 @@
  * and posts results back to the main thread.
  *
  * Uses self.onmessage pattern for Next.js bundling compatibility.
+ *
+ * DATA STRUCTURE SUPPORT:
+ * The worker supports arbitrary data structures via a harness convention:
+ * - If user code defines `__deserialize(input)`, it's called to convert raw
+ *   JSON test inputs into the data structures the solution function expects.
+ * - If user code defines `__serialize(output)`, it's called to convert the
+ *   function's return value back to plain JSON for comparison with expectedOutput.
+ * - If neither is defined, inputs are spread as-is and output is compared directly.
+ *
+ * The AI prompt instructs the model to generate these helpers as part of the
+ * boilerplate for any problem involving custom data structures.
  */
 
 /// <reference lib="webworker" />
 
 import { deepEqual } from "./deepEqual";
 import { transform } from "sucrase";
+
+/* ─── Interfaces ─────────────────────────────────────────── */
 
 interface WorkerTestCase {
   input: unknown;
@@ -45,6 +58,8 @@ interface WorkerResponse {
   error?: WorkerExecutionError;
 }
 
+/* ─── Utilities ──────────────────────────────────────────── */
+
 function truncateOutput(output: string, maxLength: number): string {
   if (output.length <= maxLength) return output;
   return (
@@ -54,20 +69,17 @@ function truncateOutput(output: string, maxLength: number): string {
 
 function extractLineNumber(error: Error): number | undefined {
   const stack = error.stack || "";
-  // Look for line numbers in anonymous function or eval contexts
   const match =
     stack.match(/<anonymous>:(\d+)/) ||
     stack.match(/Function:(\d+)/) ||
     stack.match(/eval.*:(\d+)/);
   if (match) {
-    // Subtract 1 to account for the wrapping function header line
     return Math.max(1, parseInt(match[1], 10) - 2);
   }
   return undefined;
 }
 
 function getMemoryUsageMb(): number {
-  // Use performance.memory if available (Chrome/Chromium-based)
   const perf = self.performance as Performance & {
     memory?: { usedJSHeapSize: number };
   };
@@ -76,6 +88,8 @@ function getMemoryUsageMb(): number {
   }
   return 0;
 }
+
+/* ─── Main Handler ───────────────────────────────────────── */
 
 self.onmessage = function (event: MessageEvent<WorkerRequest>) {
   const { code, testCases, maxOutputLength } = event.data;
@@ -91,7 +105,6 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     });
     jsCode = result.code;
   } catch {
-    // If stripping fails, try running as-is (may already be JS)
     jsCode = code;
   }
 
@@ -121,35 +134,49 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
   };
 
   try {
-    // First, try to create the function to catch syntax errors
     // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     let userFunction: Function;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    let deserializeFn: Function | null = null;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+    let serializeFn: Function | null = null;
 
-    // Extract all top-level function names from the code to find the user's function
+    // Extract all top-level function names from the code
     const declaredFnNames: string[] = [];
     const fnDeclRegex = /(?:^|\n)\s*(?:export\s+)?function\s+([a-zA-Z_$]\w*)/g;
     let fnMatch;
     while ((fnMatch = fnDeclRegex.exec(jsCode)) !== null) {
       declaredFnNames.push(fnMatch[1]);
     }
-    // Also check for const/let/var arrow functions: const foo = (...) =>
+    // Also check for const/let/var arrow functions
     const arrowFnRegex = /(?:^|\n)\s*(?:export\s+)?(?:const|let|var)\s+([a-zA-Z_$]\w*)\s*=/g;
     while ((fnMatch = arrowFnRegex.exec(jsCode)) !== null) {
       declaredFnNames.push(fnMatch[1]);
     }
 
-    // Build a return statement that finds the user's function
-    const fnLookup = declaredFnNames.length > 0
-      ? declaredFnNames.map((n) => `if (typeof ${n} === "function") return ${n};`).join("\n")
+    // Filter out harness functions from the solution function lookup
+    const solutionFnNames = declaredFnNames.filter(
+      (n) => n !== "__deserialize" && n !== "__serialize"
+    );
+
+    // Build a return statement that finds the user's function + harness
+    const fnLookup = solutionFnNames.length > 0
+      ? solutionFnNames.map((n) => `if (typeof ${n} === "function") return ${n};`).join("\n")
       : "";
 
+    // Execute code and extract functions
+    const extractCode = jsCode +
+      '\nvar __result = { fn: null, deserialize: null, serialize: null };\n' +
+      'if (typeof __deserialize === "function") __result.deserialize = __deserialize;\n' +
+      'if (typeof __serialize === "function") __result.serialize = __serialize;\n' +
+      'if (typeof solution === "function") { __result.fn = solution; return __result; }\n' +
+      fnLookup.replace(/return ([^;]+);/g, '__result.fn = $1; return __result;') +
+      "\nreturn __result;";
+
+    let extracted: { fn: Function | null; deserialize: Function | null; serialize: Function | null } | null = null;
+
     try {
-      userFunction = new Function(
-        jsCode +
-          '\nif (typeof solution === "function") return solution;\n' +
-          fnLookup +
-          "\nreturn null;",
-      )();
+      extracted = new Function(extractCode)();
     } catch (syntaxError) {
       const err = syntaxError as Error;
       const line = extractLineNumber(err);
@@ -171,13 +198,16 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
       return;
     }
 
-    // If no function was found, try to extract it differently
-    if (!userFunction) {
+    // Extract function references
+    if (extracted && typeof extracted === "object" && extracted.fn) {
+      userFunction = extracted.fn;
+      deserializeFn = extracted.deserialize;
+      serializeFn = extracted.serialize;
+    } else {
+      // Fallback: try older extraction methods
       try {
-        // Try wrapping the code and looking for the exported function
         userFunction = new Function(jsCode + "\nreturn solution;")();
       } catch {
-        // If still no function, run the code and try to get the last expression
         try {
           userFunction = new Function("return " + jsCode)();
         } catch {
@@ -204,10 +234,23 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
     for (const testCase of testCases) {
       const testStart = performance.now();
       try {
-        const input = Array.isArray(testCase.input)
-          ? testCase.input
-          : [testCase.input];
-        const actualOutput = userFunction(...input);
+        // Deserialize inputs: if __deserialize exists, use it to convert raw input
+        // Otherwise, spread the input array as function arguments
+        let args: unknown[];
+        if (deserializeFn) {
+          const deserialized = deserializeFn(testCase.input);
+          args = Array.isArray(deserialized) ? deserialized : [deserialized];
+        } else {
+          args = Array.isArray(testCase.input)
+            ? testCase.input
+            : [testCase.input];
+        }
+
+        const rawOutput = userFunction(...args);
+
+        // Serialize output: if __serialize exists, use it to convert back to JSON
+        const actualOutput = serializeFn ? serializeFn(rawOutput) : rawOutput;
+
         const testTimeMs =
           Math.round((performance.now() - testStart) * 100) / 100;
         const passed = deepEqual(actualOutput, testCase.expectedOutput);
@@ -232,7 +275,6 @@ self.onmessage = function (event: MessageEvent<WorkerRequest>) {
           executionTimeMs: testTimeMs,
         });
 
-        // Record the runtime error but continue with other test cases
         if (!response.error) {
           response.error = {
             type: "runtime",
