@@ -12,6 +12,7 @@ import SelfTestButton from "@/src/components/SelfTestButton";
 import CodingInterviewButton from "@/src/components/CodingInterviewButton";
 import LinkProblemButton from "@/src/components/LinkProblemButton";
 import MarkInProgressButton from "@/app/self-test/components/mark-in-progress-button/MarkInProgressButton";
+import TopicAIContext from "./topic-ai-context";
 
 export default async function TopicDetailPage({
   params,
@@ -168,37 +169,11 @@ export default async function TopicDetailPage({
                   allProblems={problemSummaries}
                 />
               </div>
-              {/* Semantic Description */}
-              {topic.semanticDescription && (
-                <div className="mt-4 rounded-md border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 px-3 py-2">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-xs">🎯</span>
-                    <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      AI Context
-                    </span>
-                  </div>
-                  {topic.semanticDescription.intent && (
-                    <p className="text-xs text-zinc-700 dark:text-zinc-300">
-                      {topic.semanticDescription.intent}
-                    </p>
-                  )}
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {topic.semanticDescription.targetLevel && (
-                      <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                        {topic.semanticDescription.targetLevel}
-                      </span>
-                    )}
-                    {topic.semanticDescription.focus?.map((f) => (
-                      <span
-                        key={f}
-                        className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                      >
-                        {f}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Semantic Description (AI Context) */}
+              <TopicAIContext
+                topicId={id}
+                initialSemanticDescription={topic.semanticDescription}
+              />
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <MarkInProgressButton topicId={id} status={topic.status} />
